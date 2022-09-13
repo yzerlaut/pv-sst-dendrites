@@ -1,1 +1,2 @@
-# pv-sst-dendrites
+# Dendritic properties of PV+ and SST+ interneurons
+
