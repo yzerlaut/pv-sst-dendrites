@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: Python 3
 #     language: python
 #     name: python3
 # ---
@@ -75,12 +75,16 @@ cells = {
         }
 
 # %%
-for neuron_id in cells['Basket']['segID']:
-    try:
-        post_mesh = mm.mesh(seg_id = neuron_id, lod=2)
-        print('  [ok] --> mesh found for cell:', neuron_id)
-    except BaseException as be:
-        print('  [X] --> NOT found for cell:', neuron_id)
+# check which cells are in the precomputed database
+for cType in ['Basket', 'Martinotti']:
+    cells[cType]['precomputed_mesh'] = np.zeros(len(cells[cType]['segID']), dtype=bool)
+    for n, neuron_id in enumerate(cells[cType]['segID']):
+        try:
+            post_mesh = mm.mesh(seg_id = neuron_id, lod=2)
+            print('  [ok] --> mesh found for cell:', neuron_id)
+            cells[cType]['precomputed_mesh'][n] = True
+        except BaseException as be:
+            print('  [X] --> NOT found for cell:', neuron_id)
 
 # %%
 for neuron_id in cells['Martinotti']['segID']:
@@ -92,18 +96,35 @@ for neuron_id in cells['Martinotti']['segID']:
 
 # %%
 from meshparty import skeleton, skeletonize, trimesh_io, meshwork
+
 neuron_id = cells['Martinotti']['segID'][1]
+
+# fetch precomputed mesh
 mesh = mm.mesh(seg_id = neuron_id, lod=1)
-sk = skeletonize.skeletonize_mesh(mesh,
-                                  collapse_soma=False,
-                                  compute_radius=False,
-                                  cc_vertex_thresh=100,
-                                  remove_zero_length_edges=False,
-                                  meta={
-                                        "root_id": root_id,
-                                        "skeleton_type": "pcg_skel",
-                                        "meta": {"space": "l2cache", "datastack": client.datastack_name}
-                                        })
+
+# compute skeleton path
+new_v, new_e, _, new_skel_map = skeletonize.calculate_skeleton_paths_on_mesh(mesh,
+                                                                             return_map=True)
+sk = skeletonize.Skeleton(new_v, new_e,
+                          mesh_to_skel_map=new_skel_map)
+
+# build nrn object from mesh and skeleton
+nrn = meshwork.Meshwork(mesh, seg_id=neuron_id, skeleton=sk)
+
+# 
+lvl2_eg = client.chunkedgraph.level2_chunk_graph(neuron_id)
+cv = client.info.segmentation_cloudvolume(progress=False)
+_, l2dict_mesh, _, _ = pcg_skel.build_spatial_graph(lvl2_eg, cv)
+
+# add pre-synapses
+pcg_skel.features.add_synapses(nrn,
+                               "synapses_pni_2",
+                               l2dict_mesh,
+                               client,
+                               root_id=neuron_id,
+                               pre=True,
+                               post=False,
+                               remove_self_synapse=True)
 
 # %%
 new_v, new_e, _, new_skel_map = skeletonize.calculate_skeleton_paths_on_mesh(mesh,
