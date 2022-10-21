@@ -8,6 +8,7 @@ import pcg_skel # version 0.3.0
 from caveclient import CAVEclient # version 4.16.2
 
 def compute_meshwork_with_synapses(neuron_id,
+                                   client,
                                    refine=None, # switch to None for fast computation
                                    voxel_resolution = np.array([4,4,40]),
                                    soma_radius = 20*1000):
@@ -64,9 +65,9 @@ if __name__=='__main__':
     if '.csv' in sys.argv[-1]:
 
         # run client
-        # datastack_name = 'minnie65_public_v343'
-        # client = CAVEclient(datastack_name)
-        # client.materialize.version = 343
+        datastack_name = 'minnie65_public_v343'
+        client = CAVEclient(datastack_name)
+        client.materialize.version = 343
 
 
         # load cell database
@@ -79,14 +80,21 @@ if __name__=='__main__':
             for root_id in df['root-ID'][df['cell-type']==cell_type]:
               
                 neuron_id = int(root_id.replace('"', '')) 
+
                 filename = 'data/%s-%s.h5' % (cell_type, neuron_id) 
 
-                print('- fetching and saving %s [...]' % filename)
+                print('\n- fetching and saving %s [...]' % filename)
 
-                # nrn  = compute_meshwork_with_synapses(neuron_id,
-                                                      # refine=None)
+                try:
+                    nrn  = compute_meshwork_with_synapses(neuron_id,
+                                                          client,
+                                                          refine=None)
 
-                # nrn.save_meshwork(filename)
+                    nrn.save_meshwork(filename)
+                    print('        ----> succeded [V]')
+
+                except BaseException as be:
+                    print('        ----> failed [X]')
 
 
 
