@@ -14,113 +14,20 @@
 # ---
 
 # %%
-# REDUCED
-cells = {
-         'Basket':{'segID':[864691135644647151,
-                            #
-                            864691136965924814,
-                            864691135875962451,
-                            864691135307240262,
-                            864691136601891793,
-                            864691135341149893,
-                            864691135212725632,
-                            864691135939796646,
-                            864691135269913253,
-                            864691135396580129,
-                            864691135771743563,
-                            864691135446872916,
-                            #
-                            864691135403927534,
-                            864691135815629903,
-                            864691135737012612,
-                            864691135873741966,
-                            864691135644647151,
-                            864691135807467037,
-                            864691135528023492,
-                            864691135212725632,
-                            864691137197014081,
-                            864691135307240262]},
-    
-         'Martinotti':{'segID':[864691135654096066,
-                                864691136483096108,
-                                864691136866902638,
-                                864691135390890482,
-                                864691136296781083,
-                                864691135697569813,
-                                864691135575230238,
-                                864691136056318680,
-                                864691136296781083,
-                                #
-                                864691136871043694,
-                                864691136436386718,
-                                864691135394616306,
-                                864691135584090435]}
-        }
-
-# %%
 # general packages
 import matplotlib.pyplot as plt
 import numpy as np
 
 # packages from Allen Institute:
 from meshparty import meshwork # version 1.16.4
-import pcg_skel # version 0.3.0 
-from caveclient import CAVEclient # version 4.16.2
 
-datastack_name = 'minnie65_public_v343'
-client = CAVEclient(datastack_name)
-client.materialize.version = 343
-
-def compute_skeleton_with_synapses(neuron_id,
-                                   refine='all', # switch to None for fast computation
-                                   voxel_resolution = np.array([4,4,40]),
-                                   soma_radius = 10*1000):
-
-    # --------------------------------------------------------
-    # get soma position of neuron ID in the "nucleus" database
-    # --------------------------------------------------------
-    soma = client.materialize.query_table('nucleus_detection_v0',
-                                          filter_equal_dict={'pt_root_id':neuron_id})
-    soma_pt= soma.loc[0, 'pt_position']*voxel_resolution
-
-    
-    # --------------------------------------------------------
-    #           compute skeleton with the `pcg_skel` package
-    # --------------------------------------------------------
-    sk, mesh, (l2dict_mesh, l2dict_mesh_r) = pcg_skel.pcg_skeleton(neuron_id,
-                                                                   client=client,
-                                                                   refine=refine, # 'all'
-                                                                   root_point=soma_pt,
-                                                                   root_point_resolution=[1,1,1],
-                                                                   collapse_soma=True,
-                                                                   collapse_radius=soma_radius,
-                                                                   save_to_cache=True,
-                                                                   return_mesh=True,
-                                                                   return_l2dict_mesh=True,
-                                                                   n_parallel=8)
-    
-    # --------------------------------------------------------
-    #           build Meshwork object from mesh and skeleton
-    # --------------------------------------------------------
-    nrn = meshwork.Meshwork(mesh, 
-                            seg_id=neuron_id, 
-                            skeleton=sk)
-
-    # -----------------------------------------------------------------------
-    #  add synapses from the "synapses_pni_2" database on the reconstruction
-    # -----------------------------------------------------------------------
-    pcg_skel.features.add_synapses(nrn,
-                                   "synapses_pni_2",
-                                   l2dict_mesh,
-                                   client,
-                                   root_id=neuron_id,
-                                   pre=True,
-                                   post=True,
-                                   remove_self_synapse=True)
-    
-    return nrn
+nrn = meshwork.load_meshwork('../data/Basket-864691135341149893.h5')
 
 
+# %%
+# ls ../data
+
+# %%
 def build_fig(key,
               cmap=plt.cm.magma,
               with_pre = False,
@@ -160,7 +67,7 @@ def plot_cell(nrn,
               with_post = False,
               with_segID=True,
               color='k',
-              clean=False, lw=0.1):
+              clean=True, lw=0.2):
     
     if ax is None:
         ax = plt.gca()
@@ -177,20 +84,14 @@ def plot_cell(nrn,
                    nrn.anno.post_syn.points[:,proj_axis2]/1e3,
                    color='turquoise', s=8, alpha=.5, label='post syn.')
     
-    if clean:
-        for cover_path in nrn.skeleton.cover_paths:
-            path_verts = nrn.skeleton.vertices[cover_path,:]
-            ax.plot(shift+\
-                    path_verts[:,proj_axis1]/1e3, 
-                    path_verts[:,proj_axis2]/1e3,
-                    color=color, lw=lw)
-
-    else:
+    # plotting using the "cover_paths"
+    for cover_path in nrn.skeleton.cover_paths:
+        path_verts = nrn.skeleton.vertices[cover_path,:]
         ax.plot(shift+\
-                   nrn.skeleton.vertices[:, proj_axis1]/1e3,
-                nrn.skeleton.vertices[:, proj_axis2]/1e3, 
-                '_', lw=0, ms=0.03, color=color)
-        
+                path_verts[:,proj_axis1]/1e3, 
+                path_verts[:,proj_axis2]/1e3,
+                color=color, lw=lw)
+
     if with_segID:
         ax.annotate('\n%s' % nrn.seg_id,
                     (shift+nrn.anno.post_syn.points[:,proj_axis1].min()/1e3,
@@ -206,32 +107,165 @@ def plot_cell(nrn,
 
 
 # %%
-neuron_id = cells['Basket']['segID'][0]
-nrn = compute_skeleton_with_synapses(neuron_id, refine=None)
+nrn.skeleton.path_length(nrn.skeleton.cover_paths[0])
 
 # %%
-nrn.save_meshwork('bc-example.h5')
+fig, AX = plt.subplots(2, 3, figsize=(15,7))
+
+path = nrn.skeleton.cover_paths[0] # 0, 10
+
+bins = np.linspace(0, 800, 30)
+
+for ax, title in zip(AX[0][:3], ['cell', 'single path', 'w. synapses']):
+    plot_cell(nrn, ax=ax)
+    ax.set_title(title)
+
+for ax in AX[0][1:3]:
+    ax.plot(nrn.skeleton.vertices[path,0]/1e3, 
+            nrn.skeleton.vertices[path,1]/1e3, color='r', lw=2)
+    ax.plot(nrn.vertices[path,0]/1e3+nrn.skeleton.vertices[nrn.root,0]/1e3, 
+            nrn.vertices[path,1]/1e3+nrn.skeleton.vertices[nrn.root,1]/1e3, color='r', lw=2)
+
+synapses_pt_in_path = np.array([d for d in nrn.anno.post_syn.df['post_pt_mesh_ind'] if (d in path)])
+
+# need to translate synapses into 
+#post_pt_skel_ind = [nrn.skeleton.mesh_to_skel_map[pt] for pt in nrn.anno.post_syn.df['post_pt_mesh_ind']]
+#synapses_pt_in_path = np.array([d for d in post_pt_skel_ind if (d in path)])
+
+
+print(len(synapses_pt_in_path))
+
+if len(synapses_pt_in_path)>0:
+    AX[0][2].plot(nrn.skeleton.vertices[synapses_pt_in_path,0]/1e3+3*np.random.randn(len(synapses_pt_in_path)), 
+                  nrn.skeleton.vertices[synapses_pt_in_path,1]/1e3+3*np.random.randn(len(synapses_pt_in_path)),
+                  'b.', ms=4)
+
+path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
+
+AX[1][0].plot(path, path_to_soma)
+AX[1][0].set_xlabel('path-point index'); AX[1][0].set_ylabel('path dist. to soma (um)')
+
+count_along_path = np.zeros(len(path))
+for i, p in enumerate(path):
+    count_along_path[i] = np.sum(nrn.anno.post_syn.df['post_pt_mesh_ind']==p)
+    
+AX[1][1].plot(path, count_along_path, 'b.')
+AX[1][1].set_xlabel('path-point index'); AX[1][1].set_ylabel('synaptic count')
+
+binned_dist = np.digitize(path_to_soma, bins=bins)
+density_hist = np.zeros(len(bins))
+for b in range(len(bins)):
+    # we sum all synapses that fall into this bin and we divide by the bin length
+    density_hist[b] = np.sum(count_along_path[binned_dist==b])/(bins[1]-bins[0])
+
+AX[1][2].plot(bins, density_hist, 'b-')
+AX[1][2].set_xlabel('path dist. to soma ($\mu$m)'); AX[1][2].set_ylabel('linear density (syn./$\mu$m)')
+  
 
 # %%
-nrn = meshwork.load_meshwork('bc-example.h5')
+fig, AX = plt.subplots(1, 2, figsize=(12,4))
+
+bins = np.linspace(0, 800, 30)
+
+DENSITY_HIST = []
+for path in nrn.skeleton.cover_paths:
+
+    # we plot all paths with a different color
+    AX[0].plot(nrn.skeleton.vertices[path,0]/1e3, 
+            nrn.skeleton.vertices[path,1]/1e3,)
+
+    path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
+
+    count_along_path = np.zeros(len(path))
+    for i, p in enumerate(path):
+        count_along_path[i] = np.sum(nrn.anno.post_syn.df['post_pt_mesh_ind']==p)
+
+    binned_dist = np.digitize(path_to_soma, bins=bins)
+    density_hist = np.ones(len(bins))*np.nan # nan by default
+    for b in range(len(bins)):
+        if np.sum(binned_dist==b)>0:
+            # we sum all synapses that fall into this bin and we divide by the bin length
+            density_hist[b] = np.sum(count_along_path[binned_dist==b])/(bins[1]-bins[0])
+
+    # we 
+    DENSITY_HIST.append(density_hist)
+    
+AX[1].plot(bins, np.nanmean(DENSITY_HIST, axis=0)) # only non-infinite values contributing
+
+AX[0].set_title('looping over paths')
+
+AX[1].set_xlabel('path dist. to soma ($\mu$m)'); 
+AX[1].set_ylabel('linear density (syn./$\mu$m)')
+
+# %%
+# np.nanmean?
+
+# %%
+fig, AX = plt.subplots(1, 2, figsize=(8,4))
+AX[1].plot(bins, np.mean(DENSITY_HIST, axis=0))
+AX[1].fill_between(bins, 
+           np.mean(DENSITY_HIST, axis=0)-np.std(DENSITY_HIST, axis=0),
+           np.mean(DENSITY_HIST, axis=0)+np.std(DENSITY_HIST, axis=0), alpha=0.4)
+
+# %%
+print(np.max(nrn.anno.post_syn.df['post_pt_mesh_ind']))
+print(np.max(path))
+print(np.max(nrn.mesh_indices))
+print(len(nrn.skeleton.vertices), np.max(nrn.skeleton.cover_paths[0]))
+
+# %%
+mesh_to_skel_indices = nrn._convert_to_skelindex(nrn.mesh_indices)
+len(nrn.mesh_indices), len(np.unique(nrn.mesh_indices)), np.max(nrn.skeleton_indices)
+
+# %%
+nrn.skeleton.vertices[nrn.root,0]
+
+# %%
+len(nrn._convert_to_skelindex(nrn.mesh_indices))
+
+# %%
+nrn.skeleton.path_length
 
 # %%
 #has_inds = np.full(nrn.skeleton.n_vertices, 0)
 #W = meshwork.utils.window_matrix(nrn.skeleton, 2000)
-
+path = nrn.skeleton.cover_paths[0]
 #print(has_inds.sum())
-nrn._convert_to_meshindex(nrn.anno.post_syn.df['post_pt_mesh_ind'])
+#nrn._convert_to_meshindex()
 
 # %%
-
 distances = nrn.skeleton_property_to_mesh(nrn.distance_to_root(nrn.skeleton.mesh_index))/1_000
 
-width = 2000
+width = 2500
 
 rho = nrn.linear_density(nrn.anno.post_syn.df['post_pt_mesh_ind'],
-                         width=width, normalize=False, exclude_root=True)
+                         width=width, 
+                         normalize=True, 
+                         exclude_root=True)
 
-plt.plot(distances, rho/width, '.')
+bins = np.linspace(5, 500)
+dist_indices = np.digitize(distances, bins=bins)
+mean_density, std_density = np.zeros(len(bins)), np.zeros(len(bins))
+
+for b in range(len(bins)):
+    if np.sum(dist_indices==b)>0:
+        mean_density[b] = np.mean(rho[dist_indices==b])
+        std_density[b] = np.std(rho[dist_indices==b])
+
+plt.plot(0.5*(bins[:-1]+bins[1:]), 1e3*mean_density[1:])
+plt.fill_between(0.5*(bins[:-1]+bins[1:]), 
+                 1e3*mean_density[1:]-1e3*std_density[1:],
+                 1e3*mean_density[1:]+1e3*std_density[1:], alpha=.3)
+
+# %%
+# nrn.linear_density?
+
+# %%
+plt.hist(rho[np.isfinite(rho)])
+
+# %%
+import pcg_skel # version 0.3.0 
+# pcg_skel.pcg_skeleton?
 
 # %%
 # nrn.linear_density?
