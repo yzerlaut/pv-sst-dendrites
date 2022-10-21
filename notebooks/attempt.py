@@ -72,7 +72,7 @@ client = CAVEclient(datastack_name)
 client.materialize.version = 343
 
 def compute_skeleton_with_synapses(neuron_id,
-                                   refine=None, # switch to None for fast computation
+                                   refine='all', # switch to None for fast computation
                                    voxel_resolution = np.array([4,4,40]),
                                    soma_radius = 10*1000):
 
@@ -203,14 +203,38 @@ def plot_cell(nrn,
                    nrn.skeleton.vertices[:, proj_axis1][nrn.skeleton.root]/1e3,
                nrn.skeleton.vertices[:, proj_axis2][nrn.skeleton.root]/1e3,
                s=40,color='violet', label='put. soma')
-    
+
 
 # %%
 neuron_id = cells['Basket']['segID'][0]
 nrn = compute_skeleton_with_synapses(neuron_id, refine=None)
 
 # %%
-nrn.seg_id
+nrn.save_meshwork('bc-example.h5')
+
+# %%
+nrn = meshwork.load_meshwork('bc-example.h5')
+
+# %%
+#has_inds = np.full(nrn.skeleton.n_vertices, 0)
+#W = meshwork.utils.window_matrix(nrn.skeleton, 2000)
+
+#print(has_inds.sum())
+nrn._convert_to_meshindex(nrn.anno.post_syn.df['post_pt_mesh_ind'])
+
+# %%
+
+distances = nrn.skeleton_property_to_mesh(nrn.distance_to_root(nrn.skeleton.mesh_index))/1_000
+
+width = 2000
+
+rho = nrn.linear_density(nrn.anno.post_syn.df['post_pt_mesh_ind'],
+                         width=width, normalize=False, exclude_root=True)
+
+plt.plot(distances, rho/width, '.')
+
+# %%
+# nrn.linear_density?
 
 # %%
 plot_cell(nrn, clean=True, lw=0.2, with_post=True)
