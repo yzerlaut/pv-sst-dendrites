@@ -1,4 +1,5 @@
 # general packages
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -85,16 +86,17 @@ if __name__=='__main__':
 
                 print('\n- fetching and saving %s [...]' % filename)
 
-                try:
-                    nrn  = compute_meshwork_with_synapses(neuron_id,
-                                                          client,
-                                                          refine=None)
+                if not os.path.isfile(filename):
+                    try:
+                        nrn  = compute_meshwork_with_synapses(neuron_id,
+                                                              client,
+                                                              refine='all') # switch to None for testing
 
-                    nrn.save_meshwork(filename)
-                    print('        ----> succeded [V]')
+                        nrn.save_meshwork(filename)
+                        print('        ----> succeded [V]')
 
-                except BaseException as be:
-                    print('        ----> failed [X]')
+                    except BaseException as be:
+                        print('        ----> failed [X]')
 
 
 

@@ -17,15 +17,47 @@
 # general packages
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # packages from Allen Institute:
 from meshparty import meshwork # version 1.16.4
 
-nrn = meshwork.load_meshwork('../data/Basket-864691135341149893.h5')
+# %% [markdown]
+# https://github.com/AllenInstitute/swdb_2022/blob/main/DynamicBrain/EM_reference_Materials/EM_Meshwork_Creation.ipynb
+
+# %%
+cells = {'Basket': [os.path.join('..', 'data', fn) for fn in os.listdir('../data') if 'Basket' in fn],
+         'Martinotti': [os.path.join('..', 'data', fn) for fn in os.listdir('../data') if 'Martinotti' in fn]}
 
 
 # %%
-# ls ../data
+def load_cell(nrn_h5_file):
+    
+    nrn = meshwork.load_meshwork(nrn_h5_file)
+    
+    nrn.pre_syn_sites = nrn.skeleton.mesh_to_skel_map[nrn.anno.pre_syn.df['pre_pt_mesh_ind']]
+    
+    nrn.post_syn_sites = nrn.skeleton.mesh_to_skel_map[nrn.anno.post_syn.df['post_pt_mesh_ind']]
+    
+    axon_inds, Q = meshwork.algorithms.split_axon_by_annotation(nrn, 
+                                                                pre_anno='pre_syn',
+                                                                post_anno='post_syn')
+    if Q>0.9:
+        nrn.axon_inds = axon_inds
+        nrn.is_axon = np.array([(m in axon_inds) for m in nrn.skeleton.mesh_to_skel_map], dtype=bool)
+        
+    else:
+        print('axon splitting not trusted...')
+        
+    return nrn
+
+
+# %%
+np.max(nrn.axon_inds)
+
+# %%
+nrn = load_cell(cells['Basket'][1])
+
 
 # %%
 def build_fig(key,
@@ -86,7 +118,8 @@ def plot_cell(nrn,
     
     # plotting using the "cover_paths"
     for cover_path in nrn.skeleton.cover_paths:
-        path_verts = nrn.skeleton.vertices[cover_path,:]
+        # dendrites
+        path_verts = nrn.skeleton.vertices[cover_path & ~nrn.is_axon,:]
         ax.plot(shift+\
                 path_verts[:,proj_axis1]/1e3, 
                 path_verts[:,proj_axis2]/1e3,
@@ -107,7 +140,13 @@ def plot_cell(nrn,
 
 
 # %%
+plot_cell(nrn)
+
+# %%
 nrn.skeleton.path_length(nrn.skeleton.cover_paths[0])
+
+# %%
+len(nrn.anno.post_syn.df['post_pt_mesh_ind'])
 
 # %%
 fig, AX = plt.subplots(2, 3, figsize=(15,7))
@@ -136,8 +175,9 @@ synapses_pt_in_path = np.array([d for d in nrn.anno.post_syn.df['post_pt_mesh_in
 print(len(synapses_pt_in_path))
 
 if len(synapses_pt_in_path)>0:
-    AX[0][2].plot(nrn.skeleton.vertices[synapses_pt_in_path,0]/1e3+3*np.random.randn(len(synapses_pt_in_path)), 
-                  nrn.skeleton.vertices[synapses_pt_in_path,1]/1e3+3*np.random.randn(len(synapses_pt_in_path)),
+    # adding a random jitter so that densely innervated areas look bigger
+    AX[0][2].plot(nrn.skeleton.vertices[synapses_pt_in_path,0]/1e3+2*np.random.randn(len(synapses_pt_in_path)), 
+                  nrn.skeleton.vertices[synapses_pt_in_path,1]/1e3+2*np.random.randn(len(synapses_pt_in_path)),
                   'b.', ms=4)
 
 path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
@@ -148,6 +188,8 @@ AX[1][0].set_xlabel('path-point index'); AX[1][0].set_ylabel('path dist. to soma
 count_along_path = np.zeros(len(path))
 for i, p in enumerate(path):
     count_along_path[i] = np.sum(nrn.anno.post_syn.df['post_pt_mesh_ind']==p)
+    
+print('synapses counted: %i/%i' % (count_along_path.sum(), len(nrn.anno.post_syn.df['post_pt_mesh_ind'])))
     
 AX[1][1].plot(path, count_along_path, 'b.')
 AX[1][1].set_xlabel('path-point index'); AX[1][1].set_ylabel('synaptic count')
@@ -160,45 +202,91 @@ for b in range(len(bins)):
 
 AX[1][2].plot(bins, density_hist, 'b-')
 AX[1][2].set_xlabel('path dist. to soma ($\mu$m)'); AX[1][2].set_ylabel('linear density (syn./$\mu$m)')
-  
+
 
 # %%
-fig, AX = plt.subplots(1, 2, figsize=(12,4))
-
-bins = np.linspace(0, 800, 30)
-
-DENSITY_HIST = []
-for path in nrn.skeleton.cover_paths:
-
-    # we plot all paths with a different color
-    AX[0].plot(nrn.skeleton.vertices[path,0]/1e3, 
-            nrn.skeleton.vertices[path,1]/1e3,)
-
-    path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
-
-    count_along_path = np.zeros(len(path))
-    for i, p in enumerate(path):
-        count_along_path[i] = np.sum(nrn.anno.post_syn.df['post_pt_mesh_ind']==p)
-
-    binned_dist = np.digitize(path_to_soma, bins=bins)
-    density_hist = np.ones(len(bins))*np.nan # nan by default
-    for b in range(len(bins)):
-        if np.sum(binned_dist==b)>0:
-            # we sum all synapses that fall into this bin and we divide by the bin length
-            density_hist[b] = np.sum(count_along_path[binned_dist==b])/(bins[1]-bins[0])
-
-    # we 
-    DENSITY_HIST.append(density_hist)
+def compute_single_cell(nrn_h5_file, 
+                        bins = np.linspace(0, 800, 30),
+                        with_fig=True):
     
-AX[1].plot(bins, np.nanmean(DENSITY_HIST, axis=0)) # only non-infinite values contributing
+    nrn = meshwork.load_meshwork(nrn_h5_file)
+    
+    if with_fig:
+        fig, AX = plt.subplots(1, 2, figsize=(12,4))
 
-AX[0].set_title('looping over paths')
+    
 
-AX[1].set_xlabel('path dist. to soma ($\mu$m)'); 
-AX[1].set_ylabel('linear density (syn./$\mu$m)')
+    DENSITY_HIST, Ntot_syn = [], 0
+
+    for path in nrn.skeleton.cover_paths:
+
+        # we plot all paths with a different color
+        AX[0].plot(nrn.skeleton.vertices[path,0]/1e3, 
+                nrn.skeleton.vertices[path,1]/1e3,)
+
+        path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
+
+        count_along_path = np.zeros(len(path))
+        for i, p in enumerate(path):
+            count_along_path[i] = np.sum(nrn.anno.post_syn.df['post_pt_mesh_ind']==p)
+
+        binned_dist = np.digitize(path_to_soma, bins=bins)
+        density_hist = np.ones(len(bins))*np.nan # nan by default
+        for b in range(len(bins)):
+            if np.sum(binned_dist==b)>0:
+                # we sum all synapses that fall into this bin and we divide by the bin length
+                density_hist[b] = np.sum(count_along_path[binned_dist==b])/(bins[1]-bins[0])
+
+        # we 
+        DENSITY_HIST.append(density_hist)
+        Ntot_syn += count_along_path.sum()
+
+    
+    print('synapses counted: %i/%i' % (Ntot_syn, len(nrn.anno.post_syn.df['post_pt_mesh_ind'])))
+
+    if with_fig:
+        AX[1].plot(bins, np.nanmean(DENSITY_HIST, axis=0)) # only non-infinite values contributing
+
+        AX[0].set_title('looping over paths')
+        AX[0].axis('equal')
+        
+        AX[1].set_xlabel('path dist. to soma ($\mu$m)'); 
+        AX[1].set_ylabel('linear density (syn./$\mu$m)')
+    else:
+        fig = None
+        
+    return bins, np.nanmean(DENSITY_HIST, axis=0), fig
+
+_ = compute_single_cell(cells['Basket'][0], with_fig=True)
 
 # %%
-# np.nanmean?
+nrn = meshwork.load_meshwork(cells['Basket'][1])
+
+# %%
+axon_inds, Q = meshwork.algorithms.split_axon_by_annotation(nrn, 
+                                                            pre_anno='pre_syn',
+                                                            post_anno='post_syn')
+
+# %%
+nrn.anno.add_annotations('is_axon', axon_inds, mask=True)
+
+# %%
+plot_cell(nrn)
+
+# %%
+len(axon_inds), np.max(nrn.skeleton.vertices)
+
+# %%
+
+DENSITIES = []
+for cell in cells['Basket']:
+
+    bins, density, _ = compute_single_cell(cell, 
+                                           with_fig=False)
+    
+    DENSITIES.append(density)
+   
+
 
 # %%
 fig, AX = plt.subplots(1, 2, figsize=(8,4))
@@ -259,6 +347,18 @@ plt.fill_between(0.5*(bins[:-1]+bins[1:]),
 
 # %%
 # nrn.linear_density?
+
+# %%
+np.sum([len(c) for c in nrn.skeleton.cover_paths]), len(nrn.skeleton_indices)
+
+# %%
+np.max()
+
+# %%
+len(nrn.skeleton.mesh_to_skel_map)
+
+# %%
+nrn.skeleton_indices
 
 # %%
 plt.hist(rho[np.isfinite(rho)])
