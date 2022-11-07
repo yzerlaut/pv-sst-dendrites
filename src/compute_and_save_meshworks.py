@@ -63,13 +63,38 @@ if __name__=='__main__':
     import sys
     import pandas as pd
 
-    if '.csv' in sys.argv[-1]:
+    # run client
+    datastack_name = 'minnie65_public_v343'
+    client = CAVEclient(datastack_name)
+    client.materialize.version = 343
 
-        # run client
-        datastack_name = 'minnie65_public_v343'
-        client = CAVEclient(datastack_name)
-        client.materialize.version = 343
+    cell_types = np.unique(client.materialize.query_table('allen_v1_column_types_slanted').cell_type)
 
+    if sys.argv[-1] in cell_types:
+
+        cells = client.materialize.query_table('allen_v1_column_types_slanted',
+                                               filter_equal_dict={'cell_type':sys.argv[-1]})
+
+        for neuron_id in cells.root_id:
+
+            filename = 'data/%s-%s.h5' % (sys.argv[-1], neuron_id) 
+
+            print('\n- fetching and saving %s [...]' % filename)
+
+            if not os.path.isfile(filename):
+                try:
+                    nrn  = compute_meshwork_with_synapses(neuron_id,
+                                                          client,
+                                                          refine='all') # switch to None for testing
+
+                    nrn.save_meshwork(filename)
+                    print('        ----> succeded [V]')
+
+                except BaseException as be:
+                    print('        ----> failed [X]')
+
+
+    elif '.csv' in sys.argv[-1]:
 
         # load cell database
         df = pd.read_csv(sys.argv[-1])
@@ -98,6 +123,17 @@ if __name__=='__main__':
                     except BaseException as be:
                         print('        ----> failed [X]')
 
+    elif 'allen' in sys.argv[-1]:
+        
+        # run client
+        datastack_name = 'minnie65_public_v343'
+        client = CAVEclient(datastack_name)
+        client.materialize.version = 343
+
+
+
+
+        
 
 
     else:
