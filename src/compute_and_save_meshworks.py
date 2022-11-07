@@ -75,13 +75,13 @@ if __name__=='__main__':
         cells = client.materialize.query_table('allen_v1_column_types_slanted',
                                                filter_equal_dict={'cell_type':sys.argv[-1]})
 
-        for neuron_id in cells.root_id:
+        for neuron_id in cells.pt_root_id:
 
             filename = 'data/%s-%s.h5' % (sys.argv[-1], neuron_id) 
 
-            print('\n- fetching and saving %s [...]' % filename)
 
             if not os.path.isfile(filename):
+                print('\n- fetching and saving %s [...]' % filename)
                 try:
                     nrn  = compute_meshwork_with_synapses(neuron_id,
                                                           client,
@@ -92,6 +92,9 @@ if __name__=='__main__':
 
                 except BaseException as be:
                     print('        ----> failed [X]')
+            else:
+                print('\n- %s already there' % filename)
+
 
 
     elif '.csv' in sys.argv[-1]:
