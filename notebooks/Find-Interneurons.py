@@ -43,7 +43,7 @@ BCs = client.materialize.query_table('allen_v1_column_types_slanted',
 # %%
 for mc_id in MCs.pt_root_id:
     print(mc_id)
-    
+
 
 # %%
 MCs.pt_root_id

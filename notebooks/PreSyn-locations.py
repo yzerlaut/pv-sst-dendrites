@@ -66,7 +66,7 @@ def analyze_afferent_neurons(nrn, cell_table, nucleus_table):
     - the spatial location of the nucleus in the sample
     """
     nrn.synaptic_sign = np.zeros(len(nrn.pre_pt_root_id), dtype=int)
-    nrn.pre_loc, nrn.exc_loc, nrn.inh_loc = [], [], []
+    nrn.pre_loc = []
     
     for i, pre_pt in enumerate(nrn.pre_pt_root_id):
 
@@ -82,31 +82,16 @@ def analyze_afferent_neurons(nrn, cell_table, nucleus_table):
         i_pt = np.flatnonzero(nucleus_table['pt_root_id']==pre_pt)
         if len(i_pt)>0:
             nrn.pre_loc.append(nucleus_table['pt_position'].values[i_pt[0]])
-            if nrn.synaptic_sign[i]==1:
-                nrn.exc_loc.append(nrn.pre_loc[-1])
-            elif nrn.synaptic_sign[i]==-1:
-                nrn.inh_loc.append(nrn.pre_loc[-1])
         else:
             nrn.pre_loc.append(None)
             
     nrn.root_position = nucleus_table['pt_position'].values[\
                 np.flatnonzero(nucleus_table['pt_root_id']==nrn.root_id)][0]
             
-    nrn.root_X, nrn.root_Y, nrn.root_Z = 4e-3*nrn.root_position[0],\
-                        4e-3*nrn.root_position[1], 40e-3*nrn.root_position[2]
-    
+    nrn.root_X,nrn.root_Y,nrn.root_Z=4e-3*nrn.root_position[0],4e-3*nrn.root_position[1],40e-3*nrn.root_position[2]
     nrn.pre_X = 4e-3*np.array([pre_loc[0] for pre_loc in nrn.pre_loc if pre_loc is not None])
     nrn.pre_Y = 4e-3*np.array([pre_loc[1] for pre_loc in nrn.pre_loc if pre_loc is not None])
     nrn.pre_Z = 40e-3*np.array([pre_loc[2] for pre_loc in nrn.pre_loc if pre_loc is not None])
-
-    nrn.exc_X = 4e-3*np.array([pre_loc[0] for pre_loc in nrn.exc_loc])
-    nrn.exc_Y = 4e-3*np.array([pre_loc[1] for pre_loc in nrn.exc_loc])
-    nrn.exc_Z = 40e-3*np.array([pre_loc[2] for pre_loc in nrn.exc_loc])
-
-    nrn.inh_X = 4e-3*np.array([pre_loc[0] for pre_loc in nrn.inh_loc])
-    nrn.inh_Y = 4e-3*np.array([pre_loc[1] for pre_loc in nrn.inh_loc])
-    nrn.inh_Z = 40e-3*np.array([pre_loc[2] for pre_loc in nrn.inh_loc])
-    
 
 def load_cell(nrn_h5_file):
     """
@@ -152,6 +137,7 @@ def compute_single_cell(nrn_h5_file,
         density_hist = np.ones(len(bins))*np.nan # nan by default
         for b in range(len(bins)):
             if np.sum(binned_dist==b)>0:
+                
                 # we sum all synapses that fall into this bin and we divide by the bin length
                 density_hist[b] = np.sum(count_along_path[binned_dist==b])/(bins[1]-bins[0])
 
@@ -176,15 +162,12 @@ def compute_single_cell(nrn_h5_file,
 
 
 # %%
-nrn = load_cell(cells['Martinotti'][3])
+nrn = load_cell(cells['Martinotti'][0])
 
 
 # %%
-
-# %%
-np.random.seed(10)
 Nsample, colors = 7, ['r', 'b']
-fig, AX = plt.subplots(2, Nsample, figsize=(2*Nsample,3))
+fig, AX = plt.subplots(2, Nsample, figsize=(1.7*Nsample,3))
 xlim, ylim = [np.inf, -np.inf], [np.inf, -np.inf] 
 for i, cType in enumerate(['Basket', 'Martinotti']):
     for j, c in enumerate(np.random.choice(len(cells[cType]), Nsample, replace=False)):
@@ -196,20 +179,16 @@ for i, cType in enumerate(['Basket', 'Martinotti']):
         xlim = [min([xlim[0], AX[i,j].get_xlim()[0]]), max([xlim[1], AX[i,j].get_xlim()[1]])]
         ylim = [min([ylim[0], AX[i,j].get_ylim()[0]]), max([ylim[1], AX[i,j].get_ylim()[1]])]
         
-for i, Ax in enumerate(AX):
-    for j, ax in enumerate(Ax):
+for Ax in AX:
+    for ax in Ax:
         ax.axis('equal')
         ax.set_ylim(ylim)
         ax.set_xlim(xlim)
-        if i==0:
-            ax.set_xticklabels([])
-        if j>0:
-            ax.set_yticklabels([])
         
 AX[1,0].set_xlabel('                             <-- medial  |  lateral-->   ($\mu$m)')
-AX[1,0].set_ylabel('                       <-- posterior  |  anterior-->  ($\mu$m)')
-fig.suptitle('soma locations of synaptic afferents with respect to target soma location', fontsize=11)
-fig.tight_layout()
+AX[1,0].set_ylabel('              <-- posterior  |  anterior-->  ($\mu$m)')
+fig.suptitle('soma locations of synaptic afferents with respect to target soma location')
+plt.tight_layout()
 fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location-examples.png', dpi=300)
 
 # %%
@@ -232,88 +211,18 @@ for i, cType in enumerate(['Basket', 'Martinotti']):
 for ax in AX:
     ax.set_ylabel('density (norm.)')
     ax.set_xlabel('2D distance (um) \nfrom post-syn. soma')
-fig.tight_layout()
+plt.tight_layout()
 fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location.png', dpi=300)
 
 # %%
-np.random.seed(10)
-Nsample, colors = 7, ['r', 'b']
-fig, AX = plt.subplots(2, Nsample, figsize=(2*Nsample,3))
-
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    for j, c in enumerate(np.random.choice(len(cells[cType]), Nsample, replace=False)):
-        nrn = load_cell(cells[cType][c])
-        AX[i,j].scatter(nrn.exc_X, nrn.exc_Z, color='green', s=2)
-        AX[i,j].scatter(nrn.inh_X, nrn.inh_Z, color='orange', s=2)
-        AX[i,j].scatter([nrn.root_X], [nrn.root_Z], color='y', s=20)
-        AX[i,j].annotate(' %s #%s' % (cType, c+1), (0,0.98),
-                         xycoords='axes fraction', va='top', color=colors[i], fontsize=8)
-        
-for i, Ax in enumerate(AX):
-    for j, ax in enumerate(Ax):
-        ax.axis('equal')
-        ax.set_ylim(ylim)
-        ax.set_xlim(xlim)
-        if i==0:
-            ax.set_xticklabels([])
-        if j>0:
-            ax.set_yticklabels([])
-        
-AX[0][0].annotate('Exc. syn. ', (0., 1.1), color='green', xycoords='axes fraction')
-AX[0][-1].annotate('Inh. syn. ', (1, 1.1), color='orange', xycoords='axes fraction', ha='right')
-AX[1,0].set_xlabel('                             <-- medial  |  lateral-->   ($\mu$m)')
-AX[1,0].set_ylabel('                       <-- posterior  |  anterior-->  ($\mu$m)')
-fig.suptitle('soma locations of synaptic afferents with respect to target soma location', fontsize=11)
-fig.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location-examples-EI.png', dpi=300)
-
-# %%
-Nsample = 2
 bins = np.linspace(10, 400, 50)
-fig, AX = plt.subplots(2, 3, figsize=(9,5))
-FINAL_EXC, FINAL_INH = {}, {}
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    FINAL_EXC[cType], FINAL_INH[cType] = [], []
-    AX[0][i].set_title(cType, color=colors[i])
-    for j, c in enumerate(range(len(cells[cType]))):
-        nrn = load_cell(cells[cType][c])
-        # exc
-        distance = np.sqrt((nrn.exc_X-nrn.root_X)**2+(nrn.exc_Z-nrn.root_Z)**2)
-        hist, be = np.histogram(distance, bins=bins, density=True)
-        AX[0][i].plot(0.5*(bins[1:]+bins[:-1]), hist, color='green', lw=0.1)
-        FINAL_EXC[cType].append(hist)
-        # inh
-        distance = np.sqrt((nrn.inh_X-nrn.root_X)**2+(nrn.inh_Z-nrn.root_Z)**2)
-        hist, be = np.histogram(distance, bins=bins, density=True)
-        AX[1][i].plot(0.5*(bins[1:]+bins[:-1]), hist, color='orange', lw=0.1)
-        FINAL_INH[cType].append(hist)
-        
-    AX[0][2].plot(0.5*(bins[1:]+bins[:-1]), np.mean(FINAL_EXC[cType], axis=0), color=colors[i], lw=2)
-    AX[1][2].plot(0.5*(bins[1:]+bins[:-1]), np.mean(FINAL_INH[cType], axis=0), color=colors[i], lw=2)
-    
-AX[0][2].annotate('Exc. syn.', (0.95, 0.95), color='green', va='top', ha='right', xycoords='axes fraction')
-AX[1][2].annotate('Inh. syn.', (0.95, 0.95), color='orange', va='top', ha='right', xycoords='axes fraction')
-
-for Ax in AX:
-    for ax in Ax:
-        ax.set_ylabel('density (norm.)')
-        ax.set_xlabel('2D distance (um) \nfrom post-syn. soma')
-
-
-# %%
-Nsample = 2
-bins = np.linspace(10, 400, 50)
-
 FINAL = {}
 for i, cType in enumerate(['Basket', 'Martinotti']):
-    FINAL[cType+'-exc'], FINAL[cType+'-inh'], FINAL[cType+'-sum'] = [], [], []
+    FINAL[cType+'-frac'], FINAL[cType+'-sum'] = [], []
     for j, c in enumerate(range(len(cells[cType]))):
         nrn = load_cell(cells[cType][c])
         FINAL[cType+'-sum'].append(len(nrn.synaptic_sign))
-        # exc
-        FINAL[cType+'-exc'].append(np.sum(nrn.synaptic_sign==1)/len(nrn.synaptic_sign))
-        # inh
-        FINAL[cType+'-inh'].append(np.sum(nrn.synaptic_sign==-1)/len(nrn.synaptic_sign))
+        FINAL[cType+'-frac'].append(len(nrn.pre_X)/len(nrn.pre_loc))
 
 # %%
 fig, AX = plt.subplots(1, 2, figsize=(8,2))
@@ -321,13 +230,11 @@ fig, AX = plt.subplots(1, 2, figsize=(8,2))
 for i, cType in enumerate(['Basket', 'Martinotti']):
     mSum, sSum = np.mean(FINAL[cType+'-sum']), np.std(FINAL[cType+'-sum'])
     AX[i].set_title(cType+'\nn=%i+/-%i syn.' % (mSum, sSum), color=colors[i], fontsize=9)
-    mExc, sExc = 100.*np.mean(FINAL[cType+'-exc']), 100.*np.std(FINAL[cType+'-exc'])
-    mInh, sInh = 100.*np.mean(FINAL[cType+'-inh']), 100.*np.std(FINAL[cType+'-inh'])
-    AX[i].pie([mExc, mInh, 100-mExc-mInh], colors=['green', 'orange', 'lightgray'],
-              labels=['\nExc: %.1f+/-%.1f%%' % (mExc, sExc),
-                      'Inh: %.1f+/-%.1f%%\n' % (mInh, sInh),''])
-    AX[i].annotate('unclassified', (0,-0.2), color='w', ha='center', va='top')
-fig.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/EI-sampling.png', dpi=300)
+    
+    mSyn, sSyn = 100.*np.mean(FINAL[cType+'-frac']), 100.*np.std(FINAL[cType+'-frac'])
 
-# %%
+    AX[i].pie([mSyn, 100-mSyn], colors=['purple', 'lightgray'],
+              labels=['located:\n%.1f+/-%.1f%%' % (mSyn, sSyn), ''])
+    AX[i].annotate('unlocated', (0,-0.2), color='w', ha='center', va='top')
+fig.tight_layout()
+fig.savefig('/home/yann.zerlaut/Desktop/figs/Loc-sampling.png', dpi=300)
