@@ -138,7 +138,7 @@ fig, ax = plt.subplots(1, figsize=(5,4))
 ax.set_xlabel('(um)')
 ax.set_ylabel('(um)')
 plot_cell(nrn, ax=ax)
-fig.savefig('/home/yann.zerlaut/Desktop/figs/example.png', dpi=300)
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/example.png', dpi=300)
 
 # %%
 nrn = load_cell(cells['Basket'][1])

@@ -34,22 +34,38 @@ cells = {'Basket': [os.path.join('..', 'data', fn) for fn in os.listdir('../data
          'Martinotti': [os.path.join('..', 'data', fn) for fn in os.listdir('../data') if 'MC' in fn]}
 
 
-# %% [markdown]
-# # Analyze presynaptic cells
-
 # %%
 def load_cell(nrn_h5_file):
     """
     we translate everything in terms of skeleton indices ! (mesh properties)
     """
     nrn = meshwork.load_meshwork(nrn_h5_file)
-    nrn.root_id = int(nrn_h5_file.split('-')[-1].replace('.h5', ''))
-
-    nrn.post_syn_sites = nrn.skeleton.mesh_to_skel_map[nrn.anno.post_syn.df['post_pt_mesh_ind']]
-    nrn.pre_pt_root_id = nrn.anno.post_syn.df['pre_pt_root_id']
     
+    nrn.pre_syn_sites = nrn.skeleton.mesh_to_skel_map[nrn.anno.pre_syn.df['pre_pt_mesh_ind']]
+    
+    nrn.post_syn_sites = nrn.skeleton.mesh_to_skel_map[nrn.anno.post_syn.df['post_pt_mesh_ind']]
+    
+    axon_inds, Q = meshwork.algorithms.split_axon_by_annotation(nrn, 
+                                                                pre_anno='pre_syn',
+                                                                post_anno='post_syn')
+    
+    if Q>0.5:
+        nrn.axon_inds = nrn.skeleton.mesh_to_skel_map[axon_inds]
+        nrn.is_axon = np.array([(m in nrn.axon_inds) for m in nrn.skeleton_indices], dtype=bool)
+        # dendritic cover paths
+        nrn.dend_cover_paths = []
+        for cover_path in nrn.skeleton.cover_paths:
+            path = [c for c in cover_path if c not in nrn.axon_inds]
+            if len(path)>0:
+                nrn.dend_cover_paths.append(path)
+    else:
+        print('axon splitting not trusted...')
+
     return nrn
 
+
+# %% [markdown]
+# # path to soma density
 
 # %%
 def compute_single_cell(nrn_h5_file, 
@@ -76,83 +92,234 @@ def compute_single_cell(nrn_h5_file,
 nrn = load_cell(cells['Martinotti'][0])
 
 # %%
-nrn.skeleton.cover_paths
-
-# %%
 bins, hist = compute_single_cell(cells['Martinotti'][0])
-plt.plot(bins, hist)
+#plt.plot(bins, hist)
 
 
 # %%
-Nsample, colors = 7, ['r', 'b']
-fig, AX = plt.subplots(2, Nsample, figsize=(1.7*Nsample,3))
-xlim, ylim = [np.inf, -np.inf], [np.inf, -np.inf] 
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    for j, c in enumerate(np.random.choice(len(cells[cType]), Nsample, replace=False)):
-        nrn = load_cell(cells[cType][c])
-        AX[i,j].scatter(nrn.pre_X, nrn.pre_Z, color=colors[i], s=1)
-        AX[i,j].scatter([nrn.root_X], [nrn.root_Z], color='y', s=40)
-        AX[i,j].annotate(' %s #%s' % (cType, c+1), (0,0.98),
-                         xycoords='axes fraction', va='top', color=colors[i], fontsize=8)
-        xlim = [min([xlim[0], AX[i,j].get_xlim()[0]]), max([xlim[1], AX[i,j].get_xlim()[1]])]
-        ylim = [min([ylim[0], AX[i,j].get_ylim()[0]]), max([ylim[1], AX[i,j].get_ylim()[1]])]
-        
-for Ax in AX:
-    for ax in Ax:
-        ax.axis('equal')
-        ax.set_ylim(ylim)
-        ax.set_xlim(xlim)
-        
-AX[1,0].set_xlabel('                             <-- medial  |  lateral-->   ($\mu$m)')
-AX[1,0].set_ylabel('              <-- posterior  |  anterior-->  ($\mu$m)')
-fig.suptitle('soma locations of synaptic afferents with respect to target soma location')
-plt.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location-examples.png', dpi=300)
+bins = np.linspace(0, 400, 30)
+
+Martinotti_Density = []
+for cell in cells['Martinotti']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Martinotti_Density.append(density)
+    except BaseException as be:
+        print(be)
+
+Basket_Density = []
+for cell in cells['Basket']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Basket_Density.append(density)
+    except BaseException as be:
+        print(be)
 
 # %%
-Nsample = 2
-bins = np.linspace(10, 400, 50)
-fig, AX = plt.subplots(1, 3, figsize=(9,3))
-FINAL = {}
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    FINAL[cType] = []
-    AX[i].set_title(cType, color=colors[i])
-    for j, c in enumerate(range(len(cells[cType]))):
-        nrn = load_cell(cells[cType][c])
-        distance = np.sqrt((nrn.pre_X-nrn.root_X)**2+(nrn.pre_Z-nrn.root_Z)**2)
-        hist, be = np.histogram(distance, bins=bins, density=True)
-        AX[i].plot(0.5*(bins[1:]+bins[:-1]), hist, color=colors[i], lw=0.1)
-        FINAL[cType].append(hist)
-    AX[i].annotate('n=%i' % len(cells[cType]), (0.95, 0.95), fontsize=9,
-                   xycoords='axes fraction', va='top', ha='right', color=colors[i])
-    AX[2].plot(0.5*(bins[1:]+bins[:-1]), np.mean(FINAL[cType], axis=0), color=colors[i], lw=2)
-for ax in AX:
-    ax.set_ylabel('density (norm.)')
-    ax.set_xlabel('2D distance (um) \nfrom post-syn. soma')
-plt.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location.png', dpi=300)
+fig, AX = plt.subplots(1, 3, figsize=(11,3))
 
-# %%
-bins = np.linspace(10, 400, 50)
-FINAL = {}
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    FINAL[cType+'-frac'], FINAL[cType+'-sum'] = [], []
-    for j, c in enumerate(range(len(cells[cType]))):
-        nrn = load_cell(cells[cType][c])
-        FINAL[cType+'-sum'].append(len(nrn.synaptic_sign))
-        FINAL[cType+'-frac'].append(len(nrn.pre_X)/len(nrn.pre_loc))
-
-# %%
-fig, AX = plt.subplots(1, 2, figsize=(8,2))
-
-for i, cType in enumerate(['Basket', 'Martinotti']):
-    mSum, sSum = np.mean(FINAL[cType+'-sum']), np.std(FINAL[cType+'-sum'])
-    AX[i].set_title(cType+'\nn=%i+/-%i syn.' % (mSum, sSum), color=colors[i], fontsize=9)
+for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
+                                 ['red', 'blue'], ['Basket', 'Martinotti']):
     
-    mSyn, sSyn = 100.*np.mean(FINAL[cType+'-frac']), 100.*np.std(FINAL[cType+'-frac'])
-
-    AX[i].pie([mSyn, 100-mSyn], colors=['purple', 'lightgray'],
-              labels=['located:\n%.1f+/-%.1f%%' % (mSyn, sSyn), ''])
-    AX[i].annotate('unlocated', (0,-0.2), color='w', ha='center', va='top')
+    for d in density:
+        ax.plot(bins[1:], d, lw=0.1)
+        
+    x, y, sy = bins[1:], np.nanmean(density, axis=0), np.nanstd(density, axis=0)
+    ax.plot(x, y, color=c)
+    ax.fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    # --
+    ax.annotate('n=%i ' % len(density), (1,0.95), color='grey', xycoords='axes fraction', ha='right', va='top')
+    ax.set_title('%s cells' % title, color=c)
+    ax.set_xlabel('path dist. to soma ($\mu$m)')
+    ax.set_ylabel('path density (norm.)')
+    # --
+    AX[2].plot(x, y, color=c, label=title)
+    #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    
+AX[2].set_xlabel('path dist. to soma ($\mu$m)')
+AX[2].set_ylabel('path density (norm.)')
+AX[2].legend()
 fig.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/Loc-sampling.png', dpi=300)
+fig.savefig('/home/yann.zerlaut/Desktop/figs/path-density.png', dpi=300)
+
+
+# %% [markdown]
+# # Branching
+
+# %%
+def compute_single_cell(nrn_h5_file, 
+                        bins = np.linspace(0, 400, 30),
+                        with_fig=False):
+    """
+    we loop over cover_paths to compute the segment density along the paths
+    """
+    
+    nrn = load_cell(nrn_h5_file)
+    
+    if with_fig:
+        fig, AX = plt.subplots(1, 2, figsize=(12,4))
+
+    COUNTS = np.zeros(len(bins))
+    for p, path in enumerate(nrn.dend_cover_paths):
+        
+        path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
+        hist = np.digitize(path_to_soma, bins=bins)
+        for i in np.unique(hist):
+            if i>0 and i<len(bins):
+                COUNTS[i]+=1
+
+    return bins, COUNTS
+
+
+# %%
+bins, hist = compute_single_cell(cells['Basket'][0])
+#plt.plot(bins, hist)
+
+# %%
+bins = np.linspace(0, 400, 30)
+
+Martinotti_Density = []
+for cell in cells['Martinotti']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Martinotti_Density.append(density)
+    except BaseException as be:
+        print(be)
+
+Basket_Density = []
+for cell in cells['Basket']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Basket_Density.append(density)
+    except BaseException as be:
+        print(be)
+
+# %%
+fig, AX = plt.subplots(1, 3, figsize=(11,3))
+
+for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
+                                 ['red', 'blue'], ['Basket', 'Martinotti']):
+    
+    for d in density:
+        ax.plot(bins, d, lw=0.1)
+        
+    x, y, sy = bins, np.nanmean(density, axis=0), np.nanstd(density, axis=0)
+    ax.plot(x, y, color=c)
+    ax.fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    # --
+    ax.annotate('n=%i ' % len(density), (1,0.95), color='grey', xycoords='axes fraction', ha='right', va='top')
+    ax.set_title('%s cells' % title, color=c)
+    ax.set_xlabel('path dist. to soma ($\mu$m)')
+    ax.set_ylabel('branch number (cover-paths)')
+    # --
+    AX[2].plot(x, y, color=c, label=title)
+    #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    
+AX[2].set_xlabel('path dist. to soma ($\mu$m)')
+AX[2].set_ylabel('branch number (cover-paths)')
+AX[2].legend()
+fig.tight_layout()
+fig.savefig('/home/yann.zerlaut/Desktop/figs/branching.png', dpi=300)
+
+
+# %% [markdown]
+# # Net path length
+
+# %%
+def compute_single_cell(nrn_h5_file, 
+                        bins = np.linspace(0, 400, 50),
+                        with_fig=False):
+    """
+    we loop over cover paths
+        we bin pieces of paths
+            we look for contiguous pieces -> we increment the net path length in that bien
+    """
+    
+    nrn = load_cell(nrn_h5_file)
+    
+    if with_fig:
+        fig, AX = plt.subplots(1, 2, figsize=(12,4))
+
+    COUNTS = np.zeros((len(bins), len(nrn.dend_cover_paths)))
+    for i, path in enumerate(nrn.dend_cover_paths):
+        
+        path_to_soma = [nrn.skeleton.distance_to_root[p]/1_000 for p in path]
+        hist = np.digitize(path_to_soma, bins=bins)
+        for j in np.unique(hist):
+            if j>0 and j<len(bins):
+                indices = np.flatnonzero(hist==j)
+                path_within_bin = np.array(path)[indices]
+                if len(path_within_bin)>1:
+                    #print(path_within_bin)
+                    jumps = np.flatnonzero(np.abs(np.diff(path_within_bin))>2)+1
+                    #print(jumps)
+                    for istart, istop in zip(np.concatenate([[0], jumps]),
+                                             np.concatenate([jumps, [-1]])):
+                        #print(istart, istop, path_within_bin[istart:istop])
+                        COUNTS[j, i] += nrn.path_length(path_within_bin[istart:istop])/1_000
+
+    return bins, COUNTS.sum(axis=1)
+
+#compute_single_cell(cells['Basket'][0])
+
+
+# %%
+bins, hist = compute_single_cell(cells['Basket'][0], bins=np.linspace(40, 300, 10))
+plt.bar(bins, hist, width=bins[1]-bins[0])
+
+# %%
+bins = np.linspace(20, 400, 20)
+
+Martinotti_Density = []
+for cell in cells['Martinotti']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Martinotti_Density.append(density)
+    except BaseException as be:
+        print(be)
+
+Basket_Density = []
+for cell in cells['Basket']:
+    try:
+        _, density = compute_single_cell(cell,
+                                         bins = bins)
+        Basket_Density.append(density)
+    except BaseException as be:
+        print(be)
+
+# %%
+fig, AX = plt.subplots(1, 3, figsize=(11,3))
+
+for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
+                                 ['red', 'blue'], ['Basket', 'Martinotti']):
+    
+    for d in density:
+        ax.plot(bins, d, lw=0.1)
+        
+    x, y, sy = bins, np.nanmean(density, axis=0), np.nanstd(density, axis=0)
+    ax.plot(x, y, color=c)
+    ax.fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    # --
+    ax.annotate('n=%i ' % len(density), (1,0.95), color='grey', xycoords='axes fraction', ha='right', va='top')
+    ax.set_title('%s cells' % title, color=c)
+    ax.set_xlabel('path dist. to soma ($\mu$m)')
+    ax.set_ylabel('net path length ($\mu$m)')
+    # --
+    AX[2].plot(x, y, color=c, label=title)
+    #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    
+AX[2].set_xlabel('path dist. to soma ($\mu$m)')
+AX[2].set_ylabel('net path length ($\mu$m)')
+AX[2].legend()
+fig.tight_layout()
+fig.savefig('/home/yann.zerlaut/Desktop/figs/path-length.png', dpi=300)
+
+# %%
+# nrn.path_length?
+
+# %%
