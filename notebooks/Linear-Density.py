@@ -263,7 +263,7 @@ _ = compute_single_cell(cells['Martinotti'][0], with_fig=True)
 plt.ylim([0,5])
 
 # %%
-bins = np.linspace(30, 350, 20)
+bins = np.linspace(20, 360, 20)
 
 Martinotti_Density = []
 for cell in cells['Martinotti']:
@@ -284,17 +284,31 @@ for cell in cells['Basket']:
         print(be)
 
 # %%
+from scipy.stats import wilcoxon
+
 fig, AX = plt.subplots(1, 3, figsize=(11,3))
+AX[2].set_xlabel('path dist. to soma ($\mu$m)')
+AX[2].set_ylabel('linear density (syn./$\mu$m)')
+plt.tight_layout()
 
-proximal, distal = [bins[0],100], [300-bins[0],300]
+fig2, ax2 = plt.subplots(1, figsize=(4,2))
 
+proximal, distal = [20,120], [260,360]
+
+prox, dist = {}, {}
 for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
                                  ['red', 'blue'], ['Basket', 'Martinotti']):
     
+    x, y, sy = .5*(bins[1:]+bins[:-1]), np.nanmean(density, axis=0)[1:], np.nanstd(density, axis=0)[1:]
+    prox[title], dist[title] = [], []
+    
     for d in density:
-        ax.plot(bins[1:], d[1:], lw=0.1)
-        
-    x, y, sy = bins[1:], np.nanmean(density, axis=0)[1:], np.nanstd(density, axis=0)[1:]
+        prox_cond = (x>=proximal[0]) & (x<=proximal[1]) & np.isfinite(d[1:])
+        prox[title].append(np.mean(d[1:][prox_cond]))
+        dist_cond = (x>=distal[0]) & (x<=distal[1]) & np.isfinite(d[1:])
+        dist[title].append(np.mean(d[1:][dist_cond]))
+        ax.plot(x, d[1:], lw=0.1, color=c)
+            
     ax.plot(x, y, color=c)
     ax.fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
     # --
@@ -305,20 +319,40 @@ for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
     ax.set_ylim([0,5.2])
     # --
     AX[2].plot(x, y, color=c, label=title)
-    #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
     
-for ax in AX:
+for i, means, label in zip(range(2), [prox, dist], ['proximal', 'distal']):
+    for j, c, title in zip(range(2), ['red', 'blue'], ['Basket', 'Martinotti']):
+        ax2.plot(3*i+j+np.random.randn(len(means[title]))*0.2,
+                 means[title], '.', color=c, ms=1)
+        ax2.bar([3*i+j], [np.nanmean(means[title])], 
+                yerr=[np.nanstd(means[title])], 
+                color=c, label=title, alpha=0.7)
+for j, c, title in zip(range(2), ['red', 'blue'], ['Basket', 'Martinotti']):
+    cond = np.isfinite(dist[title])
+    ax2.annotate('%s (n=%i)\n wilcoxon: p=%.1e ' % (title, np.sum(cond),
+                                                    wilcoxon(np.array(prox[title])[cond],
+                                                    np.array(dist[title])[cond]).pvalue),
+                 (1.1,0.2+0.3*j), xycoords='axes fraction', fontsize=7)
+
+for ax in [AX[2]]:
     ymax = ax.get_ylim()[1]
     ax.plot(proximal, np.ones(2)*ymax, lw=2, color='grey')
     ax.annotate('  proximal', (proximal[0], .99*ymax), va='top', color='grey', xycoords='data')
     ax.plot(distal, np.ones(2)*ymax, lw=2, color='grey')
     ax.annotate('  distal', (distal[0], .99*ymax), va='top', color='grey', xycoords='data')
-    
-AX[2].set_xlabel('path dist. to soma ($\mu$m)')
-AX[2].set_ylabel('linear density (syn./$\mu$m)')
+ymax = ax2.get_ylim()[1]
+ax2.annotate('proximal', (0.5, ymax), va='top', color='grey', xycoords='data', ha='center')
+ax2.annotate('distal', (3.5, ymax), va='top', color='grey', xycoords='data', ha='center')
+ax2.set_xticks([])
+ax2.set_ylabel('mean linear \n density (syn./$\mu$m)')
 AX[2].legend()
+
 plt.tight_layout()
 fig.savefig('/home/yann.zerlaut/Desktop/figs/lin-density.png', dpi=300)
+fig2.savefig('/home/yann.zerlaut/Desktop/figs/lin-density-summary.png', dpi=300)
+
+# %%
+# np.isfinite?
 
 # %% [markdown]
 # ## Plotting cells
