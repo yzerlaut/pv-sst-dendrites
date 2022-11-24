@@ -263,7 +263,7 @@ _ = compute_single_cell(cells['Martinotti'][0], with_fig=True)
 plt.ylim([0,5])
 
 # %%
-bins = np.linspace(10, 350, 20)
+bins = np.linspace(30, 350, 20)
 
 Martinotti_Density = []
 for cell in cells['Martinotti']:
@@ -286,6 +286,8 @@ for cell in cells['Basket']:
 # %%
 fig, AX = plt.subplots(1, 3, figsize=(11,3))
 
+proximal, distal = [bins[0],100], [300-bins[0],300]
+
 for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
                                  ['red', 'blue'], ['Basket', 'Martinotti']):
     
@@ -304,6 +306,13 @@ for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
     # --
     AX[2].plot(x, y, color=c, label=title)
     #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    
+for ax in AX:
+    ymax = ax.get_ylim()[1]
+    ax.plot(proximal, np.ones(2)*ymax, lw=2, color='grey')
+    ax.annotate('  proximal', (proximal[0], .99*ymax), va='top', color='grey', xycoords='data')
+    ax.plot(distal, np.ones(2)*ymax, lw=2, color='grey')
+    ax.annotate('  distal', (distal[0], .99*ymax), va='top', color='grey', xycoords='data')
     
 AX[2].set_xlabel('path dist. to soma ($\mu$m)')
 AX[2].set_ylabel('linear density (syn./$\mu$m)')
