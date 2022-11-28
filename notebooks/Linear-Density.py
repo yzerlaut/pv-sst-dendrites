@@ -431,3 +431,4 @@ fig.suptitle('Martinotti cells: "post" sites', fontsize=10)
 fig.savefig('/home/yann.zerlaut/Desktop/figs/martinotti-post.png', dpi=300)
 
 # %%
+nrn.

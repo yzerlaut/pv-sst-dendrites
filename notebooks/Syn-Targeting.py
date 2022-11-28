@@ -196,7 +196,7 @@ for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
     ax.set_ylabel('norm. synaptic  density')
     # --
     AX[2].plot(x, y, color=c, label=title)
-    #AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
     
     ax2.plot(len(means.keys())-1+np.random.randn(len(means[title]))*0.2,
              means[title], '.', color=c, ms=1)
@@ -213,5 +213,57 @@ plt.tight_layout()
 
 fig2.savefig('/home/yann.zerlaut/Desktop/figs/syn-targeting-summary.png', dpi=300)
 fig.savefig('/home/yann.zerlaut/Desktop/figs/syn-targeting.png', dpi=300)
+
+# %%
+from scipy.stats import ttest_ind
+
+dx = bins[1]-bins[0]
+
+fig, AX = plt.subplots(1, 3, figsize=(11,3))
+AX[2].set_xlabel('path dist. to soma ($\mu$m)')
+AX[2].set_ylabel('synaptic density cum. prob.')
+plt.tight_layout()
+
+fig2, ax2 = plt.subplots(1, figsize=(3.5,2))
+
+means = {}
+for ax, density, c, title in zip(AX, [Basket_Density, Martinotti_Density],
+                                 ['red', 'blue'], ['Basket', 'Martinotti']):
+    means[title] = []
+    x, y = .5*(bins[1:]+bins[:-1]), np.mean(np.cumsum(density, axis=1), axis=0)*dx
+    sy = dx*np.std(np.cumsum(density, axis=1), axis=0)
+    
+    for d in density:
+        ax.plot(x, np.cumsum(d)*dx, lw=0.1)
+        means[title].append(np.mean(x*d/d.mean()))
+        
+    ax.plot(x, y, color=c)
+    ax.fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    # --
+    ax.annotate('n=%i \n' % len(density), (1,0.), color='grey', xycoords='axes fraction', ha='right')
+    ax.set_title('%s cells' % title, color=c)
+    ax.set_xlabel('path dist. to soma ($\mu$m)')
+    ax.set_ylabel('synaptic density cum. prob.')
+    # --
+    AX[2].plot(x, y, color=c, label=title)
+    AX[2].fill_between(x, y-sy, y+sy, color=c, alpha=0.2, lw=0)
+    
+    ax2.plot(len(means.keys())-1+np.random.randn(len(means[title]))*0.2,
+             means[title], '.', color=c, ms=1)
+    ax2.bar([len(means.keys())-1], [np.mean(means[title])], 
+            yerr=[np.std(means[title])], 
+            color=c, label=title, alpha=0.7)
+    
+    
+AX[2].set_xlim([0,250])
+#AX[2].set_xscale('log')
+AX[2].legend(frameon=False)
+ax2.legend(loc=(1.1,0.2))
+ax2.set_ylabel('mean path dist.\n to soma ($\mu$m)')
+ax2.set_title('ttest_ind: p=%.1e' % ttest_ind(means['Basket'], means ['Martinotti']).pvalue, fontsize=7)
+plt.tight_layout()
+
+#fig2.savefig('/home/yann.zerlaut/Desktop/figs/syn-targeting-summary.png', dpi=300)
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/syn-targeting.png', dpi=300)
 
 # %%
