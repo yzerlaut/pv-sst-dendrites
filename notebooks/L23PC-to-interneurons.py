@@ -208,7 +208,7 @@ AX[1,0].set_xlabel('                             <-- medial  |  lateral-->   ($\
 AX[1,0].set_ylabel('              <-- posterior  |  anterior-->  ($\mu$m)')
 fig.suptitle('soma locations of L23-PCs afferents with respect to target soma location')
 plt.tight_layout()
-#fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location-examples.png', dpi=300)
+fig.savefig('/home/yann.zerlaut/Desktop/figs/pre-location-examples-L23.png', dpi=300)
 
 # %% [markdown]
 # ## Loop over all interneurons
