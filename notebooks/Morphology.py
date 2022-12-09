@@ -142,8 +142,7 @@ AX[2].set_xlabel('path dist. to soma ($\mu$m)')
 AX[2].set_ylabel('path density (norm.)')
 AX[2].legend()
 fig.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/path-density.png', dpi=300)
-
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/path-density.png', dpi=300)
 
 # %% [markdown]
 # # Branching
