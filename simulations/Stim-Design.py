@@ -41,7 +41,7 @@ vis.plot_segments(ax=ax0, color='tab:blue')
 ax.hist(1e6*SEGMENTS['distance_to_soma'], density=True)
 ax.set_xlabel('path dist. to soma ($\mu$m)')
 ax.set_ylabel('density')
-ax.set_yticks([])
+ax.set_yticks([]);
 
 # %% [markdown]
 # ## Distribute synapses
@@ -55,7 +55,7 @@ biased = 1.-(x-x.min())/(x.max()-x.min())
 biased /= np.sum(biased) # np.trapz(biased, x=1e6*x)
 
 # %%
-Nsynapses = 40
+Nsynapses = 100
 
 np.random.seed(20)
 LOCS = {}
@@ -91,11 +91,120 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
 
     inset = pt.inset(AX[1][c], [0.9, 0., 0.4, 0.3])
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], color='tab:red')
-    inset.set_xlabel('dist.');inset.set_xticks([]);inset.set_yticks([])
+    inset.set_xlabel('dist.', fontsize=7);inset.set_xticks([]);inset.set_yticks([])
     inset.set_xlim([x.min(), x.max()])
+    inset.set_title('%i synapses' % Nsynapses, fontsize=6)
+
+# %% [markdown]
+# ## Synaptic integration with "uniform" and "biased" distributions
 
 # %%
-# np.trapz?
+gL = 5e-5*nrn.siemens/nrn.cm**2
+EL = -70*nrn.mV                
+Es = 0*nrn.mV                  
+
+eqs='''
+Im = gL * (EL - v) : amp/meter**2
+Is = gs * (Es - v) : amp (point current)
+gs : siemens
+'''
 
 # %%
-fig.sup
+results = {}
+
+Nstim = 10
+events = np.arange(Nstim)*200
+Nsyns = 1+np.arange(Nstim)*10
+
+for case in ['uniform', 'biased']:
+
+    results[case] = {'Vm':[]}
+    
+    for repeat in range(2):
+        
+        np.random.seed(repeat)
+
+        spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
+
+        neuron = nrn.SpatialNeuron(morphology=morpho, 
+                           model=eqs,
+                           Cm=1 * nrn.uF / nrn.cm ** 2,    
+                           Ri=100 * nrn.ohm * nrn.cm)
+        neuron.v = EL
+
+        taus = 5.*nrn.ms
+        w = 0.2*nrn.nS
+
+        for e, ns in zip(events, Nsyns):
+
+            s = np.random.choice(np.arange(Nsynapses), ns, replace=False)
+
+            spike_times = np.concatenate([spike_times, e+np.arange(len(s))*0.01])
+            spike_IDs = np.concatenate([spike_IDs, np.array(s, dtype=int)])
+
+        stimulation = nrn.SpikeGeneratorGroup(Nsynapses,
+                                              np.array(spike_IDs, dtype=int),
+                                              spike_times*nrn.ms)
+
+        ES = nrn.Synapses(stimulation, neuron,
+                           model='''dg/dt = -g/taus : siemens
+                                    gs_post = g : siemens (summed)''',
+                           on_pre='g += w',
+                           method='exponential_euler')
+
+        for ipre, iseg_post in enumerate(LOCS[case]): # connect spike IDs to a given location
+            ES.connect(i=ipre, j=iseg_post)
+
+        # recording and running
+        M = nrn.StateMonitor(neuron, ('v'), record=[0, 1000])
+        nrn.run((400+np.max(spike_times))*nrn.ms)
+        results[case]['Vm'].append(np.array(M.v[0]/nrn.mV))
+        
+results['t'] = np.array(M.t/nrn.ms)
+
+# %%
+fig, AX = pt.plt.subplots(2, figsize=(5,3))
+
+for ax, case in zip(AX, ['uniform', 'biased']):
+    ax.plot(results['t'], np.mean(results[case]['Vm'],axis=0))
+    ax.set_ylabel('$V_m$ (mV)')
+    ax.set_xlabel('time (ms)')
+    #pt.draw_bar_scales(ax, Ybar=1, Ybar_label='10mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
+    pt.draw_bar_scales(ax, Xbar=1000, Xbar_label='1s', Ybar=1e-12)
+    #ax.ax.xaxis('off');
+    ax.axes.get_xaxis().set_visible(False)
+
+# %%
+
+
+
+
+
+
+
+
+
+# %%
+[p]]]]]]]]]\
+
+
+
+
+
+
+
+
+
+
+
+
+
+\||||||||||||||||||||||||||||||
+
+# %%
+
+
+
+
+[[[[[[[up;/'.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\
+]]]]]]
