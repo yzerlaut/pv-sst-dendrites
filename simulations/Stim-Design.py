@@ -113,8 +113,8 @@ gs : siemens
 results = {}
 
 Nstim = 10
-events = np.arange(Nstim)*200
-Nsyns = 1+np.arange(Nstim)*10
+results['events'] = np.arange(Nstim)*200
+results['Nsyns'] = 1+np.arange(Nstim)*10
 
 for case in ['uniform', 'biased']:
 
@@ -135,7 +135,7 @@ for case in ['uniform', 'biased']:
         taus = 5.*nrn.ms
         w = 0.2*nrn.nS
 
-        for e, ns in zip(events, Nsyns):
+        for e, ns in zip(results['events'], results['Nsyns']):
 
             s = np.random.choice(np.arange(Nsynapses), ns, replace=False)
 
@@ -163,48 +163,37 @@ for case in ['uniform', 'biased']:
 results['t'] = np.array(M.t/nrn.ms)
 
 # %%
-fig, AX = pt.plt.subplots(2, figsize=(5,3))
+for case in ['uniform', 'biased']:
 
-for ax, case in zip(AX, ['uniform', 'biased']):
-    ax.plot(results['t'], np.mean(results[case]['Vm'],axis=0))
+    results[case]['depol'] = []
+    results[case]['depol-sd'] = []
+
+    for event in results['events']:
+
+        t_cond = (results['t']>event) & (results['t']<=event+100)
+
+        imax = np.argmax(np.mean(results[case]['Vm'], axis=0)[t_cond])
+        results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax])
+        results[case]['depol-sd'].append(np.std(results[case]['Vm'], axis=0)[t_cond][imax])
+
+# %%
+fig, AX = pt.plt.subplots(2, figsize=(7,2.7))
+pt.plt.subplots_adjust(right=.7, hspace=0.1)
+
+axS = pt.inset(AX[1], (1.15,0.5,0.35,1.2))
+axS.set_ylabel('peak depol. (mV)')
+axS.set_xlabel(' $N_{synapses}$ ')
+for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green']):
+    ax.plot(results['t'], np.mean(results[case]['Vm'],axis=0), color=color)
     ax.set_ylabel('$V_m$ (mV)')
     ax.set_xlabel('time (ms)')
     #pt.draw_bar_scales(ax, Ybar=1, Ybar_label='10mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
-    pt.draw_bar_scales(ax, Xbar=1000, Xbar_label='1s', Ybar=1e-12)
+    pt.draw_bar_scales(ax, Xbar=200, Xbar_label='200ms', Ybar=1e-12)
     #ax.ax.xaxis('off');
     ax.axes.get_xaxis().set_visible(False)
+    axS.plot(results['Nsyns'], results[case]['depol'], color=color, label=case, lw=2)
+axS.legend(loc=(0,1), frameon=False)
+
+# pt.set_common_ylim(AX)
 
 # %%
-
-
-
-
-
-
-
-
-
-# %%
-[p]]]]]]]]]\
-
-
-
-
-
-
-
-
-
-
-
-
-
-\||||||||||||||||||||||||||||||
-
-# %%
-
-
-
-
-[[[[[[[up;/'.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\
-]]]]]]
