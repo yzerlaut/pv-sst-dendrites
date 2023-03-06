@@ -197,3 +197,23 @@ axS.legend(loc=(0,1), frameon=False)
 # pt.set_common_ylim(AX)
 
 # %%
+iEndDendrite = np.argmax(SEGMENTS['distance_to_soma'])
+SETS, i = [SEGMENTS['name'][iEndDendrite]], 0
+while (i<10) and len(SETS[-1].split('.'))>1:
+    new_name =  '.'.join(SETS[-1].split('.')[:-1])
+    SETS.append(new_name)
+    i+=1
+LOCS = []
+for i, name in enumerate(SEGMENTS['name']):
+    if name in SETS:
+        LOCS.append(i)
+
+fig, ax = pt.plt.subplots(1, figsize=(2,2))
+vis.plot_segments(ax=ax, color='tab:grey')
+vis.add_dots(ax, LOCS, 2)
+
+
+# %%
+pass
+
+
