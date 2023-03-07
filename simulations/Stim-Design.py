@@ -126,12 +126,12 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
 
 # %%
 # passive
-gL = 1e-4*nrn.siemens/nrn.cm**2
+gL = 5e-5*nrn.siemens/nrn.cm**2
 EL = -70*nrn.mV                
 Es = 0*nrn.mV                  
 # synaptic
 taus = 5.*nrn.ms
-w = 1.*nrn.nS
+w = 2.*nrn.nS
 # equation
 eqs='''
 Im = gL * (EL - v) : amp/meter**2
@@ -139,18 +139,16 @@ Is = gs * (Es - v) : amp (point current)
 gs : siemens
 '''
 
-# %%
-results = {}
 
-Nstim, Nrepeat, interstim = 10, 2, 200
-results['events'] = np.arange(Nstim)*interstim
-results['Nsyns'] = 1+np.arange(Nstim)*5
+results = {'Nstim':10, 'Nrepeat':2, 'interstim':200}
+results['events'] = np.arange(results['Nstim'])*results['interstim']
+results['Nsyns'] = 1+np.arange(results['Nstim'])*5
 
 for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
 
     results[case] = {'Vm':[]}
     
-    for repeat in range(Nrepeat):
+    for repeat in range(results['Nrepeat']):
         
         np.random.seed(repeat)
 
@@ -161,7 +159,7 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         neuron.v = EL
 
         if 'single-syn' in case:
-            spike_times = np.arange(Nsynapses)*interstim
+            spike_times = np.arange(Nsynapses)*results['interstim']
             spike_IDs = np.arange(Nsynapses)
         else:
             spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
@@ -191,8 +189,7 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         nrn.run((400+np.max(spike_times))*nrn.ms)
         results[case]['Vm'].append(np.array(M.v[0]/nrn.mV))
         
-        if ('t' not in results) and ('single-syn' not in case):
-            results['t'] = np.array(M.t/nrn.ms)
+        results[case]['t'] = np.array(M.t/nrn.ms)
 
 # %%
 np.save('results.npy', results)
@@ -201,14 +198,54 @@ np.save('results.npy', results)
 results = np.load('results.npy', allow_pickle=True).item()
 
 # %%
+
 # build linear prediction from single-syn
 def build_linear_pred_trace(results):
+
+    # build a dicionary with the individual responses
     
-    for case in ['uniform']:
-        for iLoc in np.unique(LOCS[case]):
-            iEvent = np.flatnonzero(LOCS[case]==)
-            print(iLoc)
-    results['single-syn'] = LOCS[case][iLoc]
+    for case in ['uniform', 'biased']:
+    
+        results['%s-linear-pred' % case] = []
+        linear_pred = []
+        results['%s-single-syn-kernel' % case] = []
+
+        for repeat in range(results['Nrepeat']):
+
+            # building single synapse kernel resp to build the linear resp
+            results['%s-single-syn-kernel' % case] = {}
+            for i, e in zip(results['single-syn-%s'%case]['spike_IDs_%i'%repeat],
+                            results['single-syn-%s'%case]['spike_times_%i'%repeat]):
+
+                t_cond = (results['single-syn-%s' % case]['t']>e) &  (results['single-syn-%s' % case]['t']<e+150)
+                results['%s-single-syn-kernel' % case][str(i)] = results['single-syn-%s' % case]['Vm'][repeat][t_cond]
+                results['%s-single-syn-kernel' % case][str(i)]-= results['%s-single-syn-kernel' % case][str(i)][0]
+
+            # then re-building the patterns
+            # results['%s-linear-pred' % case].append(0*results[case]['t']-70)
+            x = np.array(0*results[case]['t']-70)
+            linear_pred.append(0*results[case]['t']-70)
+            k=0
+            for i, e in zip(results[case]['spike_IDs_%i'%repeat],
+                            results[case]['spike_times_%i'%repeat]):
+
+                t_cond = (results[case]['t']>e) # & (results[case]['t']<(e+160))
+                N=len(results['%s-single-syn-kernel' % case][str(i)])
+                print(results[case]['t'][t_cond][:N])
+                # linear_pred[repeat][k*N:(k+1)*N] += results['%s-single-syn-kernel' % case][str(i)] 
+                # k+=1
+                # k = min([k, 10])
+                print(N)
+                x[t_cond][:1000] = 1 # results['%s-single-syn-kernel' % case][str(i)] 
+                linear_pred[repeat][t_cond] = 1 # results['%s-single-syn-kernel' % case][str(i)] 
+                # esults['%s-linear-pred' % case][repeat][t_cond][:N] = results['%s-single-syn-kernel' % case][str(i)] 
+                # results['%s-linear-pred' % case][repeat][:N] += results['%s-single-syn-kernel' % case][str(i)] 
+            results['%s-linear-pred' % case].append(x)
+        # results['%s-linear-pred' % case] = np.array(linear_pred) 
+
+    return results, linear_pred
+
+results, linear_pred = build_linear_pred_trace(results)
 
 
 
@@ -220,7 +257,7 @@ for case in ['uniform', 'biased']:
 
     for event in results['events']:
 
-        t_cond = (results['t']>event) & (results['t']<=event+100)
+        t_cond = (results[case]['t']>event) & (results[case]['t']<=event+100)
 
         imax = np.argmax(np.mean(results[case]['Vm'], axis=0)[t_cond])
         results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax])
@@ -234,7 +271,8 @@ axS = pt.inset(AX[1], (1.15,0.5,0.35,1.2))
 axS.set_ylabel('peak depol. (mV)')
 axS.set_xlabel(' $N_{synapses}$ ')
 for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green']):
-    ax.plot(results['t'], np.mean(results[case]['Vm'],axis=0), color=color)
+    # ax.plot(results[case]['t'], np.mean(results[case]['Vm'],axis=0), color=color)
+    ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred'],axis=0), ':', color=color)
     ax.set_ylabel('$V_m$ (mV)')
     ax.set_xlabel('time (ms)')
     #pt.draw_bar_scales(ax, Ybar=1, Ybar_label='10mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
