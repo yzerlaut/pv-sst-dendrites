@@ -68,7 +68,7 @@ BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
 
 # %%
 x = np.linspace(SEGMENTS['distance_to_soma'][BRANCH_LOCS].min(),
-                SEGMENTS['distance_to_soma'][BRANCH_LOCS].max(), 25)
+                SEGMENTS['distance_to_soma'][BRANCH_LOCS].max(), 10)
 uniform = 0.5 +0*x
 uniform /= np.sum(uniform) #np.trapz(uniform, x=1e6*x)
 
@@ -76,9 +76,9 @@ biased = 1.-(x-x.min())/(x.max()-x.min())
 biased /= np.sum(biased) # np.trapz(biased, x=1e6*x)
 
 # %%
-Nsynapses = 50
+Nsynapses = 20
 
-np.random.seed(20)
+np.random.seed(7)
 LOCS = {}
 
 digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bins=x, right=True)
@@ -94,8 +94,6 @@ for case, proba in zip(['uniform', 'biased'], [uniform, biased]):
             np.random.choice(BRANCH_LOCS[digitized_dist==i], 1)[0])
 LOCS['single-syn'] = BRANCH_LOCS # to have them all
 
-
-# %%
 fig, AX = pt.plt.subplots(2, 2, figsize=(7,5))
 pt.plt.subplots_adjust(wspace=.2, hspace=.6)
 
@@ -113,7 +111,7 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
     vis.add_dots(AX[1][c], LOCS[case], 1)
 
     inset = pt.inset(AX[1][c], [0.9, 0., 0.4, 0.3])
-    inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], color='tab:red')
+    inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], bins=x, color='tab:red')
     inset.set_xlabel('dist.', fontsize=7);inset.set_xticks([]);inset.set_yticks([])
     inset.set_xlim([x.min(), x.max()])
     inset.set_title('%i synapses' % Nsynapses, fontsize=6)
@@ -125,13 +123,15 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
 # ## Equation and Parameters
 
 # %%
+# simulation
+nrn.defaultclock.dt = 0.1*nrn.ms
 # passive
-gL = 5e-5*nrn.siemens/nrn.cm**2
+gL = 1e-4*nrn.siemens/nrn.cm**2
 EL = -70*nrn.mV                
 Es = 0*nrn.mV                  
 # synaptic
 taus = 5.*nrn.ms
-w = 2.*nrn.nS
+w = 1.0*nrn.nS
 # equation
 eqs='''
 Im = gL * (EL - v) : amp/meter**2
@@ -141,8 +141,8 @@ gs : siemens
 
 
 results = {'Nstim':10, 'Nrepeat':2, 'interstim':200}
-results['events'] = np.arange(results['Nstim'])*results['interstim']
-results['Nsyns'] = 1+np.arange(results['Nstim'])*5
+results['events'] = 20+np.arange(results['Nstim'])*results['interstim']
+results['Nsyns'] = 1+np.arange(results['Nstim'])*2
 
 for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
 
@@ -155,7 +155,7 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         neuron = nrn.SpatialNeuron(morphology=morpho, 
                            model=eqs,
                            Cm=1 * nrn.uF / nrn.cm ** 2,    
-                           Ri=100 * nrn.ohm * nrn.cm)
+                           Ri= 10 * nrn.ohm * nrn.cm)
         neuron.v = EL
 
         if 'single-syn' in case:
@@ -165,7 +165,8 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
             spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
             for e, ns in zip(results['events'], results['Nsyns']):
                 s = np.random.choice(np.arange(Nsynapses), ns, replace=False)
-                spike_times = np.concatenate([spike_times, e+np.arange(len(s))*0.01])
+                spike_times = np.concatenate([spike_times,
+                    e+np.arange(len(s))*nrn.defaultclock.dt/nrn.ms])
                 spike_IDs = np.concatenate([spike_IDs, np.array(s, dtype=int)])
 
         results[case]['spike_times_%i'%repeat] = spike_times
@@ -176,7 +177,7 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
                                               spike_times*nrn.ms)
 
         ES = nrn.Synapses(stimulation, neuron,
-                           model='''dg/dt = -g/taus : siemens
+                           model='''dg/dt = -g/taus : siemens (clock-driven)
                                     gs_post = g : siemens (summed)''',
                            on_pre='g += w',
                            method='exponential_euler')
@@ -190,6 +191,8 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         results[case]['Vm'].append(np.array(M.v[0]/nrn.mV))
         
         results[case]['t'] = np.array(M.t/nrn.ms)
+
+pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
 
 # %%
 np.save('results.npy', results)
@@ -206,7 +209,7 @@ def build_linear_pred_trace(results):
     
     for case in ['uniform', 'biased']:
     
-        results['%s-linear-pred' % case] = []
+        results['%s-linear-pred' % case] = {'Vm':[], 't':results[case]['t']}
         linear_pred = []
         results['%s-single-syn-kernel' % case] = []
 
@@ -222,35 +225,24 @@ def build_linear_pred_trace(results):
                 results['%s-single-syn-kernel' % case][str(i)]-= results['%s-single-syn-kernel' % case][str(i)][0]
 
             # then re-building the patterns
-            # results['%s-linear-pred' % case].append(0*results[case]['t']-70)
-            x = np.array(0*results[case]['t']-70)
-            linear_pred.append(0*results[case]['t']-70)
+            linear_pred = np.array(0*results[case]['t']-70)
             k=0
             for i, e in zip(results[case]['spike_IDs_%i'%repeat],
                             results[case]['spike_times_%i'%repeat]):
 
-                t_cond = (results[case]['t']>e) # & (results[case]['t']<(e+160))
+                i0 = np.flatnonzero(results[case]['t']>e)[0] # & (results[case]['t']<(e+160))
                 N=len(results['%s-single-syn-kernel' % case][str(i)])
-                print(results[case]['t'][t_cond][:N])
-                # linear_pred[repeat][k*N:(k+1)*N] += results['%s-single-syn-kernel' % case][str(i)] 
-                # k+=1
-                # k = min([k, 10])
-                print(N)
-                x[t_cond][:1000] = 1 # results['%s-single-syn-kernel' % case][str(i)] 
-                linear_pred[repeat][t_cond] = 1 # results['%s-single-syn-kernel' % case][str(i)] 
-                # esults['%s-linear-pred' % case][repeat][t_cond][:N] = results['%s-single-syn-kernel' % case][str(i)] 
-                # results['%s-linear-pred' % case][repeat][:N] += results['%s-single-syn-kernel' % case][str(i)] 
-            results['%s-linear-pred' % case].append(x)
-        # results['%s-linear-pred' % case] = np.array(linear_pred) 
+                linear_pred[i0:i0+N] += results['%s-single-syn-kernel' % case][str(i)] 
+            results['%s-linear-pred' % case]['Vm'].append(linear_pred)
 
     return results, linear_pred
 
 results, linear_pred = build_linear_pred_trace(results)
-
+pt.plt.plot(np.mean(results['uniform-linear-pred']['Vm'], axis=0))
 
 
 # %%
-for case in ['uniform', 'biased']:
+for case in ['uniform', 'biased', 'uniform-linear-pred', 'biased-linear-pred']:
 
     results[case]['depol'] = []
     results[case]['depol-sd'] = []
@@ -263,7 +255,6 @@ for case in ['uniform', 'biased']:
         results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax])
         results[case]['depol-sd'].append(np.std(results[case]['Vm'], axis=0)[t_cond][imax])
 
-# %%
 fig, AX = pt.plt.subplots(2, figsize=(7,2.7))
 pt.plt.subplots_adjust(right=.7, hspace=0.1)
 
@@ -271,15 +262,14 @@ axS = pt.inset(AX[1], (1.15,0.5,0.35,1.2))
 axS.set_ylabel('peak depol. (mV)')
 axS.set_xlabel(' $N_{synapses}$ ')
 for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green']):
-    # ax.plot(results[case]['t'], np.mean(results[case]['Vm'],axis=0), color=color)
-    ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred'],axis=0), ':', color=color)
+    ax.plot(results[case]['t'], np.mean(results[case]['Vm'],axis=0), color=color, label='real')
+    ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred']['Vm'],axis=0), ':', color=color, label='linear')
     ax.set_ylabel('$V_m$ (mV)')
     ax.set_xlabel('time (ms)')
-    #pt.draw_bar_scales(ax, Ybar=1, Ybar_label='10mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
-    pt.draw_bar_scales(ax, Xbar=200, Xbar_label='200ms', Ybar=1e-12)
-    #ax.ax.xaxis('off');
-    ax.axes.get_xaxis().set_visible(False)
+    # pt.draw_bar_scales(ax, Ybar=1, Ybar_label='1mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
+    pt.draw_bar_scales(ax, Xbar=200, Xbar_label='200ms', Ybar=1e-12, remove_axis='x')
     axS.plot(results['Nsyns'], results[case]['depol'], color=color, label=case, lw=2)
+    ax.legend(loc='best', frameon=False, fontsize=7)
 axS.legend(loc=(0,1), frameon=False)
 
 # pt.set_common_ylim(AX)
