@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -112,9 +112,9 @@ gs : siemens
 # %%
 results = {}
 
-Nstim = 10
+Nstim = 5
 results['events'] = np.arange(Nstim)*200
-results['Nsyns'] = 1+np.arange(Nstim)*10
+results['Nsyns'] = 1+np.arange(Nstim)*20
 
 for case in ['uniform', 'biased']:
 
@@ -126,10 +126,10 @@ for case in ['uniform', 'biased']:
 
         spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
 
-        neuron = nrn.SpatialNeuron(morphology=morpho, 
-                           model=eqs,
-                           Cm=1 * nrn.uF / nrn.cm ** 2,    
-                           Ri=100 * nrn.ohm * nrn.cm)
+        neuron = nrn.SpatialNeuron(morphology=morpho,
+                                   model=eqs,
+                                   Cm=1 * nrn.uF / nrn.cm ** 2,    
+                                   Ri=100 * nrn.ohm * nrn.cm)
         neuron.v = EL
 
         taus = 5.*nrn.ms
@@ -193,3 +193,5 @@ for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green'])
     ax.axes.get_xaxis().set_visible(False)
     axS.plot(results['Nsyns'], results[case]['depol'], color=color, label=case, lw=2)
 axS.legend(loc=(0,1), frameon=False)
+
+# %%

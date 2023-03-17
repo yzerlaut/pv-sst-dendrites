@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -57,7 +57,7 @@ Model = {
     ##################################################
     "gL": 0.5, # [pS/um2] = 10*[S/m2] # FITTED --- Farinella et al. 0.5pS/um2 = 0.5*1e-12*1e12 S/m2, NEURON default: 1mS/cm2 -> 10pS/um2
     "cm": 1., # [uF/cm2] NEURON default
-    "Ri": 100., # [Ohm*cm]'
+    "Ri": 100., # [Ohm*cm]
     "EL": -75, # [mV]
     #################################################
     # ---------- SYNAPTIC PARAMS  ----------------- #
@@ -91,6 +91,14 @@ def double_exp_normalization(T1, T2):
 
 Model['nAMPA'] = double_exp_normalization(Model['tauRiseAMPA'],Model['tauDecayAMPA'])    
 Model['nNMDA'] = double_exp_normalization(Model['tauRiseNMDA'],Model['tauDecayNMDA'])
+
+# %%
+BRT = nrn.morphologies.BallandRallsTree.build_morpho(Nbranch=Model['Nbranch'],
+                                                     branch_length=Model['branch_length'],
+                                                         soma_radius=Model['radius_soma'],
+                                                         root_diameter=Model['diameter_root_dendrite'],
+                                                         Nperbranch=10)
+BRT.root.LRL
 
 
 # %%

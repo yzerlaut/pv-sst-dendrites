@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -108,7 +108,7 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
     ax.set_xlabel('path dist. to soma ($\mu$m)');
     
     vis.plot_segments(ax=AX[1][c], color='tab:grey')
-    vis.add_dots(AX[1][c], LOCS[case], 1)
+    vis.add_dots(AX[1][c], LOCS[case], 3)
 
     inset = pt.inset(AX[1][c], [0.9, 0., 0.4, 0.3])
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], bins=x, color='tab:red')
@@ -126,12 +126,12 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
 # simulation
 nrn.defaultclock.dt = 0.1*nrn.ms
 # passive
-gL = 1e-4*nrn.siemens/nrn.cm**2
+gL = 5e-5*nrn.siemens/nrn.cm**2
 EL = -70*nrn.mV                
 Es = 0*nrn.mV                  
 # synaptic
 taus = 5.*nrn.ms
-w = 1.0*nrn.nS
+w = 0.2*nrn.nS
 # equation
 eqs='''
 Im = gL * (EL - v) : amp/meter**2
@@ -155,7 +155,7 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         neuron = nrn.SpatialNeuron(morphology=morpho, 
                            model=eqs,
                            Cm=1 * nrn.uF / nrn.cm ** 2,    
-                           Ri= 10 * nrn.ohm * nrn.cm)
+                           Ri= 100 * nrn.ohm * nrn.cm)
         neuron.v = EL
 
         if 'single-syn' in case:
@@ -273,26 +273,3 @@ for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green'])
 axS.legend(loc=(0,1), frameon=False)
 
 # pt.set_common_ylim(AX)
-
-# %%
-iEndDendrite = np.argmax(SEGMENTS['distance_to_soma'])
-SETS, i = [SEGMENTS['name'][iEndDendrite]], 0
-while (i<10) and len(SETS[-1].split('.'))>1:
-    new_name =  '.'.join(SETS[-1].split('.')[:-1])
-    SETS.append(new_name)
-    i+=1
-BRANCH_LOCS = []
-for i, name in enumerate(SEGMENTS['name']):
-    if name in SETS:
-        BRANCH_LOCS.append(i)
-
-fig, ax = pt.plt.subplots(1, figsize=(2,2))
-vis.plot_segments(ax=ax, color='tab:grey')
-vis.add_dots(ax, BRANCH_LOCS, 2)
-BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
-
-
-# %%
-pass
-
-
