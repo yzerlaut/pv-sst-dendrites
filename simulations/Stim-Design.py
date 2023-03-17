@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -42,6 +42,15 @@ ax.hist(1e6*SEGMENTS['distance_to_soma'], density=True)
 ax.set_xlabel('path dist. to soma ($\mu$m)')
 ax.set_ylabel('density')
 ax.set_yticks([]);
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '1.svg'))
+
+# %%
+fig, ax = pt.plt.subplots(1, figsize=(2,1.3))
+visFull, vis = nrnvyz(FULL), nrnvyz(SEGMENTS)
+visFull.plot_segments(ax=ax, color='tab:grey')
+ax0.annotate('dendrite', (0,0), xycoords='axes fraction', fontsize=6, color='tab:purple')
+vis.plot_segments(ax=ax, color='tab:red')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '1.svg'))
 
 # %% [markdown]
 # ## Distribute synapses on a single dendritic branch
@@ -76,9 +85,9 @@ biased = 1.-(x-x.min())/(x.max()-x.min())
 biased /= np.sum(biased) # np.trapz(biased, x=1e6*x)
 
 # %%
-Nsynapses = 20
+Nsynapses = 10
 
-np.random.seed(7)
+np.random.seed(3)
 LOCS = {}
 
 digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bins=x, right=True)
@@ -108,13 +117,15 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
     ax.set_xlabel('path dist. to soma ($\mu$m)');
     
     vis.plot_segments(ax=AX[1][c], color='tab:grey')
-    vis.add_dots(AX[1][c], LOCS[case], 3)
+    vis.add_dots(AX[1][c], LOCS[case], 4)
 
     inset = pt.inset(AX[1][c], [0.9, 0., 0.4, 0.3])
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], bins=x, color='tab:red')
     inset.set_xlabel('dist.', fontsize=7);inset.set_xticks([]);inset.set_yticks([])
     inset.set_xlim([x.min(), x.max()])
     inset.set_title('%i synapses' % Nsynapses, fontsize=6)
+    
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '1.svg'))
 
 # %% [markdown]
 # ## Synaptic integration with "uniform" and "biased" distributions
@@ -126,12 +137,12 @@ for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'biased']):
 # simulation
 nrn.defaultclock.dt = 0.1*nrn.ms
 # passive
-gL = 5e-5*nrn.siemens/nrn.cm**2
+gL = 1.5*1e-4*nrn.siemens/nrn.cm**2
 EL = -70*nrn.mV                
 Es = 0*nrn.mV                  
 # synaptic
 taus = 5.*nrn.ms
-w = 0.2*nrn.nS
+w = 1*nrn.nS
 # equation
 eqs='''
 Im = gL * (EL - v) : amp/meter**2
@@ -154,8 +165,8 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
 
         neuron = nrn.SpatialNeuron(morphology=morpho, 
                            model=eqs,
-                           Cm=1 * nrn.uF / nrn.cm ** 2,    
-                           Ri= 100 * nrn.ohm * nrn.cm)
+                           Cm= 0.5 * nrn.uF / nrn.cm ** 2,    
+                           Ri= 150 * nrn.ohm * nrn.cm)
         neuron.v = EL
 
         if 'single-syn' in case:
@@ -192,15 +203,13 @@ for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
         
         results[case]['t'] = np.array(M.t/nrn.ms)
 
+# np.save('results.npy', results)
+
 pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
 
-# %%
-np.save('results.npy', results)
 
 # %%
-results = np.load('results.npy', allow_pickle=True).item()
-
-# %%
+# results = np.load('results.npy', allow_pickle=True).item()
 
 # build linear prediction from single-syn
 def build_linear_pred_trace(results):
@@ -255,21 +264,30 @@ for case in ['uniform', 'biased', 'uniform-linear-pred', 'biased-linear-pred']:
         results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax])
         results[case]['depol-sd'].append(np.std(results[case]['Vm'], axis=0)[t_cond][imax])
 
-fig, AX = pt.plt.subplots(2, figsize=(7,2.7))
-pt.plt.subplots_adjust(right=.7, hspace=0.1)
+fig, AX = pt.plt.subplots(2, figsize=(3,2.7))
+pt.plt.subplots_adjust(right=.99, hspace=0.5)
 
-axS = pt.inset(AX[1], (1.15,0.5,0.35,1.2))
-axS.set_ylabel('peak depol. (mV)')
-axS.set_xlabel(' $N_{synapses}$ ')
+fig,
+#axS = pt.inset(AX[1], (1.15,0.5,0.35,1.2))
+#axS.set_ylabel('peak depol. (mV)')
+#axS.set_xlabel(' $N_{synapses}$ ')
 for ax, case, color in zip(AX, ['uniform', 'biased'], ['tab:blue', 'tab:green']):
     ax.plot(results[case]['t'], np.mean(results[case]['Vm'],axis=0), color=color, label='real')
     ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred']['Vm'],axis=0), ':', color=color, label='linear')
     ax.set_ylabel('$V_m$ (mV)')
     ax.set_xlabel('time (ms)')
-    # pt.draw_bar_scales(ax, Ybar=1, Ybar_label='1mV', Xbar=500, Xbar_label='500ms');ax.axis('off');
-    pt.draw_bar_scales(ax, Xbar=200, Xbar_label='200ms', Ybar=1e-12, remove_axis='x')
-    axS.plot(results['Nsyns'], results[case]['depol'], color=color, label=case, lw=2)
-    ax.legend(loc='best', frameon=False, fontsize=7)
-axS.legend(loc=(0,1), frameon=False)
+    ax.set_title(case, color=color)
+    #pt.draw_bar_scales(ax, Ybar=1, Ybar_label='1mV', Xbar=200, Xbar_label='200ms', remove_axis='both')
+    #axS.plot(results['Nsyns'], results[case]['depol'], color=color, label=case, lw=2)
+    ax.legend(loc=(0.9,0.2), frameon=False, fontsize=7)
+#axS.legend(loc=(0,1), frameon=False)
 
 # pt.set_common_ylim(AX)
+
+# %%
+pt.plt.plot(results['single-syn-uniform']['Vm'].flatten()[::10])
+
+# %%
+results['single-syn-uniform']
+
+# %%
