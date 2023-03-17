@@ -87,13 +87,13 @@ biased /= np.sum(biased) # np.trapz(biased, x=1e6*x)
 # %%
 Nsynapses = 10
 
-np.random.seed(3)
 LOCS = {}
 
 digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bins=x, right=True)
 
-for case, proba in zip(['uniform', 'biased'], [uniform, biased]):
+for case, proba, seed in zip(['uniform', 'biased'], [uniform, biased], [13,3]):
     
+    np.random.seed(seed)
     LOCS[case] = []
     iDist = np.random.choice(np.arange(len(x)), Nsynapses, p=proba)
     
