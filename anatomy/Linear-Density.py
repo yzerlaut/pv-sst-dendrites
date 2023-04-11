@@ -192,8 +192,7 @@ for b in range(len(bins)):
 
 AX[1][2].plot(bins, density_hist, 'b-')
 AX[1][2].set_xlabel('path dist. to soma ($\mu$m)'); AX[1][2].set_ylabel('linear density (syn./$\mu$m)')
-fig.savefig('/home/yann.zerlaut/Desktop/figs/comput.png', dpi=300)
-
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/comput.png', dpi=300)
 
 # %%
 def compute_single_cell(nrn_h5_file, 
@@ -253,7 +252,7 @@ def compute_single_cell(nrn_h5_file,
 # %%
 _, _, fig = compute_single_cell(cells['Basket'][1], with_fig=True)
 plt.ylim([0,5])
-fig.savefig('/home/yann.zerlaut/Desktop/figs/comput-2.png', dpi=300)
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/comput-2.png', dpi=300)
 
 # %% [markdown]
 # ## Example Martinotti cell

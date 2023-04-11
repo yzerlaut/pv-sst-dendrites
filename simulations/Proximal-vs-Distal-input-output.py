@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -124,7 +124,7 @@ def run_sim(Model,
                                Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
                                Ri=Model['Ri'] * nrn.ohm * nrn.cm)
     
-    gL = Model['gL']*nrn.siemens/nrn.meter**2
+    neuron.gL = Model['gL']*nrn.siemens/nrn.meter**2
     neuron.v = Model['EL']*nrn.mV # Vm initialized to E
 
     spike_IDs, spike_times, tstims = [], [], []

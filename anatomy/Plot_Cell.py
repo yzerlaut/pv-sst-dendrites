@@ -67,8 +67,30 @@ def load_cell(nrn_h5_file):
 
 
 # %%
+cells['Basket'][1]
+
+# %%
 # example
 nrn = load_cell(cells['Basket'][1])
+
+# %%
+from meshparty import meshwork
+nrn = meshwork.load_meshwork('../data/BC-864691135502365877.h5')
+axon_inds, Q = meshwork.algorithms.split_axon_by_annotation(nrn, 
+                                                            pre_anno='pre_syn',
+                                                            post_anno='post_syn')
+nrn.axon_inds = nrn.skeleton.mesh_to_skel_map[axon_inds]
+
+
+# %%
+from meshparty import meshwork
+import meshparty
+print(meshparty.__version__)
+nrn = meshwork.load_meshwork('../data/BC-864691135502365877.h5')
+axon_inds, Q = meshwork.algorithms.split_axon_by_annotation(nrn, 
+                                                            pre_anno='pre_syn',
+                                                            post_anno='post_syn')
+nrn.axon_inds = nrn.skeleton.mesh_to_skel_map[axon_inds]
 
 
 # %%
@@ -235,3 +257,5 @@ plot_cell(nrn, ax=AX[1],
 set_view_with_scale(AX[1], x0, y0, width, 10)
 
 fig.savefig('/home/yann.zerlaut/Desktop/Martinotti.png', dpi=300)
+
+# %%

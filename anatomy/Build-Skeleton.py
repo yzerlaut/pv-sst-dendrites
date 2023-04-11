@@ -21,7 +21,6 @@ import numpy as np
 from caveclient import CAVEclient
 
 
-#datastack_name = 'minnie65_public_v117'
 datastack_name = 'minnie65_public_v343' 
 client = CAVEclient(datastack_name)
 client.materialize.version = 343
@@ -146,7 +145,7 @@ def compute_skeleton(neuron_id,
                                    remove_self_synapse=True)
     return nrn
 
-
+compute_skeleton(cells['Martinotti']['segID'][0])
 
 # %%
 # check which cells are in the precomputed database
