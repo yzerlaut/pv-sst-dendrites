@@ -18,21 +18,23 @@ import sys, os
 
 import numpy as np
 
+import matplotlib.pylab as plt
+sys.path.append('../')
+import plot_tools as pt
+
 sys.path.append('../neural_network_dynamics/')
 import nrn
 from nrn.plot import nrnvyz
-from utils import plot_tools as pt
-import matplotlib.pylab as plt
 
 # %%
 Model = {
     #################################################
     # ---------- MORPHOLOGY PARAMS  --------------- #
     #################################################
-    'Nbranch':4, # 
-    'branch_length':100, # [um]
-    'radius_soma':10, # [um]
-    'diameter_root_dendrite':2.0, # [um]
+    'branch-number':4, #
+    'tree-length':400.0, # [um]
+    'soma-radius':10.0, # [um]
+    'root-diameter':2.0, # [um]
     'nseg_per_branch': 10,
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
@@ -52,16 +54,17 @@ Model = {
 
 
 # %%
-BRT = nrn.morphologies.BallandRallsTree.build_morpho(Nbranch=Model['Nbranch'],
-                                                     branch_length=Model['branch_length'],
-                                                     soma_radius=Model['radius_soma'],
-                                                     root_diameter=Model['diameter_root_dendrite'],
-                                                     Nperbranch=Model['nseg_per_branch'])
+BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
+                                Nbranch=Model['branch-number'],
+                                branch_length=1.0*Model['tree-length']/Model['branch-number'],
+                                soma_radius=Model['soma-radius'],
+                                root_diameter=Model['root-diameter'],
+                                Nperbranch=Model['nseg_per_branch'])
 
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 
 vis = nrnvyz(SEGMENTS)
-BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['Nbranch']+1)
+BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
 vis.add_dots(ax, BRANCH_LOCS, 2)
@@ -70,48 +73,49 @@ ax.set_title('n=%i segments' % len(BRANCH_LOCS), fontsize=6)
 
 # %%
 
-def run_imped_charact(Model, 
+def run_imped_charact(Model,
                       pulse={'amp':1,
                              'duration':200}):
     """
     current in pA, durations in ms
     """
-    
+
     # simulation params
     nrn.defaultclock.dt = Model['dt']*nrn.ms
-    
+
     # passive
     gL = Model['gL']*1e-4*nrn.siemens/nrn.cm**2
-    EL = Model['EL']*nrn.mV                
+    EL = Model['EL']*nrn.mV
     # equation
     eqs='''
     Im = gL * (EL - v) : amp/meter**2
     I : amp (point current)
     '''
-    
-    BRT = nrn.morphologies.BallandRallsTree.build_morpho(Nbranch=Model['Nbranch'],
-                                                         branch_length=Model['branch_length'],
-                                                         soma_radius=Model['radius_soma'],
-                                                         root_diameter=Model['diameter_root_dendrite'],
-                                                         Nperbranch=Model['nseg_per_branch'])
-    
+
+    BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
+                                    Nbranch=Model['branch-number'],
+                                    branch_length=1.0*Model['tree-length']/Model['branch-number'],
+                                    soma_radius=Model['soma-radius'],
+                                    root_diameter=Model['root-diameter'],
+                                    Nperbranch=Model['nseg_per_branch'])
+
     SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
-    BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['Nbranch']+1)
-    
+    BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
+
     neuron = nrn.SpatialNeuron(morphology=BRT,
                                #model=Equation_String.format(**Model),
                                model=eqs,
                                method='euler',
                                Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
                                Ri=Model['Ri'] * nrn.ohm * nrn.cm)
-    
-    
+
+
     output = {'loc':[],
               'input_resistance':[],
               'transfer_resistance_to_soma':[]}
-    
+
     for b in BRANCH_LOCS:
-        
+
         neuron.v = EL # init to rest
 
         # recording and running
@@ -125,54 +129,206 @@ def run_imped_charact(Model,
         nrn.run(pulse['duration']*nrn.ms)
         # turn off the current pulse
         neuron.I[b] = 0*nrn.pA
-        
+
         # measure all quantities
         output['input_resistance'].append(\
                                 1e6*(neuron.v[b]-EL)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
         output['transfer_resistance_to_soma'].append(\
                                 1e6*(neuron.v[0]-EL)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
-        output['loc'].append(b/len(BRANCH_LOCS)*Model['Nbranch']*Model['branch_length'])
-    
+        output['loc'].append(b/len(BRANCH_LOCS)*Model['tree-length'])
+
     t, neuron, BRT = None, None, None
     return output
-    
+
 results = run_imped_charact(Model)
 
 # %%
-fig, AX = plt.subplots(1, 2, figsize=(5,1.5))
-plt.subplots_adjust(wspace=0.6)
-AX[0].set_title('input resistance')
-AX[0].plot(results['loc'], results['input_resistance'])
-AX[1].set_title('transfer resistance')
-AX[1].plot(results['loc'], results['transfer_resistance_to_soma'])
-for ax in AX:
-    ax.set_xlabel('dist. to soma ($\mu$m)')
-    ax.set_ylabel('resistance (M$\Omega$)')
+
+def run_params_scan(key, values):
+
+    RESULTS = []
+    for i, value in enumerate(values):
+        cModel = Model.copy()
+        cModel[key] = value
+        RESULTS.append(run_imped_charact(cModel))
+    np.save('../data/%s-impact.npy' % key,
+            {key:values, 'results':RESULTS})
+
+def plot_parameter_variation(key,
+                             title='title', 
+                             label='label'):
+
+    data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
+
+    fig, AX = plt.subplots(1, 2, figsize=(4, 1.3))
+    plt.subplots_adjust(wspace=0.6, right=0.8, left=0.15)
+
+    AX[0].annotate(title, (0.01, 0.5), rotation=90, xycoords='figure fraction', va='center')
+    AX[0].set_title('input resistance')
+    AX[1].set_title('transfer resistance')
+
+    for ax in AX:
+        ax.set_xlabel('path dist. to soma ($\mu$m)')
+        ax.set_ylabel('M$\Omega$')
+
+    for i, results in enumerate(data['results']):
+        color = plt.cm.viridis(i/(len(data[key])-1))
+        AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
+        AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+
+    inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
+    pt.bar_legend(fig, X=range(len(data[key])+1),
+                  ticks = np.arange(len(data[key]))+0.5,
+                  ticks_labels = [str(k) for k in data[key]],
+                  colormap=plt.cm.viridis, ax_colorbar=inset,
+                  label=label)
+
+    return fig
+
 
 # %%
-full_length = 400 # [um]
-
-BRANCHES, RESULTS = range(2, 6), []
-for i, Nbranch in enumerate(BRANCHES):
-    cModel = Model.copy()
-    cModel['Nbranch'] = Nbranch
-    cModel['branch_length'] = full_length/Nbranch
-    RESULTS.append(run_imped_charact(cModel))
+# Impact of branching
 
 # %%
-full_length = 400 # [um]
 
-fig, AX = plt.subplots(1, 2, figsize=(5,1.5))
-plt.subplots_adjust(wspace=0.6, right=0.8)
-AX[0].set_title('input resistance')
-AX[1].set_title('transfer resistance')
-for ax in AX:
-    ax.set_xlabel('path dist. to soma ($\mu$m)')
-    ax.set_ylabel('resistance (M$\Omega$)')
-
-for i, results in enumerate(RESULTS):
-    color = plt.cm.viridis(i/(len(BRANCHES)-1))
-    AX[0].plot(results['loc'], results['input_resistance'], color=color)
-    AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color)
+run_params_scan('branch-number', [1,2,3,4,5])
 
 # %%
+fig = plot_parameter_variation('branch-number',
+                               title='Branching/Tapering',
+                               label='branch\nnumber')
+
+
+# %%
+# Impact of Tree Length
+
+# %%
+
+run_params_scan('tree-length', [100,200,400,600,1000])
+
+# %%
+fig = plot_parameter_variation('tree-length',
+                               title='Tree Length',
+                               label='full length\n($\\mu$m)')
+
+
+# %%
+# Impact of Intracellular Resistance
+
+# %%
+
+run_params_scan('Ri', [5, 10, 25, 50, 100])
+
+# %%
+
+fig = plot_parameter_variation('Ri',
+                               title='   Intracellular Resistivity',
+                               label='$R_i$\n($\Omega$.cm)')
+
+
+# %%
+# Impact of Transmembrane Resistance
+
+# %%
+
+run_params_scan('gL', [0.25, 0.5, 1, 2.5, 5])
+
+# %%
+
+fig = plot_parameter_variation('gL',
+                               title='Membrane Conductance',
+                               label='$g_L$\n(pS/$\\mu$m$^2$)')
+
+
+# %%
+# Impact of Root Diameter
+
+# %%
+
+run_params_scan('root-diameter', [1, 1.5, 2, 2.5, 3])
+
+# %%
+
+fig = plot_parameter_variation('root-diameter',
+                               title='Tree Root Diameter',
+                               label='root diam.\n($\\mu$m)')
+
+
+# %%
+# Impact of Soma Size
+
+# %%
+
+run_params_scan('soma-radius', [2, 5, 10, 20, 50])
+
+# %%
+
+fig = plot_parameter_variation('soma-radius',
+                               title='Soma Size',
+                               label='soma radius ($\\mu$m)')
+
+
+# %%
+KEYS = [\
+    'branch-number',
+    'tree-length',
+    'ri',
+    'gL',
+    'root-diameter',
+    'soma-radius']
+
+TITLES = [\
+    'Branching',
+    'Tree\nLength',
+    'Intracellular\n Resistivity',
+    'Membrane\nConductance',
+    'Root\nDiameter',
+    'Soma Size']
+
+LABELS=[\
+    'branch\nnumber',
+    'full length\n($\\mu$m)',
+    '$R_i$\n($\Omega$.cm)',
+    '$g_L$\n(pS/$\\mu$m$^2$)',
+    'root diam.\n($\\mu$m)',
+    'soma radius ($\\mu$m)']
+
+N = len(KEYS)
+fig, AXS = plt.subplots(N, 2, figsize=(3.5, 1.4*N))
+plt.subplots_adjust(wspace=0.6, hspace=0.5, right=0.8, left=0.2)
+
+AXS[0][0].set_title('input resistance')
+AXS[0][1].set_title('transfer resistance')
+
+for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
+
+    data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
+
+    AX[0].annotate(title, (-0.9, 0.5), rotation=90, xycoords='axes fraction',
+                   va='center', ha='center')
+
+
+    for i, results in enumerate(data['results']):
+        color = plt.cm.viridis(i/(len(data[key])-1))
+        AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
+        AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+
+    inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
+    pt.bar_legend(fig, X=range(len(data[key])+1),
+                  ticks = np.arange(len(data[key]))+0.5,
+                  ticks_labels = [str(k) for k in data[key]],
+                  colormap=plt.cm.viridis, ax_colorbar=inset,
+                  label=label)
+    for ax in AX:
+        ax.set_ylabel('M$\Omega$')
+        if key==KEYS[-1]:
+            ax.set_xlabel('path to soma ($\mu$m)')
+
+# fig.savefig('../figures/Ball-and-Rall-Tree-parameters.svg')
+
+
+
+
+
+
+
