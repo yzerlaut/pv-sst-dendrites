@@ -39,7 +39,7 @@ Model = {
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
     ##################################################
-    "gL": 1, # [pS/um2] = 10*[S/m2] # FITTED --- Farinella et al. 0.5pS/um2 = 0.5*1e-12*1e12 S/m2, NEURON default: 1mS/cm2 -> 10pS/um2
+    "gL": 1, # [pS/um2] = 10*[S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
     "cm": 1., # [uF/cm2] NEURON default
     "Ri": 50., # [Ohm*cm]
     "EL": -75, # [mV]
@@ -59,16 +59,21 @@ BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
                                 branch_length=1.0*Model['tree-length']/Model['branch-number'],
                                 soma_radius=Model['soma-radius'],
                                 root_diameter=Model['root-diameter'],
-                                Nperbranch=Model['nseg_per_branch'])
+                                Nperbranch=Model['nseg_per_branch'],
+                                random_angle=0)
 
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 
 vis = nrnvyz(SEGMENTS)
-BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
+#BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
+n, N = Model['nseg_per_branch'], Model['branch-number']
+BRANCH_LOCS = np.concatenate([np.arange(n+1),
+                              1+20*N+np.arange(3*n)]),
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
-vis.add_dots(ax, BRANCH_LOCS, 2)
+#vis.add_dots(ax, BRANCH_LOCS, 2)
 ax.set_title('n=%i segments' % len(BRANCH_LOCS), fontsize=6)
+fig.savefig('../figures/ball-and-rall-tree.svg')
 
 
 # %%
@@ -143,7 +148,6 @@ def run_imped_charact(Model,
 results = run_imped_charact(Model)
 
 # %%
-
 def run_params_scan(key, values):
 
     RESULTS = []
@@ -167,43 +171,67 @@ def plot_parameter_variation(key,
     AX[0].set_title('input resistance')
     AX[1].set_title('transfer resistance')
 
-    for ax in AX:
-        ax.set_xlabel('path dist. to soma ($\mu$m)')
-        ax.set_ylabel('M$\Omega$')
-
     for i, results in enumerate(data['results']):
-        color = plt.cm.viridis(i/(len(data[key])-1))
+        color = plt.cm.viridis_r(i/(len(data[key])-1))
         AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
         AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+
+    for ax in AX:
+        pt.set_plot(ax, xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$')
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
     pt.bar_legend(fig, X=range(len(data[key])+1),
                   ticks = np.arange(len(data[key]))+0.5,
                   ticks_labels = [str(k) for k in data[key]],
-                  colormap=plt.cm.viridis, ax_colorbar=inset,
+                  colormap=plt.cm.viridis_r, ax_colorbar=inset,
                   label=label)
 
     return fig
 
 
-# %%
-# Impact of branching
+# %% [markdown]
+# ## Impact of Branching+Tapering
 
 # %%
-
 run_params_scan('branch-number', [1,2,3,4,5])
 
 # %%
 fig = plot_parameter_variation('branch-number',
-                               title='Branching/Tapering',
+                               title='Branching+Tapering',
                                label='branch\nnumber')
 
 
 # %%
-# Impact of Tree Length
+fig = plot_parameter_variation('branch-number',
+                               label='branch\nnumber')
+fig.savefig('../figures/branching-effect.svg')
 
 # %%
+fig, AX = plt.subplots(1, 5, figsize=(5, 1.5))
 
+for i, N in enumerate([1,2,3,4,5]):
+    BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
+                                    Nbranch=N,
+                                    branch_length=1.0*Model['tree-length']/N,
+                                    soma_radius=Model['soma-radius'],
+                                    root_diameter=Model['root-diameter'],
+                                    Nperbranch=Model['nseg_per_branch'])
+
+    SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
+
+    vis = nrnvyz(SEGMENTS)
+    BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
+    vis.plot_segments(ax=AX[i], color=plt.cm.viridis_r(i/4),
+                      bar_scale_args={'Ybar':100,'Ybar_label':'100$\\mu$m ','Xbar': 1e-10} if i==0 else\
+                             {'Ybar':1e-10,'Xbar': 1e-10})
+    AX[i].set_title('$N_B$=%i' % N, fontsize=7)
+pt.set_common_xlims(AX)
+fig.savefig('../figures/branching-models.svg')
+
+# %% [markdown]
+# ## Impact of Tree Length
+
+# %%
 run_params_scan('tree-length', [100,200,400,600,1000])
 
 # %%
@@ -212,73 +240,68 @@ fig = plot_parameter_variation('tree-length',
                                label='full length\n($\\mu$m)')
 
 
-# %%
-# Impact of Intracellular Resistance
+# %% [markdown]
+# ## Impact of Intracellular Resistance
 
 # %%
-
 run_params_scan('Ri', [5, 10, 25, 50, 100])
 
 # %%
-
 fig = plot_parameter_variation('Ri',
                                title='   Intracellular Resistivity',
                                label='$R_i$\n($\Omega$.cm)')
 
 
-# %%
-# Impact of Transmembrane Resistance
+# %% [markdown]
+# ## Impact of Transmembrane Resistance
 
 # %%
-
 run_params_scan('gL', [0.25, 0.5, 1, 2.5, 5])
 
 # %%
-
 fig = plot_parameter_variation('gL',
                                title='Membrane Conductance',
                                label='$g_L$\n(pS/$\\mu$m$^2$)')
 
 
-# %%
-# Impact of Root Diameter
+# %% [markdown]
+# ## Impact of Root Diameter
 
 # %%
-
 run_params_scan('root-diameter', [1, 1.5, 2, 2.5, 3])
 
 # %%
-
 fig = plot_parameter_variation('root-diameter',
                                title='Tree Root Diameter',
                                label='root diam.\n($\\mu$m)')
 
 
-# %%
-# Impact of Soma Size
+# %% [markdown]
+# ## Impact of Soma Size
 
 # %%
-
 run_params_scan('soma-radius', [2, 5, 10, 20, 50])
 
 # %%
-
 fig = plot_parameter_variation('soma-radius',
                                title='Soma Size',
                                label='soma radius ($\\mu$m)')
 
 
+# %% [markdown]
+# ## Summary Fig
+
 # %%
 KEYS = [\
     'branch-number',
     'tree-length',
-    'ri',
+    'Ri',
     'gL',
     'root-diameter',
     'soma-radius']
 
 TITLES = [\
-    'Branching',
+    'Branching\n+Tapering',
     'Tree\nLength',
     'Intracellular\n Resistivity',
     'Membrane\nConductance',
@@ -324,11 +347,7 @@ for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
         if key==KEYS[-1]:
             ax.set_xlabel('path to soma ($\mu$m)')
 
-# fig.savefig('../figures/Ball-and-Rall-Tree-parameters.svg')
+#fig.savefig('../figures/Ball-and-Rall-Tree-parameters.svg')
 
 
-
-
-
-
-
+# %%
