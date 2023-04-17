@@ -34,7 +34,7 @@ Model = {
     'branch-number':4, #
     'tree-length':400.0, # [um]
     'soma-radius':10.0, # [um]
-    'root-diameter':2.0, # [um]
+    'root-diameter':1.0, # [um]
     'nseg_per_branch': 10,
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
@@ -202,7 +202,7 @@ fig = plot_parameter_variation('branch-number',
 
 
 # %%
-fig = plot_parameter_variation('branch-number',
+fig = plot_parameter_variation('branch-number', title='',
                                label='branch\nnumber')
 fig.savefig('../figures/branching-effect.svg')
 

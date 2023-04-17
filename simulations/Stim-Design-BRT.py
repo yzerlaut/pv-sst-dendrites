@@ -18,13 +18,10 @@ import sys, os
 
 import numpy as np
 
-import matplotlib.pylab as plt
-sys.path.append('../')
-import plot_tools as pt
-
 sys.path.append('../neural_network_dynamics/')
 import nrn
 from nrn.plot import nrnvyz
+from utils import plot_tools as pt
 
 # %% [markdown]
 # ## Load morphology
@@ -34,24 +31,24 @@ Model = {
     #################################################
     # ---------- MORPHOLOGY PARAMS  --------------- #
     #################################################
-    'branch-number':4, #
-    'tree-length':400.0, # [um]
-    'soma-radius':10.0, # [um]
-    'root-diameter':2.0, # [um]
+    'Nbranch':4, # 
+    'branch_length':100, # [um]
+    'radius_soma':10, # [um]
+    'diameter_root_dendrite':1.0, # [um]
     'nseg_per_branch': 10,
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
     ##################################################
-    "gL": 1, # [pS/um2] = 10*[S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
+    "gL": 0.5, # [pS/um2] = 10*[S/m2] # FITTED --- Farinella et al. 0.5pS/um2 = 0.5*1e-12*1e12 S/m2, NEURON default: 1mS/cm2 -> 10pS/um2
     "cm": 1., # [uF/cm2] NEURON default
-    "Ri": 50., # [Ohm*cm]
+    "Ri": 100., # [Ohm*cm]
     "EL": -75, # [mV]
     #################################################
     # ---------- SYNAPTIC PARAMS  ----------------- #
     #################################################
     'Ee':0,# [mV]
     'qAMPA':0.3,# [nS] # Destexhe et al., 1998: "0.35 to 1.0 nS"
-    'qNMDAtoAMPAratio': 0,
+    'qNMDAtoAMPAratio': 2.5,
     'tauRiseAMPA':0.5,# [ms], Destexhe et al. 1998: 0.4 to 0.8 ms
     'tauDecayAMPA':5,# [ms], Destexhe et al. 1998: "the decay time constant is about 5 ms (e.g., Hestrin, 1993)"
     'tauRiseNMDA': 3,# [ms], Farinella et al., 2014
@@ -70,49 +67,16 @@ Model = {
     'etaMg': 0.33, # 1/mM
     'V0NMDA':1./0.08,# [mV]
     'Mg_NMDA':1.,# mM
-}
+}    
 
-def double_exp_normalization(T1, T2):
-    return T1/(T2-T1)*((T2/T1)**(T2/(T2-T1)))
 
-Model['nAMPA'] = double_exp_normalization(Model['tauRiseAMPA'],Model['tauDecayAMPA'])    
-Model['nNMDA'] = double_exp_normalization(Model['tauRiseNMDA'],Model['tauDecayNMDA'])
-
-# %% [markdown]
-# ## Set Equations
 
 # %%
-# cable theory:
-Equation_String = '''
-Im = + ({gL}*siemens/meter**2) * (({EL}*mV) - v) : amp/meter**2
-Is = gE * (({Ee}*mV) - v) : amp (point current)
-gE : siemens'''
-
-# synaptic dynamics:
-
-# -- excitation (NMDA-dependent)
-EXC_SYNAPSES_EQUATIONS = '''dgRiseAMPA/dt = -gRiseAMPA/({tauRiseAMPA}*ms) : 1 (clock-driven)
-                            dgDecayAMPA/dt = -gDecayAMPA/({tauDecayAMPA}*ms) : 1 (clock-driven)
-                            dgRiseNMDA/dt = -gRiseNMDA/({tauRiseNMDA}*ms) : 1 (clock-driven)
-                            dgDecayNMDA/dt = -gDecayNMDA/({tauDecayNMDA}*ms) : 1 (clock-driven)
-                            gAMPA = ({qAMPA}*nS)*{nAMPA}*(gDecayAMPA-gRiseAMPA) : siemens
-                            gNMDA = ({qAMPA}*{qNMDAtoAMPAratio}*nS)*{nNMDA}*(gDecayNMDA-gRiseNMDA)/(1+{etaMg}*{cMg}*exp(-v_post/({V0NMDA}*mV))) : siemens
-                            gE_post = gAMPA+gNMDA : siemens (summed)'''
-ON_EXC_EVENT = 'gDecayAMPA += 1; gRiseAMPA += 1; gDecayNMDA += 1; gRiseNMDA += 1'
-
-
-
-# %% [markdown]
-# ## Distributions of distance to soma across synaptic locations
-
-# %%
-BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                Nbranch=Model['branch-number'],
-                                branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                soma_radius=Model['soma-radius'],
-                                root_diameter=Model['root-diameter'],
-                                Nperbranch=Model['nseg_per_branch'],
-                                random_angle=0)
+BRT = nrn.morphologies.BallandRallsTree.build_morpho(Nbranch=Model['Nbranch'],
+                                                     branch_length=Model['branch_length'],
+                                                     soma_radius=Model['radius_soma'],
+                                                     root_diameter=Model['diameter_root_dendrite'],
+                                                     Nperbranch=Model['nseg_per_branch'])
 FULL = nrn.morpho_analysis.compute_segments(BRT)
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT, without_axon=True)
 
@@ -120,11 +84,11 @@ SEGMENTS = nrn.morpho_analysis.compute_segments(BRT, without_axon=True)
 fig, [ax0, ax] = pt.plt.subplots(1, 2, figsize=(4,1.3))
 visFull, vis = nrnvyz(FULL), nrnvyz(SEGMENTS)
 visFull.plot_segments(ax=ax0, color='tab:grey')
-ax0.annotate('\n   dendrite', (0,0), xycoords='axes fraction', fontsize=6, color='tab:blue')
+ax0.annotate('dendrite', (0,0), xycoords='axes fraction', fontsize=6, color='tab:blue')
 vis.plot_segments(ax=ax0, color='tab:blue')
 ax.hist(1e6*SEGMENTS['distance_to_soma'], density=True,
-        bins=np.linspace(0, Model['tree-length'],
-                        Model['nseg_per_branch']*Model['branch-number']+1))
+        bins=np.linspace(0, Model['branch_length']*Model['Nbranch'],
+                        Model['nseg_per_branch']*Model['Nbranch']+1))
 ax.set_xlabel('path dist. to soma ($\mu$m)')
 ax.set_ylabel('density')
 ax.set_yticks([]);
@@ -153,70 +117,54 @@ BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
 
 
 # %%
-x = np.linspace(0, 400, 12)
-digitized = np.digitize(1e6*SEGMENTS['distance_to_soma'][1:], bins=x)
-area = [np.sum(SEGMENTS['area'][1:][digitized==d]/nrn.um**2) for d in np.unique(digitized)]
-plt.plot(x[1:], area)
-pt.set_plot(plt.gca(), xlabel='dist. to soma', ylabel='sum area')
-#plt.plot(1e6*SEGMENTS['distance_to_soma'][1:], SEGMENTS['area'][1:]/nrn.um**2, 'o')
-
-# %%
-# getting the different distributions
 x = np.linspace(SEGMENTS['distance_to_soma'][BRANCH_LOCS].min(),
                 SEGMENTS['distance_to_soma'][BRANCH_LOCS].max(), len(BRANCH_LOCS))
-
-distally_biased = (x-x.min())/(x.max()-x.min())
-distally_biased /= np.sum(distally_biased) #np.trapz(uniform, x=1e6*x)
-
 uniform = 0.5 +0*x
 uniform /= np.sum(uniform) #np.trapz(uniform, x=1e6*x)
 
-proximally_biased = 1.-(x-x.min())/(x.max()-x.min())
-proximally_biased /= np.sum(proximally_biased) # np.trapz(biased, x=1e6*x)
+biased = 1.-(x-x.min())/(x.max()-x.min())
+biased /= np.sum(biased) # np.trapz(biased, x=1e6*x)
 
 # %%
-Nsynapses, LOCS = 20, {}
-np.random.seed(1)
+Nsynapses = 20
+
+np.random.seed(7)
+LOCS = {}
 
 digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bins=x, right=True)
 
-for case, proba in zip(['uniform', 'proximally-biased'],
-                       [uniform, proximally_biased]):
+for case, proba in zip(['uniform', 'proximally-biased'], [uniform, biased]):
     
-    LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses, p=proba, replace=False)
+    LOCS[case] = np.random.choice(np.arange(len(x)), Nsynapses, p=proba, replace=False)
     
 LOCS['single-syn'] = BRANCH_LOCS # to have them all
 
-fig, AX = pt.plt.subplots(1, 2, figsize=(3,1.5))
-pt.plt.subplots_adjust(left=0.1, bottom=0.05)
-INSETS = []
+fig, AX = pt.plt.subplots(2, 2, figsize=(7,5))
+pt.plt.subplots_adjust(wspace=.2, hspace=.6)
 
-for c, y, case in zip(range(2),
-                      [uniform, proximally_biased],
-                      ['uniform', 'proximally-biased']):
+for c, y, case in zip(range(2), [uniform, biased], ['uniform', 'proximally-biased']):
     
-    AX[c].axis('off')
-    vis.plot_segments(ax=AX[c], color='tab:grey',
-                      bar_scale_args={'Ybar':100,'Ybar_label':'100$\\mu$m ','Xbar': 1e-10} if c==1 else\
-                                     {'Ybar':1e-10,'Xbar': 1e-10})
-    vis.add_dots(AX[c], LOCS[case], 6)
-    INSETS.append(pt.inset(AX[c], [0.8, 0.8, 0.3, 0.3]))
-    INSETS[-1].hist(1e6*SEGMENTS['distance_to_soma'][LOCS[case]], 
-                    alpha=.4, bins=10, color='tab:red')
-    AX[c].annotate(case, (0.5, 1.3), xycoords='axes fraction', ha='center', fontsize=8)
+    ax=pt.inset(AX[0][c], [0.3, 0.2, 0.4, 0.6])
+    ax.set_ylabel('synaptic density')
+    AX[0][c].axis('off')
+    ax.plot(1e6*x, y, '-', color='tab:grey', lw=2)
+    ax.set_yticks([0,0.1])
+    ax.set_title(case)
+    ax.set_xlabel('path dist. to soma ($\mu$m)');
+    
+    vis.plot_segments(ax=AX[1][c], color='tab:grey')
+    vis.add_dots(AX[1][c], LOCS[case], 3)
 
-INSETS[0].plot([0,400], [2,2], '-', color='tab:red', lw=2)
-INSETS[1].plot([0,400], [4,0], '-', color='tab:red', lw=2)
+    inset = pt.inset(AX[1][c], [0.9, 0., 0.4, 0.3])
+    inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], bins=10, color='tab:red')
+    inset.set_xlabel('dist.', fontsize=7);inset.set_xticks([]);inset.set_yticks([])
+    inset.set_xlim([x.min(), x.max()])
+    inset.set_title('%i synapses' % Nsynapses, fontsize=6)
 
-pt.set_common_xlims(INSETS)
-
-for ax, y in zip(INSETS,
-                 [distally_biased, uniform, proximally_biased]):
-    pt.set_plot(ax, xlabel='dist. ($\mu$m)',
-                yticks=[], ylabel='density', xticks=[0, 400], fontsize=6,
-                ylim = [-0.2, 6],
-                xlim_enhancement=0, ylim_enhancement=0, tck_outward=1, tck_length=2)
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'temp.svg'))
+# %%
+LOCS['biased'] = 1+np.arange(10)
+LOCS['uniform'] = 26+np.arange(10)
+LOCS
 
 # %% [markdown]
 # ## Synaptic integration with "uniform" and "biased" distributions
@@ -225,12 +173,28 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'temp.svg'))
 # ## Equation and Parameters
 
 # %%
-results = {'Nstim':5, 'Nrepeat':2, 'interstim':200}
+# simulation
+nrn.defaultclock.dt = 0.1*nrn.ms
+# passive
+gL = 1.5*nrn.siemens/nrn.meter**2
+EL = -70*nrn.mV                
+Es = 0*nrn.mV                  
+# synaptic
+taus = 5.*nrn.ms
+w = 0.4*nrn.nS
+# equation
+eqs='''
+Im = gL * (EL - v) : amp/meter**2
+Is = gs * (Es - v) : amp (point current)
+gs : siemens
+'''
+
+
+results = {'Nstim':5, 'Nrepeat':20, 'interstim':200}
 results['events'] = 20+np.arange(results['Nstim'])*results['interstim']
 results['Nsyns'] = 1+np.arange(results['Nstim'])*2
 
-for case in ['single-syn-uniform', 'uniform',
-             'proximally-biased', 'single-syn-proximally-biased']:
+for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
 
     results[case] = {'Vm':[]}
     
@@ -239,12 +203,10 @@ for case in ['single-syn-uniform', 'uniform',
         np.random.seed(repeat)
 
         neuron = nrn.SpatialNeuron(morphology=BRT,
-                                   model=Equation_String.format(**Model),
-                                   method='euler',
-                                   Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
-                                   Ri=Model['Ri'] * nrn.ohm * nrn.cm)
-
-        neuron.v = Model['EL']*nrn.mV # Vm initialized to E
+                                   model=eqs,
+                                   Cm= 1 * nrn.uF / nrn.cm ** 2,    
+                                   Ri= 200 * nrn.ohm * nrn.cm)
+        neuron.v = EL
 
         if 'single-syn' in case:
             spike_times = np.arange(Nsynapses)*results['interstim']
@@ -260,12 +222,16 @@ for case in ['single-syn-uniform', 'uniform',
         results[case]['spike_times_%i'%repeat] = spike_times
         results[case]['spike_IDs_%i'%repeat] = spike_IDs
 
-        Estim, ES = nrn.process_and_connect_event_stimulation(neuron,
-                                                              spike_IDs, spike_times,
-                                                              BRANCH_LOCS,
-                                                              EXC_SYNAPSES_EQUATIONS.format(**Model),
-                                                              ON_EXC_EVENT.format(**Model))
-        
+        stimulation = nrn.SpikeGeneratorGroup(len(LOCS['single-syn']),
+                                              np.array(spike_IDs, dtype=int),
+                                              spike_times*nrn.ms)
+
+        ES = nrn.Synapses(stimulation, neuron,
+                           model='''dg/dt = -g/taus : siemens (clock-driven)
+                                    gs_post = g : siemens (summed)''',
+                           on_pre='g += w',
+                           method='exponential_euler')
+
         for ipre, iseg_post in enumerate(LOCS[case.replace('single-syn-', '')]): # connect spike IDs to a given location
             ES.connect(i=ipre, j=iseg_post)
 
@@ -277,7 +243,11 @@ for case in ['single-syn-uniform', 'uniform',
         results[case]['t'] = np.array(M.t/nrn.ms)
 
 # np.save('results.npy', results)
+
 pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
+
+# %%
+LOCS.keys()
 
 
 # %%
@@ -286,9 +256,9 @@ pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
 # build linear prediction from single-syn
 def build_linear_pred_trace(results):
 
-    # build a dictionary with the individual responses
+    # build a dicionary with the individual responses
     
-    for case in ['uniform', 'proximally-biased']:
+    for case in ['uniform', 'biased']:
     
         results['%s-linear-pred' % case] = {'Vm':[], 't':results[case]['t']}
         linear_pred = []
@@ -306,7 +276,7 @@ def build_linear_pred_trace(results):
                 results['%s-single-syn-kernel' % case][str(i)]-= results['%s-single-syn-kernel' % case][str(i)][0]
 
             # then re-building the patterns
-            linear_pred = np.array(0*results[case]['t']+Model['EL'])
+            linear_pred = np.array(0*results[case]['t']-70)
             k=0
             for i, e in zip(results[case]['spike_IDs_%i'%repeat],
                             results[case]['spike_times_%i'%repeat]):
@@ -323,8 +293,7 @@ pt.plt.plot(np.mean(results['uniform-linear-pred']['Vm'], axis=0))
 
 
 # %%
-for case in ['uniform', 'proximally-biased', 
-             'uniform-linear-pred', 'proximally-biased-linear-pred']:
+for case in ['uniform', 'biased', 'uniform-linear-pred', 'biased-linear-pred']:
 
     results[case]['depol'] = []
     results[case]['depol-sd'] = []
@@ -334,7 +303,7 @@ for case in ['uniform', 'proximally-biased',
         t_cond = (results[case]['t']>event) & (results[case]['t']<=event+100)
 
         imax = np.argmax(np.mean(results[case]['Vm'], axis=0)[t_cond])
-        results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax]-Model['EL'])
+        results[case]['depol'].append(np.mean(results[case]['Vm'], axis=0)[t_cond][imax]+70)
         results[case]['depol-sd'].append(np.std(results[case]['Vm'], axis=0)[t_cond][imax])
 
 fig2, AX = pt.plt.subplots(2, figsize=(4,2.4))
@@ -348,10 +317,9 @@ AX1[0].set_xlabel(' $N_{synapses}$ ')
 for ax in AX1[1:]:
     ax.set_xlabel('expected EPSP (mV)   ')
     ax.set_ylabel('observed EPSP (mV)')
-for ax, ax1, case, color in zip(AX, AX1[1:], ['uniform', 'proximally-biased'],
-                                ['tab:blue', 'tab:green']):
+for ax, ax1, case, color in zip(AX, AX1[1:], ['uniform', 'biased'], ['tab:blue', 'tab:green']):
     ax.plot(results[case]['t'], np.mean(results[case]['Vm'],axis=0), color=color, label='real')
-    ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred']['Vm'], axis=0), ':', color=color, label='linear')
+    ax.plot(results[case]['t'], np.mean(results[case+'-linear-pred']['Vm'],axis=0), ':', color=color, label='linear')
     ax.set_ylabel('$V_m$ (mV)')
     ax.set_xlabel('time (ms)')
     ax.set_title(case, color=color)
@@ -363,7 +331,13 @@ for ax, ax1, case, color in zip(AX, AX1[1:], ['uniform', 'proximally-biased'],
     ax.legend(loc=(0.9,0.2), frameon=False, fontsize=7)
 AX1[0].set_xticks([1,5,9])
 
-fig2.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '2.svg'))
-fig3.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '3.svg'))
+#fig2.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '2.svg'))
+#fig3.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', '3.svg'))
+
+# %%
+pt.plt.plot(results['single-syn-uniform']['Vm'].flatten()[::10])
+
+# %%
+results['single-syn-uniform']
 
 # %%
