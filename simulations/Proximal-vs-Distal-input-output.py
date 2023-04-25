@@ -124,7 +124,7 @@ def run_sim(Model,
                                Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
                                Ri=Model['Ri'] * nrn.ohm * nrn.cm)
     
-    neuron.gL = Model['gL']*nrn.siemens/nrn.meter**2
+    #neuron.gL = Model['gL']*nrn.siemens/nrn.meter**2
     neuron.v = Model['EL']*nrn.mV # Vm initialized to E
 
     spike_IDs, spike_times, tstims = [], [], []
@@ -163,7 +163,6 @@ def run_sim(Model,
 
     # recording and running
     Ms = nrn.StateMonitor(neuron, ('v'), record=[0]) # soma
-    print()
     Md = nrn.StateMonitor(dend_comp, ('v'), record=[5]) # dendrite, n the middle
 
     # # Run simulation
@@ -171,10 +170,14 @@ def run_sim(Model,
 
     # # Analyze somatic response
     stim_number = np.arange(NstimMax+1)
-    peak_levels = np.zeros(NstimMax+1)
+    peak_levels_soma, peak_levels_dend = np.zeros(NstimMax+1), np.zeros(NstimMax+1)
+    integ_soma, integ_dend = np.zeros(NstimMax+1), np.zeros(NstimMax+1)
     for n in range(1, NstimMax+1):
         cond = (t>tstims[n-1][0]) & (t<tstims[n-1][1])
-        peak_levels[n] = np.max(np.array(Ms.v/nrn.mV)[0,cond]-Model['EL'])
+        peak_levels_soma[n] = np.max(np.array(Ms.v/nrn.mV)[0,cond]-Model['EL'])
+        peak_levels_dend[n] = np.max(np.array(Md.v/nrn.mV)[0,cond]-Model['EL'])
+        integ_soma[n] = np.trapz(np.array(Ms.v/nrn.mV)[0,cond]-Model['EL'])
+        integ_dend[n] = np.trapz(np.array(Md.v/nrn.mV)[0,cond]-Model['EL'])
     
     label = '%s stim, $q_{AMPA}$=%.1fnS, NMDA/AMPA=%.1f, $N_{branch}$=%i, $L_{branch}$=%ium, $D_{root}$=%.1fum     ' % (\
             loc, Model['qAMPA'], Model['qNMDAtoAMPAratio'], Model['Nbranch'], Model['branch_length'], Model['diameter_root_dendrite'])
@@ -182,7 +185,10 @@ def run_sim(Model,
               'Vm_soma':np.array(Ms.v/nrn.mV)[0,:],
               'Vm_dend':np.array(Md.v/nrn.mV)[0,:],
               'stim_number':stim_number,
-              'peak_levels':peak_levels,
+              'peak_levels_soma':peak_levels_soma,
+              'peak_levels_dend':peak_levels_dend,
+              'integ_soma':integ_soma,
+              'integ_dend':integ_dend,
               'label':label,
               'Model':Model}
     
@@ -194,12 +200,13 @@ output = run_sim(Model, loc='proximal', NstimMax=15)
 
 
 # %%
-
 def plot_signals(output):
+    
     # raw traces
-    fig, AX = plt.subplots(2, 1, figsize=(6,2))
+    fig, AX = plt.subplots(2, 1, figsize=(8,2))
+    plt.subplots_adjust(hspace=0, right=.6, left=0.1)
+    
     AX[0].set_title(output['label'], fontsize=8)
-    plt.subplots_adjust(hspace=0, right=.75)
     cond = output['t']>150
     AX[0].plot(output['t'][cond], output['Vm_dend'][cond], '-', color='k', lw=1)
     AX[0].annotate('dendrite', (0.02, 0.95), va='top', xycoords='axes fraction')
@@ -212,16 +219,42 @@ def plot_signals(output):
         ax.set_xlim(xlim)
     AX[1].plot(xlim[1]-200*np.arange(2), ylim[1]+np.zeros(2), '-', lw=1, color='gray')
     AX[1].annotate('200ms', (xlim[1], ylim[1]), rotation=90, ha='right', va='top', color='gray')
+    
     # summary
-    ax = fig.add_axes([0.85,0.35,0.13,0.43])
-    ax.set_title('soma resp.', fontsize=10)
-    ax.plot(output['stim_number'], output['peak_levels'], 'ko', ms=3)
-    ax.set_xlabel('number stim.\nsynapses')
-    ax.set_ylabel('peak depol. (mV)    ')
+    ax = fig.add_axes([0.65,0.45,0.11,0.35])
+    ax.set_title('peak resp.', fontsize=8)
+    ax.plot(output['stim_number'], output['peak_levels_soma']/output['peak_levels_soma'][-1], 
+            'o', ms=2, label='soma')
+    ax.plot(output['stim_number'], output['peak_levels_dend']/output['peak_levels_dend'][-1], 
+            '+', ms=4, label='ded')
+    ax.set_xlabel('number stim.\nsynapses', fontsize=7)
+    ax.legend(frameon=False, fontsize=6)
+    #ax.set_ylabel('peak depol. (mV)    ', fontsize=7)
+    
+    # summary
+    ax = fig.add_axes([0.85,0.45,0.11,0.35])
+    ax.set_title('integral', fontsize=8)
+    ax.plot(output['stim_number'], output['integ_soma']/output['integ_soma'][-1], 
+            'o', ms=2, label='soma')
+    ax.plot(output['stim_number'], output['integ_dend']/output['integ_dend'][-1], 
+            '+', ms=4, label='dend')
+    ax.set_xlabel('number stim.\nsynapses', fontsize=7)
+    ax.legend(frameon=False, fontsize=6, loc=(0.7,0))
+
     return fig
 
+fig = plot_signals(output)
 #fig = plot_signals(output)
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'example.png'))
+
+# %%
+cond = (output['t']>199) & (output['t']<1200)
+fig, ax = plt.subplots(1, figsize=(6,2))
+ax2 = ax.twinx()
+ax2.plot(output['t'][cond]/1e3, output['Vm_soma'][cond])
+ax2.set_ylabel('soma depol. (mV)')
+ax.plot(output['t'][cond]/1e3, output['Vm_dend'][cond], 'r')
+ax.set_ylabel('dend. depol. (mV)')
 
 
 # %%
@@ -236,7 +269,7 @@ cModel['qNMDAtoAMPAratio'] = 0.01
        
 output = run_sim(cModel, loc='proximal', NstimMax=15)
 fig = plot_signals(output)
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'example.png'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'example.png'))
 
 # %%
 cModel = Model.copy()
@@ -255,16 +288,19 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'low-quantal.png'))
 # %%
 cModel = Model.copy()
 
-cModel['Nbranch'] = 2
-cModel['branch_length'] = 1
+cModel['Nbranch'] = 5
+cModel['branch_length'] = 100
 cModel['radius_soma'] = 10
 cModel['diameter_root_dendrite'] = 1
-cModel['qAMPA'] = 0.1
+cModel['qAMPA'] = 0.4
 cModel['qNMDAtoAMPAratio'] = 0.5
        
 output = run_sim(cModel, loc='distal', NstimMax=15)
 fig = plot_signals(output)
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'distal-PV-like.png'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'distal-PV-like.png'))
+
+# %%
+fig = plot_signals(output)
 
 # %%
 cModel = Model.copy()

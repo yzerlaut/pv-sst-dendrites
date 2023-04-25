@@ -35,13 +35,14 @@ Model = {
     'tree-length':400.0, # [um]
     'soma-radius':10.0, # [um]
     'root-diameter':1.0, # [um]
+    'diameter-exponent':2./3.,
     'nseg_per_branch': 10,
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
     ##################################################
-    "gL": 1, # [pS/um2] = 10*[S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
+    "gL": 5, # [pS/um2] = [S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
     "cm": 1., # [uF/cm2] NEURON default
-    "Ri": 50., # [Ohm*cm]
+    "Ri": 100., # [Ohm*cm]
     "EL": -75, # [mV]
     ###################################################
     # ---------- SIMULATION PARAMS  ----------------- #
@@ -59,6 +60,7 @@ BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
                                 branch_length=1.0*Model['tree-length']/Model['branch-number'],
                                 soma_radius=Model['soma-radius'],
                                 root_diameter=Model['root-diameter'],
+                                diameter_exponent=Model['diameter-exponent'],
                                 Nperbranch=Model['nseg_per_branch'],
                                 random_angle=0)
 
@@ -73,8 +75,7 @@ fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
 #vis.add_dots(ax, BRANCH_LOCS, 2)
 ax.set_title('n=%i segments' % len(BRANCH_LOCS), fontsize=6)
-fig.savefig('../figures/ball-and-rall-tree.svg')
-
+#fig.savefig('../figures/ball-and-rall-tree.svg')
 
 # %%
 
@@ -88,15 +89,16 @@ def run_imped_charact(Model,
     # simulation params
     nrn.defaultclock.dt = Model['dt']*nrn.ms
 
-    # passive
-    gL = Model['gL']*1e-4*nrn.siemens/nrn.cm**2
-    EL = Model['EL']*nrn.mV
     # equation
     eqs='''
     Im = gL * (EL - v) : amp/meter**2
     I : amp (point current)
     '''
 
+    # passive
+    gL = Model['gL']*nrn.siemens/nrn.meter**2
+    EL = Model['EL']*nrn.mV
+    
     BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
                                     Nbranch=Model['branch-number'],
                                     branch_length=1.0*Model['tree-length']/Model['branch-number'],
@@ -226,7 +228,7 @@ for i, N in enumerate([1,2,3,4,5]):
                              {'Ybar':1e-10,'Xbar': 1e-10})
     AX[i].set_title('$N_B$=%i' % N, fontsize=7)
 pt.set_common_xlims(AX)
-fig.savefig('../figures/branching-models.svg')
+#fig.savefig('../figures/branching-models.svg')
 
 # %% [markdown]
 # ## Impact of Tree Length

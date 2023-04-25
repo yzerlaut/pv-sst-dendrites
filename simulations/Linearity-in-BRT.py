@@ -37,20 +37,20 @@ Model = {
     'branch-number':4, #
     'tree-length':400.0, # [um]
     'soma-radius':10.0, # [um]
-    'root-diameter':1.0, # [um]
+    'root-diameter':1.5, # [um]
     'nseg_per_branch': 10,
     ##################################################
     # ---------- BIOPHYSICAL PROPS ----------------- #
     ##################################################
-    "gL": 1.5*10, # [pS/um2] = 10*[S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
+    "gL": 2.5, # [pS/um2] = [S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
     "cm": 1., # [uF/cm2] NEURON default
-    "Ri": 200., # [Ohm*cm]
+    "Ri": 150., # [Ohm*cm]
     "EL": -70, # [mV]
     #################################################
     # ---------- SYNAPTIC PARAMS  ----------------- #
     #################################################
     'Ee':0,# [mV]
-    'qAMPA':0.4,# [nS] # Destexhe et al., 1998: "0.35 to 1.0 nS"
+    'qAMPA':1.,# [nS] # Destexhe et al., 1998: "0.35 to 1.0 nS"
     'qNMDAtoAMPAratio': 0,
     'tauRiseAMPA':0.5,# [ms], Destexhe et al. 1998: 0.4 to 0.8 ms
     'tauDecayAMPA':5,# [ms], Destexhe et al. 1998: "the decay time constant is about 5 ms (e.g., Hestrin, 1993)"
@@ -126,27 +126,34 @@ ax.set_xlabel('path dist. to soma ($\mu$m)')
 ax.set_ylabel('density')
 ax.set_yticks([]);
 
+
 # %% [markdown]
 # ## Distribute synapses on a single dendritic branch
 
 # %%
-# select a given dendrite, the longest one !
-iEndDendrite = np.argmax(SEGMENTS['distance_to_soma'])
-SETS, i = [SEGMENTS['name'][iEndDendrite]], 0
-while (i<10) and len(SETS[-1].split('.'))>1:
-    new_name =  '.'.join(SETS[-1].split('.')[:-1])
-    SETS.append(new_name)
-    i+=1
-BRANCH_LOCS = []
-for i, name in enumerate(SEGMENTS['name']):
-    if name in SETS:
-        BRANCH_LOCS.append(i)
+def find_singleBranch_locs(SEGMENTS, with_fig=False):
+    # select a given dendrite, the longest one !
+    iEndDendrite = np.argmax(SEGMENTS['distance_to_soma'])
+    SETS, i = [SEGMENTS['name'][iEndDendrite]], 0
+    while (i<10) and len(SETS[-1].split('.'))>1:
+        new_name =  '.'.join(SETS[-1].split('.')[:-1])
+        SETS.append(new_name)
+        i+=1
+    BRANCH_LOCS = []
+    for i, name in enumerate(SEGMENTS['name']):
+        if name in SETS:
+            BRANCH_LOCS.append(i)
 
-fig, ax = pt.plt.subplots(1, figsize=(2,2))
-vis.plot_segments(ax=ax, color='tab:grey')
-vis.add_dots(ax, BRANCH_LOCS, 2)
-ax.set_title('n=%i segments' % len(SEGMENTS['name']), fontsize=6)
-#BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
+    if with_fig:
+        fig, ax = pt.plt.subplots(1, figsize=(2,2))
+        vis = nrnvyz(SEGMENTS)
+        vis.plot_segments(ax=ax, color='tab:grey')
+        vis.add_dots(ax, BRANCH_LOCS, 2)
+        ax.set_title('n=%i segments' % len(SEGMENTS['name']), fontsize=6)
+        
+    return np.array(BRANCH_LOCS, dtype=int)
+
+BRANCH_LOCS =find_singleBranch_locs(SEGMENTS)
 
 
 # %%
@@ -158,26 +165,29 @@ pt.set_plot(plt.gca(), xlabel='dist. to soma', ylabel='sum area')
 #plt.plot(1e6*SEGMENTS['distance_to_soma'][1:], SEGMENTS['area'][1:]/nrn.um**2, 'o')
 
 # %%
+#distally_biased = get_biased_distrib(-1)
+
+# %%
+
 # getting the different distributions
 x = np.linspace(SEGMENTS['distance_to_soma'][BRANCH_LOCS].min(),
-                SEGMENTS['distance_to_soma'][BRANCH_LOCS].max(), len(BRANCH_LOCS))
-
+                SEGMENTS['distance_to_soma'][BRANCH_LOCS].max(),
+                len(BRANCH_LOCS))
 
 def get_biased_distrib(factor):
     """ bias factor should be between 0 and 1"""
     distrib = 0.5+factor/2.-factor*(x-x.min())/(x.max()-x.min())
     return distrib/np.sum(distrib) #np.trapz(distrib, x=1e6*x)
     
-    
 uniform = get_biased_distrib(0)
 proximally_biased = get_biased_distrib(1)
-#distally_biased = get_biased_distrib(-1)
 
-# %%
+
 Nsynapses, LOCS = 20, {}
 np.random.seed(4)
 
-digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bins=x, right=True)
+digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS],
+                             bins=x, right=True)
 
 for case, proba in zip(['uniform', 'proximally-biased'],
                        [uniform, proximally_biased]):
@@ -225,17 +235,18 @@ for ax, y in zip(INSETS,
 # ## Equation and Parameters
 
 # %%
-results = {'Nstim':5, 'Nrepeat':2, 'interstim':200}
+results = {'Nstim':5, 'Nrepeat':5, 'interstim':200}
 
 results['events'] = 20+np.arange(results['Nstim'])*results['interstim']
 results['Nsyns'] = 1+np.arange(results['Nstim'])*2
 
-for case in ['single-syn-uniform', 'uniform',
-             'proximally-biased', 'single-syn-proximally-biased']:
+for case in ['single-syn', 
+             'uniform',
+             'proximally-biased']:
 
     results[case] = {'Vm':[]}
     
-    for repeat in range(results['Nrepeat']):
+    for repeat in range(results['Nrepeat'] if (case!='single-syn') else 1):
         
         np.random.seed(repeat)
 
@@ -248,12 +259,14 @@ for case in ['single-syn-uniform', 'uniform',
         neuron.v = Model['EL']*nrn.mV # Vm initialized to E
 
         if 'single-syn' in case:
-            spike_times = np.arange(Nsynapses)*results['interstim']
-            spike_IDs = np.arange(Nsynapses)
+            spike_times = np.arange(len(LOCS['single-syn']))*results['interstim']
+            spike_IDs = np.arange(len(LOCS['single-syn']))
         else:
             spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
+            
             for e, ns in zip(results['events'], results['Nsyns']):
-                s = np.random.choice(np.arange(Nsynapses), ns, replace=False)
+                s = np.random.choice(np.arange(len(LOCS[case])),
+                                     ns, replace=False) # we pick in LOCS[case] !
                 spike_times = np.concatenate([spike_times,
                     e+np.arange(len(s))*nrn.defaultclock.dt/nrn.ms])
                 spike_IDs = np.concatenate([spike_IDs, np.array(s, dtype=int)])
@@ -261,16 +274,16 @@ for case in ['single-syn-uniform', 'uniform',
         results[case]['spike_times_%i'%repeat] = spike_times
         results[case]['spike_IDs_%i'%repeat] = spike_IDs
         
-        stimulation = nrn.SpikeGeneratorGroup(len(LOCS['single-syn']),
+        stimulation = nrn.SpikeGeneratorGroup(len(LOCS[case]),
                                               np.array(spike_IDs, dtype=int),
                                               spike_times*nrn.ms)
 
         ES = nrn.Synapses(stimulation, neuron,
-                           model=EXC_SYNAPSES_EQUATIONS.format(**Model),
-                           on_pre=ON_EXC_EVENT.format(**Model),
-                           method='exponential_euler')
+                          model=EXC_SYNAPSES_EQUATIONS.format(**Model),
+                          on_pre=ON_EXC_EVENT.format(**Model),
+                          method='exponential_euler')
 
-        for ipre, iseg_post in enumerate(LOCS[case.replace('single-syn-', '')]): # connect spike IDs to a given location
+        for ipre, iseg_post in enumerate(LOCS[case]): # connect spike IDs to a location given by LOCS[case]
             ES.connect(i=ipre, j=iseg_post)
             
         # recording and running
@@ -283,41 +296,46 @@ for case in ['single-syn-uniform', 'uniform',
 # np.save('results.npy', results)
 pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
 
+# %%
+pt.plt.plot(results['single-syn']['Vm'][0])
+
+# %%
+results['uniform']
+
 
 # %%
 # results = np.load('results.npy', allow_pickle=True).item()
 
 # build linear prediction from single-syn
-def build_linear_pred_trace(results):
+def build_linear_pred_trace(results,
+                            kernel_window=200, # ms
+                            verbose=False):
 
-    # build a dictionary with the individual responses
+    # build the set of single-synaptic responses
+    results['single-syn-kernel'] = {}
+    for i, e in zip(results['single-syn']['spike_IDs_0'],
+                    results['single-syn']['spike_times_0']):
+
+        t_cond = (results['single-syn']['t']>e) &  (results['single-syn']['t']<e+kernel_window)
+        results['single-syn-kernel'][str(i)] = results['single-syn']['Vm'][0][t_cond]
+        results['single-syn-kernel'][str(i)] -= results['single-syn-kernel'][str(i)][0]
     
+    # build a dictionary with the individual linear-pred responses
     for case in ['uniform', 'proximally-biased']:
     
         results['%s-linear-pred' % case] = {'Vm':[], 't':results[case]['t']}
         linear_pred = []
-        results['%s-single-syn-kernel' % case] = []
 
         for repeat in range(results['Nrepeat']):
-
-            # building single synapse kernel resp to build the linear resp
-            results['%s-single-syn-kernel' % case] = {}
-            for i, e in zip(results['single-syn-%s'%case]['spike_IDs_%i'%repeat],
-                            results['single-syn-%s'%case]['spike_times_%i'%repeat]):
-
-                t_cond = (results['single-syn-%s' % case]['t']>e) &  (results['single-syn-%s' % case]['t']<e+150)
-                results['%s-single-syn-kernel' % case][str(i)] = results['single-syn-%s' % case]['Vm'][repeat][t_cond]
-                results['%s-single-syn-kernel' % case][str(i)]-= results['%s-single-syn-kernel' % case][str(i)][0]
-
-            # then re-building the patterns
+            # re-building the patterns
             linear_pred = np.array(0*results[case]['t']+Model['EL'])
             k=0
             for i, e in zip(results[case]['spike_IDs_%i'%repeat],
                             results[case]['spike_times_%i'%repeat]):
 
                 i0 = np.flatnonzero(results[case]['t']>e)[0] # & (results[case]['t']<(e+160))
-                N=len(results['%s-single-syn-kernel' % case][str(i)])
-                linear_pred[i0:i0+N] += results['%s-single-syn-kernel' % case][str(i)] 
+                N=len(results['single-syn-kernel'][str(i)])
+                linear_pred[i0:i0+N] += results['single-syn-kernel'][str(i)] 
             results['%s-linear-pred' % case]['Vm'].append(linear_pred)
 
     return results, linear_pred
