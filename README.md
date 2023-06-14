@@ -1,6 +1,6 @@
 # Interneuron Specific Dendritic Computation in the Neocortex
 
-*analyze the dendritic integration properties of PV+ and SST+ interneurons*
+*Analyze the dendritic integration properties of PV+ and SST+ interneurons in the mouse visual cortex*
 
 ## A) Dendritic Anatomy Analysis -- EM dataset
 
