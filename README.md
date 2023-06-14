@@ -1,32 +1,32 @@
 # Interneuron Specific Dendritic Computation in the Neocortex
 
-    > analyze the dendritic integration properties of PV+ and SST+ interneurons
+*analyze the dendritic integration properties of PV+ and SST+ interneurons*
 
-## 1) Dendritic Anatomy Analysis -- EM dataset
+## A) Dendritic Anatomy Analysis -- EM dataset
 
-    > Build the figure panels related to Figure 1.
+*Build the figure panels related to Figure 1.*
 
-### a) Set of Cellular Morphologies [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Plot-Morphologies.ipynb)
+### 1) Set of Cellular Morphologies [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Plot-Morphologies.ipynb)
 
 - details the set of Martinotti and Basket cells analyzed in the study
 
-### b) Analysis of Synaptic Locations [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Synaptic-Locations-Analysis.ipynb)
+### 2) Analysis of Synaptic Locations [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Synaptic-Locations-Analysis.ipynb)
 
 - computes the positions of synapses along the dendritic tree
 - computes a linear density estimates along the tree
 
-### c) Diameter Analysis [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Diameter-Analysis.ipynb)
+### 3) Diameter Analysis [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Diameter-Analysis.ipynb)
 
 - computes the dendritic diameters along the different 
 
-## 2) Numerical Simulations of Dendritic Integration 
+## B) Numerical Simulations of Dendritic Integration 
 
 [...]
 
-## 3) 
+## C) In Vivo Imaging of Neural Activity in Interneurons of the Mouse VIsual Cortex
 
 [...]
 
 ## Usage/Setup
 
-- Part 1) relies on the 
+- Part A) relies on the Allen Institute 
