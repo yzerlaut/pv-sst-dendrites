@@ -10,7 +10,7 @@
 
 - details the set of Martinotti and Basket cells analyzed in the study
 
-### 2) Analysis of Synaptic Locations [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Synaptic-Locations-Analysis.ipynb)
+### 2) Analysis of Synaptic Locations [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Synaptic-Location-Analysis.ipynb)
 
 - computes the positions of synapses along the dendritic tree
 - computes a linear density estimates along the tree
