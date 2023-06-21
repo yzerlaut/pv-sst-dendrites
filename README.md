@@ -4,11 +4,15 @@
 
 ## A) Dendritic Anatomy Analysis -- EM dataset
 
+> relies on the MICrONS dataset, see: https://microns-explorer.org
+
 *Build the figure panels related to Figure 1.*
 
-### 1) Set of Cellular Morphologies [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Plot-Morphologies.ipynb)
+### 1) Dataset Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Dataset.ipynb)
 
 - details the set of Martinotti and Basket cells analyzed in the study
+- plot all celular morhphologies 
+- show the layer classification
 
 ### 2) Analysis of Synaptic Locations [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Synaptic-Location-Analysis.ipynb)
 
