@@ -8,7 +8,7 @@
 
 *Build the figure panels related to Figure 1.*
 
-### 1) Dataset Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Dataset.ipynb)
+### 1) Dataset Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Dataset-Presentation.ipynb)
 
 - details the set of Martinotti and Basket cells analyzed in the study
 - plot all celular morhphologies 
