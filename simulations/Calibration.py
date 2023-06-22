@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -87,8 +87,8 @@ BRANCH_LOCS = np.concatenate([np.arange(n+1),
                               1+20*N+np.arange(3*n)]),
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
-vis.add_dots(ax, [soma_loc], 10, color='r')
-vis.add_dots(ax, [dend_loc], 10, color='b')
+vis.add_dots(ax, [prox_loc], 10, color='r')
+vis.add_dots(ax, [dist_loc], 10, color='b')
 pt.annotate(ax, 'proximal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['distance_to_soma'][prox_loc]),
             (1,1), va='top', color='r', fontsize='small')
 pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['distance_to_soma'][dist_loc]),
@@ -101,7 +101,8 @@ pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['
 # %%
 
 def run_charact(Model,
-                dend_loc=24, soma_loc=1,
+                dend_loc=24, 
+                soma_loc=1,
                 event_at=20, # ms
                 interstim=70, # ms
                 pulse_amp = 20, # pA
