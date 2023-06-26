@@ -13,147 +13,109 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Input Impedance Properties of the Model
+#     > Characterizing the parameter dependency of the input impedance spatial profile 
+#
+
 # %%
-import sys, os
+from single_cell_integration import * # code to run the model: (see content below)
 
-import numpy as np
-
-import matplotlib.pylab as plt
-sys.path.append('../')
+import sys
+sys.path.append('..')
 import plot_tools as pt
+import matplotlib.pylab as plt
 
-sys.path.append('../neural_network_dynamics/')
-import nrn
+# %% [markdown]
+# ### Locations where to simulate/record along the dendritic tree
+
+# %%
 from nrn.plot import nrnvyz
-
-# %%
-Model = {
-    #################################################
-    # ---------- MORPHOLOGY PARAMS  --------------- #
-    #################################################
-    'branch-number':4, #
-    'tree-length':400.0, # [um]
-    'soma-radius':10.0, # [um]
-    'root-diameter':1.0, # [um]
-    'diameter-reduction-factor':0.5, # 0.5**(2/3), # Rall branching rule
-    'nseg_per_branch': 10,
-    ##################################################
-    # ---------- BIOPHYSICAL PROPS ----------------- #
-    ##################################################
-    "gL": 5, # [pS/um2] = [S/m2] # NEURON default: 1mS/cm2 -> 10pS/um2
-    "cm": 1., # [uF/cm2] NEURON default
-    "Ri": 150., # [Ohm*cm]
-    "EL": -70, # [mV]
-    ###################################################
-    # ---------- SIMULATION PARAMS  ----------------- #
-    ###################################################
-    'dt':0.025,# [ms]
-    'seed':1, #
-}
-
-
-# %%
-BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                Nbranch=Model['branch-number'],
-                                branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                soma_radius=Model['soma-radius'],
-                                root_diameter=Model['root-diameter'],
-                                diameter_reduction_factor=Model['diameter-reduction-factor'],
-                                Nperbranch=Model['nseg_per_branch'],
-                                random_angle=0)
-
+Model = load_params('BRT-parameters.json')
+BRT, neuron = initialize(Model)
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 
 vis = nrnvyz(SEGMENTS)
-#BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 n, N = Model['nseg_per_branch'], Model['branch-number']
-BRANCH_LOCS = np.concatenate([np.arange(n+1),
-                              1+20*N+np.arange(3*n)]),
+#BRANCH_LOCS = np.concatenate([np.arange(n+1),
+#                              1+20*N+np.arange(3*n)])
+BRANCH_LOCS = np.arange(n*N+1)
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
-#vis.add_dots(ax, BRANCH_LOCS, 2)
+vis.add_dots(ax, BRANCH_LOCS, 2)
 ax.set_title('n=%i segments' % len(BRANCH_LOCS), fontsize=6)
-#fig.savefig('../figures/ball-and-rall-tree.svg')
+Model['BRANCH_LOCS'] = BRANCH_LOCS # set for later !!
+
 
 # %%
 
+# %% [markdown]
+# ### Run Input Impedance Profile Characterization
+
+# %%
+# function to test the spatial-dep
 def run_imped_charact(Model,
                       pulse={'amp':1,
                              'duration':200}):
     """
+    loop over dendritic locations on the morphology
+    
     current in pA, durations in ms
     """
 
-    # simulation params
-    nrn.defaultclock.dt = Model['dt']*nrn.ms
-
-    # equation
-    eqs='''
-    Im = gL * (EL - v) : amp/meter**2
-    I : amp (point current)
-    '''
-
-    # passive
-    gL = Model['gL']*nrn.siemens/nrn.meter**2
-    EL = Model['EL']*nrn.mV
-    
-    BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                    Nbranch=Model['branch-number'],
-                                    branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                    soma_radius=Model['soma-radius'],
-                                    root_diameter=Model['root-diameter'],
-                                    diameter_reduction_factor=Model['diameter-reduction-factor'],
-                                    Nperbranch=Model['nseg_per_branch'])
-
-    SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
-    BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
-
-    neuron = nrn.SpatialNeuron(morphology=BRT,
-                               #model=Equation_String.format(**Model),
-                               model=eqs,
-                               method='euler',
-                               Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
-                               Ri=Model['Ri'] * nrn.ohm * nrn.cm)
-
+    #print(' ', nrn.collect().pop())
 
     output = {'loc':[],
               'input_resistance':[],
               'transfer_resistance_to_soma':[]}
 
-    for b in BRANCH_LOCS:
-
-        neuron.v = EL # init to rest
-
-        # recording and running
-        Ms = nrn.StateMonitor(neuron, ('v'), record=[0, b]) # soma
-
+    net, BRT, neuron = initialize(Model, with_network=True)
+   
+    for b in np.arange(Model['nseg_per_branch']*Model['branch-number']+1):
+        
+        net.restore('start')
+        
+        # recording
+        Ms = nrn.StateMonitor(neuron, ('v'), record=[0, b]) # soma + dend loc
+        net.add(Ms)
+        
         # run a pre-period for relaxation
-        nrn.run(100*nrn.ms)
+        net.run(100*nrn.ms)
+        
         # turn on the current pulse
         neuron.I[b] = pulse['amp']*nrn.pA
-        # ru nuntil relaxation (long pulse)
-        nrn.run(pulse['duration']*nrn.ms)
+        # run until relaxation (long pulse)
+        net.run(pulse['duration']*nrn.ms)
         # turn off the current pulse
         neuron.I[b] = 0*nrn.pA
 
         # measure all quantities
         output['input_resistance'].append(\
-                                1e6*(neuron.v[b]-EL)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
+                1e6*(neuron.v[b]-Model['EL']*nrn.mV)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
         output['transfer_resistance_to_soma'].append(\
-                                1e6*(neuron.v[0]-EL)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
-        output['loc'].append(b/len(BRANCH_LOCS)*Model['tree-length'])
+                1e6*(neuron.v[0]-Model['EL']*nrn.mV)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
+        output['loc'].append(b/len(Model['BRANCH_LOCS'])*Model['tree-length'])
 
-    t, neuron, BRT = None, None, None
+        net.remove(Ms)
+        Ms = None
+        
+    net.remove(neuron)
+    net, BRT, neuron = None, None, None
     return output
 
 results = run_imped_charact(Model)
+#results = run_imped_charact(Model)
 
 # %%
-def run_params_scan(key, values):
+import copy
 
+def run_params_scan(key, values):
+    Model = load_params('BRT-parameters.json')
+    n, N = Model['nseg_per_branch'], Model['branch-number']
+    Model['BRANCH_LOCS'] = np.concatenate([np.arange(n+1),1+20*N+np.arange(3*n)])
     RESULTS = []
     for i, value in enumerate(values):
-        cModel = Model.copy()
+        cModel = copy.deepcopy(Model)
         cModel[key] = value
         RESULTS.append(run_imped_charact(cModel))
     np.save('../data/%s-impact.npy' % key,
@@ -204,7 +166,7 @@ fig = plot_parameter_variation('branch-number',
 
 
 # %%
-run_params_scan('branch-number', [1,2,3,4])
+#run_params_scan('branch-number', [1,2,3,4])
 
 # %%
 # figure for paper

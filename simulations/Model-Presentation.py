@@ -13,50 +13,42 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Model Presentation
+
 # %%
-import sys, os
+from single_cell_integration import * # code to run the model: (see content below)
 
-import numpy as np
-
+import sys
 sys.path.append('..')
 import plot_tools as pt
 
-sys.path.append('../neural_network_dynamics/')
-import nrn
-from nrn.plot import nrnvyz
+# %% [markdown]
+# ## Equations for cellular and synaptic integration
+
+# %%
+# cat single_cell_integration.py
 
 # %% [markdown]
-# ## Default Parameters
+# ## Default Model Parameters
 #
 # saved as a json file:
 
 # %%
-# cat ../BRT-parameters.json
+# cat BRT-parameters.json
 
 # %% [markdown]
-# ### Load parameters
+# ## Load parameters and build the associated morphological model
 
 # %%
 # we load the default parameters
-from utils import params
-Model = params.load('../BRT-parameters.json')
-
-# %% [markdown]
-# ### Build the associated morphology
+Model = load_params('BRT-parameters.json')
 
 # %%
-BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                Nbranch=Model['branch-number'],
-                                branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                soma_radius=Model['soma-radius'],
-                                root_diameter=Model['root-diameter'],
-                                diameter_reduction_factor=Model['diameter-reduction-factor'],
-                                Nperbranch=Model['nseg_per_branch'],
-                                random_angle=0)
-
+# build and plot the associated morphology;
+from nrn.plot import nrnvyz
+BRT, neuron = initialize(Model)
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
-
-# %%
 fig, [ax0, ax] = pt.plt.subplots(1, 2, figsize=(4,1.3))
 vis = nrnvyz(SEGMENTS)
 vis.plot_segments(ax=ax0, color='tab:blue')
@@ -68,6 +60,11 @@ ax.set_ylabel('density')
 ax.set_yticks([]);
 
 # %% [markdown]
+# # AMPA vs NMDA synaptic events
+
+# %%
+
+# %% [markdown]
 # # Synaptic integration in the proximal and distal segments
 
 # %% [markdown]
@@ -77,6 +74,8 @@ ax.set_yticks([]);
 prox_loc = 4
 dist_loc = 29
 
+from nrn.plot import nrnvyz # requires: %run ../src/single_cell_integration.py
+SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 vis = nrnvyz(SEGMENTS)
 
 n, N = Model['nseg_per_branch'], Model['branch-number']
@@ -108,50 +107,17 @@ def run_charact(Model,
                 Nrepeat=10,
                 full_output=False):
     """
-    one synaptic 
-    current in pA, durations in ms
+    a synaptic barrage stimulation in a proximal and then in adistal location
     """
 
-    # simulation params
-    nrn.defaultclock.dt = Model['dt']*nrn.ms
-
-    # equation
-    eqs='''
-    Im = gL * (EL - v) : amp/meter**2
-    Is = gs * (Es - v) : amp (point current)
-    gs : siemens
-    I : amp (point current)
-    '''
-
-    # passive
-    gL = Model['gL']*nrn.siemens/nrn.meter**2
-    EL = Model['EL']*nrn.mV
-    Es = Model['Ee']*nrn.mV
-    taus = Model['tauDecayAMPA']*nrn.ms
-    w = Model['qAMPA']*nrn.nS
+    BRT, neuron = initialize(Model)
     
-    BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                        Nbranch=Model['branch-number'],
-                                        branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                        soma_radius=Model['soma-radius'],
-                                        root_diameter=Model['root-diameter'],
-                                        Nperbranch=Model['nseg_per_branch'])
-    
-    neuron = nrn.SpatialNeuron(morphology=BRT,
-                               model=eqs,
-                               Cm= 1 * nrn.uF / nrn.cm ** 2,    
-                               Ri= Model['Ri'] * nrn.ohm * nrn.cm)
-    neuron.v = EL
-    neuron.I = 0*nrn.pA
-    neuron.gs = 0*nrn.nS
-
     spike_times = np.empty(0, dtype=int)
-    
     for d in range(2):
         # loop over prox/dist stimulation
         spike_times = np.concatenate([spike_times, [start_at+d*space]])
         spike_times = np.concatenate([spike_times,\
-                        spike_times[-1]+single_sequence_delay+interstim*np.arange(Nrepeat)])
+                spike_times[-1]+single_sequence_delay+interstim*np.arange(Nrepeat)])
 
     spike_IDs = np.ones(len(spike_times), dtype=int)
     spike_IDs[:int(len(spike_times)/2)] = 0
@@ -160,9 +126,8 @@ def run_charact(Model,
                                           np.array(spike_times)*nrn.ms)
     
     ES = nrn.Synapses(stimulation, neuron,
-                       model='''dg/dt = -g/taus : siemens (clock-driven)
-                                gs_post = g : siemens (summed)''',
-                       on_pre='g += w',
+                       model=EXC_SYNAPSES_EQUATIONS.format(**Model),
+                       on_pre=ON_EXC_EVENT.format(**Model),
                        method='exponential_euler')
 
     ES.connect(i=0, j=prox_loc) # 0 is prox
@@ -193,7 +158,7 @@ def run_charact(Model,
         cond = (M.t/nrn.ms>t0) & (M.t/nrn.ms<(t0+single_sequence_delay))
         # first compute single EPSPs
         for i, loc in enumerate(['soma', 'prox', 'dist']):
-            results['EPSP_at_%s' % loc] = (M.v[i,:][cond]-EL)/nrn.mV
+            results['EPSP_at_%s' % loc] = M.v[i,:][cond]/nrn.mV-Model['EL']
             results['lin_pred_%s' % loc][cond] += results['EPSP_at_%s' % loc]
             # then build linear pred
             for k in range(Nrepeat):
@@ -262,3 +227,4 @@ for d, stim in enumerate(['prox', 'dist']):
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
+pt.plt.show()

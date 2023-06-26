@@ -25,7 +25,16 @@
 
 ## B) Numerical Simulations of Dendritic Integration 
 
-[...]
+*Build the figure panels related to Figure 1.*
+
+### 1) Model Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Model-Presentation.ipynb)
+
+- morphology drawing 
+- input impedance characterization
+
+### 2) Analysis of Synaptic Integration [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Analysis-of-Synaptic-Integration.ipynb)
+
+- ...
 
 ## C) In Vivo Imaging of Neural Activity in Interneurons of the Mouse VIsual Cortex
 

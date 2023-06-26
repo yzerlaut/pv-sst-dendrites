@@ -18,14 +18,14 @@ import sys, os
 
 import numpy as np
 
-sys.path.append('../../neural_network_dynamics/')
+sys.path.append('../neural_network_dynamics/')
 import nrn
 from nrn.plot import nrnvyz
 from utils import plot_tools as pt
 
 # we load the default parameters
 from utils import params
-Model = params.load('../BRT-parameters.json')
+Model = params.load('BRT-parameters.json')
 
 # %%
 BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
@@ -34,13 +34,12 @@ BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
                                 soma_radius=Model['soma-radius'],
                                 root_diameter=Model['root-diameter'],
                                 diameter_reduction_factor=Model['diameter-reduction-factor'],
-                                Nperbranch=Model['nseg_per_branch'],
-                                random_angle=0)
+                                Nperbranch=Model['nseg_per_branch'])
 
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 
 # %% [markdown]
-# # Equations for cellular and synaptix integration
+# # Equations for cellular and synaptic integration
 
 # %%
 # cable theory:
@@ -60,6 +59,103 @@ EXC_SYNAPSES_EQUATIONS = '''dgRiseAMPA/dt = -gRiseAMPA/({tauRiseAMPA}*ms) : 1 (c
                             gNMDA = ({qAMPA}*{qNMDAtoAMPAratio}*nS)*{nNMDA}*(gDecayNMDA-gRiseNMDA)/(1+{etaMg}*{cMg}*exp(-v_post/({V0NMDA}*mV))) : siemens
                             gE_post = gAMPA+gNMDA : siemens (summed)'''
 ON_EXC_EVENT = 'gDecayAMPA += 1; gRiseAMPA += 1; gDecayNMDA += 1; gRiseNMDA += 1'
+
+
+# %%
+#########################################
+# ---------- SIMULATION   ------------- #
+#########################################
+
+def run_sim(Model,
+            t0 = 200,
+            locs = {'soma':0, 'prox':4, 'dist':29},
+            stim_levels = np.arange(10)*2,
+            verbose=True):
+
+    # Ball and Rall Tree morphology
+    BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
+                                    Nbranch=Model['branch-number'],
+                                    branch_length=1.0*Model['tree-length']/Model['branch-number'],
+                                    soma_radius=Model['soma-radius'],
+                                    root_diameter=Model['root-diameter'],
+                                    diameter_reduction_factor=Model['diameter-reduction-factor'],
+                                    Nperbranch=Model['nseg_per_branch'])
+    
+    neuron = nrn.SpatialNeuron(morphology=BRT,
+                               model=Equation_String.format(**Model),
+                               method='euler',
+                               Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
+                               Ri=Model['Ri'] * nrn.ohm * nrn.cm)
+    
+    neuron.v = Model['EL']*nrn.mV # Vm initialized to E
+
+    spike_IDs, spike_times, tstims = [], [], []
+    for n in range(1, NstimMax+1):
+        tstims.append([t0, t0+n*Model['interspike']+Model['interstim']/2.]) # interval to analyze resp
+        for k in range(n):
+            spike_times.append(t0+k*Model['interspike'])
+        t0+=n*Model['interspike']+Model['interstim']
+        
+    spike_IDs = np.zeros(len(spike_times)) # one single synaptic loc
+    
+    # spatial location of the synaptic input
+    if loc=='distal' and Model['Nbranch']>1:
+        dend_comp = getattr(neuron.root, ''.join(['L' for b in range(Model['Nbranch']-1)]))
+    elif loc=='proximal' or Model['Nbranch']==1:
+        dend_comp = neuron.root
+    else:
+        dend_comp = None
+        print(' /!\ Location not recognized ! /!\ ')
+        
+    synapses_loc = [dend_comp[5] for i in range(len(spike_times))] # in the middle
+        
+    Estim, ES = nrn.process_and_connect_event_stimulation(neuron,
+                                                          spike_IDs, spike_times,
+                                                          synapses_loc,
+                                                          EXC_SYNAPSES_EQUATIONS.format(**Model),
+                                                          ON_EXC_EVENT.format(**Model))
+
+    Model['tstop']=t0
+    np.random.seed(Model['seed'])
+        
+    # simulation params
+    nrn.defaultclock.dt = Model['dt']*nrn.ms
+    t = np.arange(int(Model['tstop']/Model['dt']))*Model['dt']
+
+    # recording and running
+    Ms = nrn.StateMonitor(neuron, ('v'), record=[0]) # soma
+    Md = nrn.StateMonitor(dend_comp, ('v'), record=[5]) # dendrite, n the middle
+
+    # # Run simulation
+    nrn.run(Model['tstop']*nrn.ms)
+
+    # # Analyze somatic response
+    stim_number = np.arange(NstimMax+1)
+    peak_levels_soma, peak_levels_dend = np.zeros(NstimMax+1), np.zeros(NstimMax+1)
+    integ_soma, integ_dend = np.zeros(NstimMax+1), np.zeros(NstimMax+1)
+    for n in range(1, NstimMax+1):
+        cond = (t>tstims[n-1][0]) & (t<tstims[n-1][1])
+        peak_levels_soma[n] = np.max(np.array(Ms.v/nrn.mV)[0,cond]-Model['EL'])
+        peak_levels_dend[n] = np.max(np.array(Md.v/nrn.mV)[0,cond]-Model['EL'])
+        integ_soma[n] = np.trapz(np.array(Ms.v/nrn.mV)[0,cond]-Model['EL'])
+        integ_dend[n] = np.trapz(np.array(Md.v/nrn.mV)[0,cond]-Model['EL'])
+    
+    label = '%s stim, $q_{AMPA}$=%.1fnS, NMDA/AMPA=%.1f, $N_{branch}$=%i, $L_{branch}$=%ium, $D_{root}$=%.1fum     ' % (\
+            loc, Model['qAMPA'], Model['qNMDAtoAMPAratio'], Model['Nbranch'], Model['branch_length'], Model['diameter_root_dendrite'])
+    output = {'t':np.array(Ms.t/nrn.ms),
+              'Vm_soma':np.array(Ms.v/nrn.mV)[0,:],
+              'Vm_dend':np.array(Md.v/nrn.mV)[0,:],
+              'stim_number':stim_number,
+              'peak_levels_soma':peak_levels_soma,
+              'peak_levels_dend':peak_levels_dend,
+              'integ_soma':integ_soma,
+              'integ_dend':integ_dend,
+              'label':label,
+              'Model':Model}
+    
+    t, neuron, BRT = None, None, None
+    return output
+
 
 # %% [markdown]
 # # Distribute synapses with distance-dependent densities
@@ -132,7 +228,7 @@ for c, ax, bias, case in zip(range(2), AX, [0, 1],
     inset.set_xlim([-10e-6, 410e-6])
     inset.set_ylim([-1, 12])
     
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Simulations of Synaptic integration
