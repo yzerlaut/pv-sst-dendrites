@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -44,10 +44,7 @@ fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
 vis.add_dots(ax, BRANCH_LOCS, 2)
 ax.set_title('n=%i segments' % len(BRANCH_LOCS), fontsize=6)
-Model['BRANCH_LOCS'] = BRANCH_LOCS # set for later !!
 
-
-# %%
 
 # %% [markdown]
 # ### Run Input Impedance Profile Characterization
@@ -63,15 +60,14 @@ def run_imped_charact(Model,
     current in pA, durations in ms
     """
 
-    #print(' ', nrn.collect().pop())
-
     output = {'loc':[],
               'input_resistance':[],
               'transfer_resistance_to_soma':[]}
 
     net, BRT, neuron = initialize(Model, with_network=True)
    
-    for b in np.arange(Model['nseg_per_branch']*Model['branch-number']+1):
+    Nseg_tot = Model['nseg_per_branch']*Model['branch-number']+1
+    for b in np.arange(Nseg_tot):
         
         net.restore('start')
         
@@ -94,7 +90,7 @@ def run_imped_charact(Model,
                 1e6*(neuron.v[b]-Model['EL']*nrn.mV)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
         output['transfer_resistance_to_soma'].append(\
                 1e6*(neuron.v[0]-Model['EL']*nrn.mV)/nrn.volt/pulse['amp']) # 1e6*V/pA = MOhm
-        output['loc'].append(b/len(Model['BRANCH_LOCS'])*Model['tree-length'])
+        output['loc'].append(b/Nseg_tot*Model['tree-length'])
 
         net.remove(Ms)
         Ms = None
@@ -111,8 +107,6 @@ import copy
 
 def run_params_scan(key, values):
     Model = load_params('BRT-parameters.json')
-    n, N = Model['nseg_per_branch'], Model['branch-number']
-    Model['BRANCH_LOCS'] = np.concatenate([np.arange(n+1),1+20*N+np.arange(3*n)])
     RESULTS = []
     for i, value in enumerate(values):
         cModel = copy.deepcopy(Model)

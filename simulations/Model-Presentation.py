@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -64,10 +64,10 @@ ax.set_yticks([]);
 
 # %%
 dist_loc = 20
-space, interstim = 200, 5 # ms
-spikes = 50+np.arange(10)*interstim
+t0, space, interstim = 30, 230, 10 # ms
+spikes = t0+np.arange(5)*interstim
 
-fig, AX = pt.plt.subplots(2, 2, figsize=(1.7,1.8))
+fig, AX = pt.plt.subplots(1, 2, figsize=(1.9,1.4))
 
 for r, NA_ratio in enumerate([0, 2.5]):
     
@@ -93,19 +93,23 @@ for r, NA_ratio in enumerate([0, 2.5]):
     M = nrn.StateMonitor(neuron, ('v'),
                          record=[0, dist_loc]) # monitor soma+prox+loc
 
-    for b, bg_current in enumerate([0, 200]):
+    for b, bg_current in enumerate([0, 60]):
         
         # running
-        neuron.I[0] = bg_current*nrn.pA
-        nrn.run(200*nrn.ms)
+        neuron.I[dist_loc] = bg_current*nrn.pA
+        nrn.run(space*nrn.ms)
         neuron.I = 0*nrn.pA
         
         # plot cond
-        cond = M.t/nrn.ms>b*space+30
-        AX[r][b].plot((M.t[cond]-M.t[cond][0])/nrn.ms, M.v[1,cond]/nrn.mV)
-        
-#pt.set_common_ylims(AX)
+        cond = (M.t/nrn.ms>(t0-10+b*space)) & (M.t/nrn.ms<(t0-10+(1+b)*space-50))
+        AX[r].plot((M.t[cond]-M.t[cond][0])/nrn.ms, M.v[1,cond]/nrn.mV, color='tab:grey')
+           
+pt.set_common_ylims(AX)
 pt.set_common_xlims(AX)
+pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
+pt.set_plot(AX[0], ['left'], yticks=[-70, -50, -30, -10], xticks=[])
+pt.set_plot(AX[1], ['left'], yticks=[-70, -50, -30, -10], yticks_labels=[], xticks=[])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Synaptic integration in the proximal and distal segments
@@ -136,6 +140,8 @@ pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['
 
 # %% [markdown]
 # ## Showing integrative properties
+#
+# --> (AMPA only)
 
 # %%
 
@@ -153,7 +159,7 @@ def run_charact(Model,
     a synaptic barrage stimulation in a proximal and then in adistal location
     """
 
-    BRT, neuron = initialize(Model)
+    net, BRT, neuron = initialize(Model, with_network=True)
     
     spike_times = np.empty(0, dtype=int)
     for d in range(2):
@@ -167,6 +173,7 @@ def run_charact(Model,
     
     stimulation = nrn.SpikeGeneratorGroup(2, spike_IDs,
                                           np.array(spike_times)*nrn.ms)
+    net.add(stimulation)
     
     ES = nrn.Synapses(stimulation, neuron,
                        model=EXC_SYNAPSES_EQUATIONS.format(**Model),
@@ -175,19 +182,21 @@ def run_charact(Model,
 
     ES.connect(i=0, j=prox_loc) # 0 is prox
     ES.connect(i=1, j=dist_loc) # 1 is dist
+    net.add(ES)
 
     # recording
     M = nrn.StateMonitor(neuron, ('v'),
                          record=[0, prox_loc, dist_loc]) # monitor soma+prox+loc
+    net.add(M)
     
     # running
     # --event only first
     neuron.I = 0*nrn.pA
-    nrn.run((start_at+2*space)*nrn.ms)
+    net.run((start_at+2*space)*nrn.ms)
     
     # --then current step
     neuron.I[0] = pulse_amp*nrn.pA
-    nrn.run(100*nrn.ms)
+    net.run(100*nrn.ms)
     neuron.I[0] = 0*nrn.pA
     
     results = {'start_at':start_at, 'space':space, 'Nrepeat':Nrepeat,
@@ -215,11 +224,13 @@ def run_charact(Model,
     for i, loc in enumerate(['soma', 'prox', 'dist']):
         results['Vm_%s' % loc] = M.v[i,:]/nrn.mV
     results['t'] = M.t/nrn.ms
-
-    M, stimulation, ES, neuron = None, None, None, None
+        
+    net.remove(neuron)
+    net, Ms, stimulation, ES, neuron = None, None, None, None, None
     
     return results
 
+Model = load_params('BRT-parameters.json')
 results = run_charact(Model, full_output=True)
 
 # %%

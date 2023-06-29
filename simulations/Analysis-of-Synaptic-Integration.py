@@ -6,59 +6,25 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Analysis of Synaptic Integration
+
 # %%
-import sys, os
+from single_cell_integration import * # code to run the model: (see content below)
 
-import numpy as np
-
-sys.path.append('../neural_network_dynamics/')
-import nrn
-from nrn.plot import nrnvyz
-from utils import plot_tools as pt
+import sys
+sys.path.append('..')
+import plot_tools as pt
 
 # we load the default parameters
-from utils import params
-Model = params.load('BRT-parameters.json')
-
-# %%
-BRT = nrn.morphologies.BallandRallsTree.build_morpho(\
-                                Nbranch=Model['branch-number'],
-                                branch_length=1.0*Model['tree-length']/Model['branch-number'],
-                                soma_radius=Model['soma-radius'],
-                                root_diameter=Model['root-diameter'],
-                                diameter_reduction_factor=Model['diameter-reduction-factor'],
-                                Nperbranch=Model['nseg_per_branch'])
-
-SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
-
-# %% [markdown]
-# # Equations for cellular and synaptic integration
-
-# %%
-# cable theory:
-Equation_String = '''
-Im = + ({gL}*siemens/meter**2) * (({EL}*mV) - v) : amp/meter**2
-Is = gE * (({Ee}*mV) - v) : amp (point current)
-gE : siemens'''
-
-# synaptic dynamics:
-
-# -- excitation (NMDA-dependent)
-EXC_SYNAPSES_EQUATIONS = '''dgRiseAMPA/dt = -gRiseAMPA/({tauRiseAMPA}*ms) : 1 (clock-driven)
-                            dgDecayAMPA/dt = -gDecayAMPA/({tauDecayAMPA}*ms) : 1 (clock-driven)
-                            dgRiseNMDA/dt = -gRiseNMDA/({tauRiseNMDA}*ms) : 1 (clock-driven)
-                            dgDecayNMDA/dt = -gDecayNMDA/({tauDecayNMDA}*ms) : 1 (clock-driven)
-                            gAMPA = ({qAMPA}*nS)*{nAMPA}*(gDecayAMPA-gRiseAMPA) : siemens
-                            gNMDA = ({qAMPA}*{qNMDAtoAMPAratio}*nS)*{nNMDA}*(gDecayNMDA-gRiseNMDA)/(1+{etaMg}*{cMg}*exp(-v_post/({V0NMDA}*mV))) : siemens
-                            gE_post = gAMPA+gNMDA : siemens (summed)'''
-ON_EXC_EVENT = 'gDecayAMPA += 1; gRiseAMPA += 1; gDecayNMDA += 1; gRiseNMDA += 1'
+Model = load_params('BRT-parameters.json')
 
 
 # %%
@@ -162,7 +128,11 @@ def run_sim(Model,
 
 # %%
 # select a given dendrite, the longest one !
+from nrn.plot import nrnvyz
+BRT, neuron = initialize(Model)
+SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 vis = nrnvyz(SEGMENTS)
+"""
 iEndDendrite = np.argmax(SEGMENTS['distance_to_soma'])
 SETS, i = [SEGMENTS['name'][iEndDendrite]], 0
 while (i<10) and len(SETS[-1].split('.'))>1:
@@ -173,6 +143,11 @@ BRANCH_LOCS = []
 for i, name in enumerate(SEGMENTS['name']):
     if name in SETS:
         BRANCH_LOCS.append(i)
+"""
+n, N = Model['nseg_per_branch'], Model['branch-number']
+BRANCH_LOCS = np.concatenate([np.arange(n+1),
+                              1+20*N+np.arange(3*n)])
+BRANCH_LOCS = np.arange(n*N+1)
 
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
 vis.plot_segments(ax=ax, color='tab:grey')
@@ -190,128 +165,145 @@ def get_distr(x, bias=0):
     distrib = 1-bias*(x-np.min(x))/(np.max(x)-np.min(x))
     return distrib/distrib.sum()
 
+def proba_of_branch_locs(BRANCH_LOCS, bias=0):
+    
+    return get_distr(SEGMENTS['distance_to_soma'][BRANCH_LOCS], bias=bias)
+
+#np.random.seed(20)
+Nsynapses = 40
+LOC = np.random.choice(BRANCH_LOCS, Nsynapses,
+                       p=proba_of_branch_locs(BRANCH_LOCS, bias=0))
+
+# %%
+# select a given dendrite, the longest one !
+from nrn.plot import nrnvyz
+BRT, neuron = initialize(Model)
+SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
+vis = nrnvyz(SEGMENTS)
+
+fig, ax = pt.plt.subplots(1, figsize=(2,2))
+vis.plot_segments(ax=ax, color='tab:grey')
+vis.add_dots(ax, LOC, 2, color='tab:cyan')
 
 # %%
 Nsynapses = 40
 
 LOCS = {}
 
-digitized_dist = np.digitize(SEGMENTS['distance_to_soma'][BRANCH_LOCS],
-                             bins=x, right=True)
-
-for case, bias, seed in zip(['uniform', 'proximally-biased'], [0, 1], [11,15]):
+for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,15]):
     
     np.random.seed(seed)
-    proba = get_distr(x, bias=bias)
-    LOCS[case] = np.random.choice(np.arange(len(x)), Nsynapses,
-                                  p=proba)
+    LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
+                                  p=proba_of_branch_locs(BRANCH_LOCS, bias=bias))
     
-LOCS['single-syn'] = BRANCH_LOCS # to have them all
+LOCS['single-syn'] = np.unique(np.concatenate([LOCS['uniform'],
+                                               LOCS['biased']]))
 
 fig, AX = pt.plt.subplots(1, 2, figsize=(4,2))
 pt.plt.subplots_adjust(wspace=.2, hspace=.6)
 
 for c, ax, bias, case in zip(range(2), AX, [0, 1],
-                                   ['uniform', 'proximally-biased']):
-
+                             ['uniform', 'biased']):
     
     vis.plot_segments(ax=ax, color='tab:grey', bar_scale_args=None, diameter_magnification=2.5)
-    vis.add_dots(ax, LOCS[case], 4, color='tab:cyan')
+    vis.add_dots(ax, LOCS[case], 5, color='tab:cyan')
 
     inset = pt.inset(ax, [0.8, 0.7, 0.3, 0.3])
-    bins = np.linspace(x.min(), x.max(), 10)
+    bins = np.linspace(0, 400e-6, 10)
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], 
                bins=bins, color='tab:cyan')
     inset.plot(bins, get_distr(bins, bias=bias)*Nsynapses, color='r', lw=1)
-    #pt.set_plot(inset, xticks=[], yticks=[], xlim=[x.min(), x.max()])
-    inset.set_xticks([]);inset.set_yticks([0, 10])
-    inset.set_xlim([-10e-6, 410e-6])
-    inset.set_ylim([-1, 12])
+    pt.set_plot(inset, xticks=[], yticks=[], xlim=[x.min(), x.max()], ylabel='count', xlabel='dist.')
+    #inset.set_xticks([]);inset.set_yticks([0, 10])
+    #inset.set_xlim([-10e-6, 420e-6])
+    inset.set_ylim([-0.1, 12])
     
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Simulations of Synaptic integration
 
-# %% [markdown]
-# ## Equation and Parameters
-
 # %%
-# simulation
-nrn.defaultclock.dt = 0.1*nrn.ms
-# passive
-gL = 1.5*nrn.siemens/nrn.meter**2
-EL = -70*nrn.mV                
-Es = 0*nrn.mV                  
-# synaptic
-taus = 5.*nrn.ms
-w = 0.4*nrn.nS
-# equation
-eqs='''
-Im = gL * (EL - v) : amp/meter**2
-Is = gs * (Es - v) : amp (point current)
-gs : siemens
-'''
+# we restart from the default parameters
+Model = load_params('BRT-parameters.json')
+
+#
+BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
+LOCS = {}
+for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,15]):
+    np.random.seed(seed)
+    LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
+                                  p=proba_of_branch_locs(BRANCH_LOCS, bias=bias))
+    
+# single syn case:
+LOCS['single-syn'] = BRANCH_LOCS # 1 synapse in all segments !
 
 
-results = {'Nstim':5, 'Nrepeat':20, 'interstim':200}
-results['events'] = 20+np.arange(results['Nstim'])*results['interstim']
-results['Nsyns'] = 1+np.arange(results['Nstim'])*2
+results = {'repeat':2, 'interspike':5., 'start':50, 'interstim':200, 'seed':0,
+           'Nsyns':1+np.arange(3)*4}
 
-for case in ['single-syn-uniform', 'uniform', 'biased', 'single-syn-biased']:
+for case in ['single-syn', 'uniform', 'biased']:
 
     results[case] = {'Vm':[]}
     
-    for repeat in range(results['Nrepeat']):
+    results[case]['spike_times'] = np.empty(0, dtype=int)
+    results[case]['spike_IDs'] = np.empty(0, dtype=int)
         
-        np.random.seed(repeat)
-
-        neuron = nrn.SpatialNeuron(morphology=BRT,
-                                   model=eqs,
-                                   Cm= 1 * nrn.uF / nrn.cm ** 2,    
-                                   Ri= 200 * nrn.ohm * nrn.cm)
-        neuron.v = EL
-
-        if 'single-syn' in case:
-            spike_times = np.arange(Nsynapses)*results['interstim']
-            spike_IDs = np.arange(Nsynapses)
-        else:
-            spike_IDs, spike_times, synapses = np.empty(0, dtype=int), np.empty(0), np.empty(0, dtype=int)
-            for e, ns in zip(results['events'], results['Nsyns']):
-                s = np.random.choice(np.arange(Nsynapses), ns, replace=False)
-                spike_times = np.concatenate([spike_times,
-                    e+np.arange(len(s))*nrn.defaultclock.dt/nrn.ms])
-                spike_IDs = np.concatenate([spike_IDs, np.array(s, dtype=int)])
-
-        results[case]['spike_times_%i'%repeat] = spike_times
-        results[case]['spike_IDs_%i'%repeat] = spike_IDs
-
-        stimulation = nrn.SpikeGeneratorGroup(len(LOCS['single-syn']),
-                                              np.array(spike_IDs, dtype=int),
-                                              spike_times*nrn.ms)
-
-        ES = nrn.Synapses(stimulation, neuron,
-                           model='''dg/dt = -g/taus : siemens (clock-driven)
-                                    gs_post = g : siemens (summed)''',
-                           on_pre='g += w',
-                           method='exponential_euler')
-
-        for ipre, iseg_post in enumerate(LOCS[case.replace('single-syn-', '')]): # connect spike IDs to a given location
-            ES.connect(i=ipre, j=iseg_post)
-
-        # recording and running
-        M = nrn.StateMonitor(neuron, ('v'), record=[0])
-        nrn.run((200+np.max(spike_times))*nrn.ms)
-        results[case]['Vm'].append(np.array(M.v[0]/nrn.mV))
+    if case=='single-syn':
+        results[case]['spike_IDs'] = BRANCH_LOCS
+        results[case]['spike_times'] = results['start']+\
+                    np.arange(len(BRANCH_LOCS))*results['interstim']
         
-        results[case]['t'] = np.array(M.t/nrn.ms)
+    else:
+        for repeat in range(results['repeat']):
 
-# np.save('results.npy', results)
+            np.random.seed(results['seed']+repeat)
 
-pt.plt.plot(np.mean(results['uniform']['Vm'], axis=0))
+            for i, Nsyn in enumerate(results['Nsyns']):
+
+                spike_IDs = np.random.choice(LOCS[case], Nsyn)
+                results[case]['spike_IDs'] = np.concatenate([results[case]['spike_IDs'], spike_IDs])
+                t0 = results['start']+repeat*len(results['Nsyns'])*results['interstim']+i*results['interstim']
+                spike_times = t0+np.arange(Nsyn)*results['interspike']
+                results[case]['spike_times'] = np.concatenate([results[case]['spike_times'],spike_times])
+            
+
+    net, BRT, neuron = initialize(Model, with_network=True)
+
+    stimulation = nrn.SpikeGeneratorGroup(len(BRANCH_LOCS),
+                                          np.array(spike_IDs, dtype=int),
+                                          spike_times*nrn.ms)
+    net.add(stimulation)
+    
+    ES = nrn.Synapses(stimulation, neuron,
+                       model=EXC_SYNAPSES_EQUATIONS.format(**Model),
+                       on_pre=ON_EXC_EVENT.format(**Model),
+                       method='exponential_euler')
+    for ipre, iseg_post in zip(BRANCH_LOCS, BRANCH_LOCS):
+        # synapse ID matches segment ID !!!
+        ES.connect(i=ipre, j=iseg_post)
+    net.add(ES)
+
+    # recording and running
+    M = nrn.StateMonitor(neuron, ('v'), record=[0])
+    net.add(M)
+    
+    net.run((200+np.max(results[case]['spike_times']))*nrn.ms)
+    
+    results[case]['Vm'] = np.array(M.v[0]/nrn.mV)
+    results[case]['t'] = np.array(M.t/nrn.ms)
+
+#np.save('results.npy', results)
+
+#pt.plt.plot(results['uniform']['spike_times'], results['uniform']['spike_IDs'], 'o', ms=1)
 
 # %%
-LOCS.keys()
+case = 'single-syn'
+cond = results[case]['t']>0
+pt.plt.plot(results[case]['t'][cond], results['single-syn']['Vm'][cond])
+
+# %%
+results['single-syn']['spike_times']
 
 
 # %%
