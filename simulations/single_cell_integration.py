@@ -36,8 +36,7 @@ def initialize(Model, with_network=False):
                                model=Equation_String.format(**Model),
                                method='euler',
                                Cm=Model['cm'] * nrn.uF / nrn.cm ** 2,
-                               Ri=Model['Ri'] * nrn.ohm * nrn.cm,
-                               name='spatial_neuron')
+                               Ri=Model['Ri'] * nrn.ohm * nrn.cm)
     
     # model initialization
     neuron.v = Model['EL']*nrn.mV # Vm initialized to E

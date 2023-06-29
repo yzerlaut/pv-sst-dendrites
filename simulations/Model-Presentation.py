@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -63,6 +63,49 @@ ax.set_yticks([]);
 # # AMPA vs NMDA synaptic events
 
 # %%
+dist_loc = 20
+space, interstim = 200, 5 # ms
+spikes = 50+np.arange(10)*interstim
+
+fig, AX = pt.plt.subplots(2, 2, figsize=(1.7,1.8))
+
+for r, NA_ratio in enumerate([0, 2.5]):
+    
+    cModel = Model.copy()
+    cModel['qNMDAtoAMPAratio'] = NA_ratio
+    
+    BRT, neuron = initialize(cModel)
+    
+    # stimulation
+    spike_times = np.concatenate([i*space+spikes for i in range(2)]) # ms
+    spike_IDs = np.zeros(len(spike_times), dtype=int)
+    stimulation = nrn.SpikeGeneratorGroup(1, spike_IDs,
+                                          np.array(spike_times)*nrn.ms)
+    ES = nrn.Synapses(stimulation, neuron,
+                       model=EXC_SYNAPSES_EQUATIONS.format(**cModel),
+                       on_pre=ON_EXC_EVENT.format(**cModel),
+                       method='exponential_euler')
+
+    ES.connect(i=0, j=dist_loc) # 0 is dist
+    #net.add(ES)
+
+    # recording
+    M = nrn.StateMonitor(neuron, ('v'),
+                         record=[0, dist_loc]) # monitor soma+prox+loc
+
+    for b, bg_current in enumerate([0, 200]):
+        
+        # running
+        neuron.I[0] = bg_current*nrn.pA
+        nrn.run(200*nrn.ms)
+        neuron.I = 0*nrn.pA
+        
+        # plot cond
+        cond = M.t/nrn.ms>b*space+30
+        AX[r][b].plot((M.t[cond]-M.t[cond][0])/nrn.ms, M.v[1,cond]/nrn.mV)
+        
+#pt.set_common_ylims(AX)
+pt.set_common_xlims(AX)
 
 # %% [markdown]
 # # Synaptic integration in the proximal and distal segments
@@ -224,7 +267,7 @@ for d, stim in enumerate(['prox', 'dist']):
     for l, label in enumerate(['soma', 'prox', 'dist']):
         if d==1:
             AX[l][d].annotate(' '+label, (1,0), xycoords='axes fraction', color=COLORS[l])
+pt.draw_bar_scales(inset, Xbar=20, Xbar_label='20ms ', Ybar=1e-12)
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
-pt.plt.show()
