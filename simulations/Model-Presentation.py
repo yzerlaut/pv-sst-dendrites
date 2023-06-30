@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -64,7 +64,7 @@ ax.set_yticks([]);
 
 # %%
 dist_loc = 20
-t0, space, interstim = 30, 230, 10 # ms
+t0, space, interstim = 30, 210, 10 # ms
 spikes = t0+np.arange(5)*interstim
 
 fig, AX = pt.plt.subplots(1, 2, figsize=(1.9,1.4))
@@ -93,7 +93,7 @@ for r, NA_ratio in enumerate([0, 2.5]):
     M = nrn.StateMonitor(neuron, ('v'),
                          record=[0, dist_loc]) # monitor soma+prox+loc
 
-    for b, bg_current in enumerate([0, 60]):
+    for b, bg_current in enumerate([0, 40]):
         
         # running
         neuron.I[dist_loc] = bg_current*nrn.pA
@@ -107,9 +107,9 @@ for r, NA_ratio in enumerate([0, 2.5]):
 pt.set_common_ylims(AX)
 pt.set_common_xlims(AX)
 pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
-pt.set_plot(AX[0], ['left'], yticks=[-70, -50, -30, -10], xticks=[])
-pt.set_plot(AX[1], ['left'], yticks=[-70, -50, -30, -10], yticks_labels=[], xticks=[])
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+pt.set_plot(AX[0], ['left'], yticks=[-70, -45, -20], xticks=[])
+pt.set_plot(AX[1], ['left'], yticks=[-70, -45, -20], yticks_labels=[], xticks=[])
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Synaptic integration in the proximal and distal segments
@@ -118,7 +118,7 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 # ## Stimulation and Recording locations
 
 # %%
-prox_loc = 4
+prox_loc = 0
 dist_loc = 29
 
 from nrn.plot import nrnvyz # requires: %run ../src/single_cell_integration.py
@@ -231,6 +231,7 @@ def run_charact(Model,
     return results
 
 Model = load_params('BRT-parameters.json')
+
 results = run_charact(Model, full_output=True)
 
 # %%
@@ -263,14 +264,16 @@ for d, stim in enumerate(['prox', 'dist']):
     
 # custom view ranges
 pt.set_common_ylims([ax[0] for ax in AX])
-AX[0][1].set_ylim([-71, -64])
-AX[1][1].set_ylim([-71, -64])
+AX[0][1].plot([0], [-69.5], '.w')
+AX[1][1].plot([0], [-69.5], '.w')
+#AX[0][1].set_ylim([AX[0][0].get_ylim()[0], -68])
+#AX[1][1].set_ylim([AX[0][0].get_ylim()[0], -68])
 scale = 5 # mV
 for l in range(3):
-    pt.draw_bar_scales(AX[l][0], Ybar=5, Ybar_label='5mV ',Xbar=1e-12, remove_axis=True, color=COLORS[l])
+    pt.draw_bar_scales(AX[l][0], Ybar=2, Ybar_label='2mV ',Xbar=1e-12, remove_axis=True, color=COLORS[l])
     
 for l in range(2):
-    pt.draw_bar_scales(AX[l][1], Ybar=2, Ybar_label='2mV ', Xbar=1e-12, remove_axis=True, color=COLORS[l])
+    pt.draw_bar_scales(AX[l][1], Ybar=0.2, Ybar_label='0.2mV ', Xbar=1e-12, remove_axis=True, color=COLORS[l])
 pt.draw_bar_scales(AX[2][1], Ybar=10, Ybar_label='10mV ', Xbar=1e-12, remove_axis=True, color=COLORS[2])
 
 # plot scale bars
@@ -279,6 +282,7 @@ for d, stim in enumerate(['prox', 'dist']):
         if d==1:
             AX[l][d].annotate(' '+label, (1,0), xycoords='axes fraction', color=COLORS[l])
 pt.draw_bar_scales(inset, Xbar=20, Xbar_label='20ms ', Ybar=1e-12)
+
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%

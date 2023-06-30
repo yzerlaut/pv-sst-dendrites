@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -160,7 +160,7 @@ fig = plot_parameter_variation('branch-number',
 
 
 # %%
-#run_params_scan('branch-number', [1,2,3,4])
+run_params_scan('branch-number', [1,2,3,4])
 
 # %%
 # figure for paper
@@ -173,10 +173,14 @@ pt.plt.subplots_adjust(hspace=0.1, right=0.8, left=0.15)
 for i, results in enumerate(data['results']):
     color = pt.viridis_r(i/(len(data[key])-1))
     AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
-    AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+    AX[1].plot(results['loc'], 
+               np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0],
+               color=color, lw=1.5)
 
-pt.set_plot(AX[0], xticks=[0,200,400], yscale='log', ylim=[90, 9700], xticks_labels=[])
-pt.set_plot(AX[1], xticks=[0,200,400], xlabel='dist. from soma ($\mu$m)', yscale='log', ylim=[5, 300])
+pt.set_plot(AX[0], xticks=[0,200,400], yscale='log', #ylim=[90, 9700], 
+            xticks_labels=[])
+pt.set_plot(AX[1], xticks=[0,200,400], xlabel='dist. from soma ($\mu$m)', 
+            yticks=[0.1, 1], yticks_labels=['0.1', '1'], yscale='log')
 
 inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 1.5))
 pt.bar_legend(fig, X=range(len(data[key])+1),
