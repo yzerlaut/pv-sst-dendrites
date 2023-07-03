@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -101,7 +101,7 @@ for c, ax, bias, case in zip(range(2), AX, [0, 1],
     
 pt.set_common_ylims(INSETS) 
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
-"""
+""";
 
 # %% [markdown]
 # # Simulations of Synaptic integration
@@ -117,14 +117,14 @@ def PSP(segment_index, results, length=100):
     return results['single-syn']['t'][cond]-t0, results['single-syn']['Vm'][cond]-results['single-syn']['Vm'][0]
 
 def run_sim(Model,
-            CASES=['bias=0,rAN=0'],
+            CASES=['bias=0,rNA=0'],
             Nrepeat=5,
-            Nsyns=np.arange(1, 4)*10):
+            Nsyns=1+np.arange(6)*4):
 
     BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
     
     # initialize results with protocol parameters
-    results = {'start':50, 'interspike':1, 'interstim':200,
+    results = {'start':50, 'interspike':0.5, 'interstim':100,
                'seed':10, 'repeat':Nrepeat,
                'CASES':CASES,
                'Nsyns':Nsyns}
@@ -147,7 +147,7 @@ def run_sim(Model,
         else:
             # extract and ratio amp-a-to-nmda ratio
             bias = float(case.split(',')[0].replace('bias=', ''))
-            Model['qNMDAtoAMPAratio'] = float(case.split('rAN=')[1])
+            Model['qNMDAtoAMPAratio'] = float(case.split('rNA=')[1])
             
             results[case]['spike_times'] = np.empty(0, dtype=int)
             results[case]['spike_IDs'] = np.empty(0, dtype=int)
@@ -241,7 +241,7 @@ def run_sim(Model,
                     
     return results
 
-results = run_sim(Model, CASES=['bias=0,rAN=0', 'bias=1,rAN=0', 'bias=0,rAN=1.5'])
+results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=0,rNA=2.5'])
 
 #np.save('results.npy', results)
 
@@ -266,7 +266,7 @@ for c, case in enumerate(results['CASES']):
     AX[c].set_title('%s\n$\epsilon=$%.1f%%' % (case, 100*epsilon(results,
                                                                  resp=resp,
                                                                  evaluate_on='end_point')))
-    pt.set_plot(AX[c], ylabel='depol. (mV)', xlabel='n$_{syn}$')
+    pt.set_plot(AX[c], ylabel='%s depol. (mV)' % resp, xlabel='n$_{syn}$')
 
 # %% [markdown]
 # ### raw data
@@ -275,22 +275,61 @@ for c, case in enumerate(results['CASES']):
 fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
 pt.plt.subplots_adjust(hspace=0.1)
 for c, case in enumerate(results['CASES']):
-    cond = results[case]['t']<2*len(results['Nsyns'])*results['interstim']
+    cond = results[case]['t']<1e4#4*len(results['Nsyns'])*results['interstim']
     AX[c].plot(results[case]['t'][cond], results[case]['Vm'][cond])
     AX[c].plot(results[case]['t'][cond], results[case]['Vm-linear-pred'][cond], ':', lw=0.4)
     pt.annotate(AX[c], case, (1.,0))
+pt.set_common_ylims(AX)
 
 # %% [markdown]
 # ### average over different patterns
 
 # %%
-Cfig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
+fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
 pt.plt.subplots_adjust(hspace=0.1)
+COLORS = ['tab:purple', 'tab:brown', 'tab:olive']
 for c, case in enumerate(results['CASES']):
-    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'])
-    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-linear-pred-trial-average'], ':', lw=0.4)
+    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
+    AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
+               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], ':', lw=0.5, color='purple')
+
+# %% [markdown]
+# ### summary fig
 
 # %%
-pt.plt.show()
+fig, AX = pt.plt.subplots(len(results['CASES']),
+                          figsize=(6, 0.6*len(results['CASES'])))
+pt.plt.subplots_adjust(hspace=0.1)
+
+COLORS = ['dimgrey', 'tab:brown', 'tab:olive']
+INSETS = []
+for c, case in enumerate(results['CASES']):
+    AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
+               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], 
+               ':', lw=0.5, color=COLORS[0])
+    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], 
+               alpha=.8, color=COLORS[c])
+    pt.set_plot(AX[c], [])
+    
+    inset = pt.inset(AX[c], (1.1, 0.2, 0.1, 0.8))
+    inset.plot(np.concatenate([[0],results['Nsyns']]),
+               np.concatenate([[0],results[case]['Vm-max-evoked']]),
+               alpha=.8, color=COLORS[c])
+    inset.plot(np.concatenate([[0],results['Nsyns']]),
+               np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
+               ':', lw=0.5, color=COLORS[0])
+    
+    pt.set_plot(inset, xticks=[0, 10, 20], xticks_labels=[], yticks=[0,10,20])
+    INSETS.append(inset)
+
+pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=10, Ybar_label='10mV')
+pt.set_common_ylims(AX)
+pt.set_common_ylims(INSETS)
+pt.set_plot(INSETS[2], xticks=[0, 10, 20], xticks_labels=['0', '10', '20'], yticks=[0,10,20],
+            ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7)
+
+
+# %%
+#pt.plt.show()
 
 # %%
