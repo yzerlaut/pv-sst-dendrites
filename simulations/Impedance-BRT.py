@@ -132,10 +132,12 @@ def plot_parameter_variation(key,
     for i, results in enumerate(data['results']):
         color = plt.cm.viridis_r(i/(len(data[key])-1))
         AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
-        AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+        AX[1].plot(results['loc'],
+                   np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0], 
+                   color=color, lw=1.5)
 
-    for ax in AX:
-        pt.set_plot(ax, xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', yscale=yscale)
+    pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', yscale=yscale)
+    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', ylim=[0,1])
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
     pt.bar_legend(fig, X=range(len(data[key])+1),
@@ -180,7 +182,7 @@ for i, results in enumerate(data['results']):
 pt.set_plot(AX[0], xticks=[0,100,200], yscale='log', yticks=[1e2,1e3], #ylim=[90, 9700], 
             xticks_labels=[])
 pt.set_plot(AX[1], xticks=[0,100,200], xlabel='dist. from soma ($\mu$m)', 
-            yticks=[0.1, 1], yticks_labels=['0.1', '1'], yscale='log')
+            yticks=[0.1, 1], yticks_labels=['0.1', '1'], yscale='lin')
 
 inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 1.5))
 pt.bar_legend(fig, X=range(len(data[key])+1),
@@ -228,7 +230,7 @@ fig = plot_parameter_variation('diameter-reduction-factor',
 # ## Impact of Tree Length
 
 # %%
-run_params_scan('tree-length', [100,200,400,600])
+run_params_scan('tree-length', [50, 100, 200, 400])
 
 # %%
 fig = plot_parameter_variation('tree-length',
@@ -252,7 +254,7 @@ fig = plot_parameter_variation('Ri',
 # ## Impact of Transmembrane Resistance
 
 # %%
-run_params_scan('gL', [1, 2.5, 5, 10, 25])
+run_params_scan('gL', [0.5, 1, 2.5, 5, 10])
 
 # %%
 fig = plot_parameter_variation('gL',
@@ -330,7 +332,7 @@ for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
     for i, results in enumerate(data['results']):
         color = plt.cm.viridis(i/(len(data[key])-1))
         AX[0].plot(results['loc'], results['input_resistance'], color=color, lw=1.5)
-        AX[1].plot(results['loc'], results['transfer_resistance_to_soma'], color=color, lw=1.5)
+        AX[1].plot(results['loc'], np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0], color=color, lw=1.5)
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
     pt.bar_legend(fig, X=range(len(data[key])+1),
@@ -338,10 +340,9 @@ for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
                   ticks_labels = [str(k) for k in data[key]],
                   colormap=plt.cm.viridis, ax_colorbar=inset,
                   label=label)
+    AX[0].set_ylabel('M$\Omega$')
+    AX[0].set_yscale('log')
     for ax in AX:
-        ax.set_ylabel('M$\Omega$')
-        ax.set_yscale('log')
-        ax.set_xticks([0,200,400])
         if key==KEYS[-1]:
             ax.set_xlabel('dist. to soma ($\mu$m)')
 

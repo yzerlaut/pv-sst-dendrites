@@ -33,7 +33,10 @@ Model = load_params('BRT-parameters.json')
 # %%
 # distribution as a function of the bias factor !
 def get_distr(x, Model, bias=0):
-    distrib = 1-bias*x/(Model['tree-length']*1e-6)
+    if bias>=0:
+        distrib = 1-bias*x/(Model['tree-length']*1e-6)
+    else:
+        distrib = -bias*x/(Model['tree-length']*1e-6)
     return distrib/distrib.sum()
 
 def proba_of_branch_locs(BRANCH_LOCS, Model, bias=0):
@@ -49,7 +52,6 @@ BRANCH_LOCS = np.arange(n*N+1)
 # ### Plot
 
 # %%
-"""
 # select a given dendrite, the longest one !
 from nrn.plot import nrnvyz
 BRT, neuron = initialize(Model)
@@ -66,17 +68,15 @@ vis.plot_segments(ax=ax, color='tab:grey')
 vis.add_dots(ax, BRANCH_LOCS, 2, color='tab:cyan')
 ax.set_title('n=%i segments' % len(SEGMENTS['name']), fontsize=6)
 BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
-""";
 
 
 # %%
-"""
 Nsynapses = 10
 
 LOCS = {}
 BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 
-for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,15]):
+for case, bias, seed in zip(['uniform', 'biased'], [0, -1], [6,17]):
     
     np.random.seed(seed)
     LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
@@ -88,11 +88,12 @@ INSETS = []
 for c, ax, bias, case in zip(range(2), AX, [0, 1],
                              ['uniform', 'biased']):
     
-    vis.plot_segments(ax=ax, color='tab:grey', bar_scale_args=None, diameter_magnification=2.5)
+    vis.plot_segments(ax=ax, color='tab:grey',
+                      bar_scale_args=None, diameter_magnification=2.5)
     vis.add_dots(ax, LOCS[case], 5, color='tab:cyan')
 
     inset = pt.inset(ax, [0.8, 0.7, 0.3, 0.3])
-    bins = np.linspace(0, 400e-6, 10)
+    bins = np.linspace(0, 100e-6, 10)
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], 
                bins=bins, color='tab:cyan')
     inset.plot(bins, get_distr(bins, Model, bias=bias)*Nsynapses, color='r', lw=1)
@@ -101,7 +102,6 @@ for c, ax, bias, case in zip(range(2), AX, [0, 1],
     
 pt.set_common_ylims(INSETS) 
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
-""";
 
 # %% [markdown]
 # # Simulations of Synaptic integration
@@ -118,13 +118,13 @@ def PSP(segment_index, results, length=100):
 
 def run_sim(Model,
             CASES=['bias=0,rNA=0'],
-            Nrepeat=5,
-            Nsyns=1+np.arange(6)*4):
+            Nrepeat=10,
+            Nsyns=1+np.arange(3)*5):
 
     BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
     
     # initialize results with protocol parameters
-    results = {'start':50, 'interspike':0.5, 'interstim':100,
+    results = {'start':50, 'interspike':1.0, 'interstim':100,
                'seed':10, 'repeat':Nrepeat,
                'CASES':CASES,
                'Nsyns':Nsyns}
@@ -136,6 +136,8 @@ def run_sim(Model,
     for c, case in enumerate(['single-syn']+CASES):
 
         results[case] = {'Vm':[]}
+        
+        np.random.seed(results['seed'])
 
         if case=='single-syn':
 
@@ -156,7 +158,6 @@ def run_sim(Model,
 
                 for i, Nsyn in enumerate(results['Nsyns']):
 
-                    np.random.seed(results['seed']+repeat*Nsyn)
 
                     spike_IDs = np.random.choice(BRANCH_LOCS, Nsyn,
                                                  p=proba_of_branch_locs(BRANCH_LOCS, Model,
@@ -241,7 +242,7 @@ def run_sim(Model,
                     
     return results
 
-results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=0,rNA=2.5'])
+results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=-1,rNA=0', 'bias=0,rNA=2.5'])
 
 #np.save('results.npy', results)
 
@@ -257,7 +258,8 @@ def epsilon(results,
         return results[case]['Vm-%s-evoked' % resp][-1]/results[case]['Vm-linear-pred-%s-evoked' % resp][-1]
 
 resp = 'max'
-fig, AX = pt.plt.subplots(1, len(results['CASES']), figsize=(1.5*len(results['CASES']), 1))
+fig, AX = pt.plt.subplots(1, len(results['CASES']),
+                          figsize=(1.5*len(results['CASES']), 1))
 pt.plt.subplots_adjust(wspace=1.1)
 for c, case in enumerate(results['CASES']):
     for key in ['Vm', 'Vm-linear-pred']:
@@ -275,11 +277,16 @@ for c, case in enumerate(results['CASES']):
 fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
 pt.plt.subplots_adjust(hspace=0.1)
 for c, case in enumerate(results['CASES']):
-    cond = results[case]['t']<1e4#4*len(results['Nsyns'])*results['interstim']
+    cond = results[case]['t']>0 #1e4#4*len(results['Nsyns'])*results['interstim']
     AX[c].plot(results[case]['t'][cond], results[case]['Vm'][cond])
     AX[c].plot(results[case]['t'][cond], results[case]['Vm-linear-pred'][cond], ':', lw=0.4)
     pt.annotate(AX[c], case, (1.,0))
 pt.set_common_ylims(AX)
+inset = pt.inset(AX[0], [0.05, 1.2, 0.9, 0.7])
+inset.plot(results['single-syn']['t'], results['single-syn']['Vm'])
+pt.draw_bar_scales(inset, Xbar=100, Xbar_label='100ms', Ybar=1, Ybar_label='1mV', remove_axis=True)
+pt.annotate(inset, 'single-syn', (1.,0))
+
 
 # %% [markdown]
 # ### average over different patterns
@@ -289,10 +296,12 @@ fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CA
 pt.plt.subplots_adjust(hspace=0.1)
 COLORS = ['tab:purple', 'tab:brown', 'tab:olive']
 for c, case in enumerate(results['CASES']):
-    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
-    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-linear-pred-trial-average'], ':', lw=0.5, color=COLORS[c])    
-    #AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
-    #           results[results['CASES'][0]]['Vm-linear-pred-trial-average'], ':', lw=0.5, color='purple')
+    AX[c].plot(results[case]['t-trial-average'], 
+               results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
+    AX[c].plot(results[case]['t-trial-average'], 
+               results[case]['Vm-linear-pred-trial-average'], ':', lw=0.5, color=COLORS[c]) 
+    pt.annotate(AX[c], case, (1.,0), color=COLORS[c])
+
 
 # %% [markdown]
 # ### summary fig
@@ -320,13 +329,13 @@ for c, case in enumerate(results['CASES']):
                np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
                ':', lw=0.5, color=COLORS[0])
     
-    pt.set_plot(inset, xticks=[0, 10, 20], xticks_labels=[], yticks=[0,10,20])
+    pt.set_plot(inset, xticks=[0, 5, 10], xticks_labels=[])#, yticks=[0,10,20])
     INSETS.append(inset)
 
-pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=10, Ybar_label='10mV')
+pt.draw_bar_scales(AX[0], Xbar=10, Xbar_label='10ms', Ybar=10, Ybar_label='10mV')
 pt.set_common_ylims(AX)
 pt.set_common_ylims(INSETS)
-pt.set_plot(INSETS[2], xticks=[0, 10, 20], xticks_labels=['0', '10', '20'], yticks=[0,10,20],
+pt.set_plot(INSETS[2], xticks=[0, 5, 10], #yticks=[0,10,20],
             ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7)
 
 

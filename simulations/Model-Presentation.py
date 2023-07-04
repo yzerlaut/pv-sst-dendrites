@@ -118,8 +118,8 @@ pt.set_plot(AX[1], ['left'], yticks=[-70, -45, -20], yticks_labels=[], xticks=[]
 # ## Stimulation and Recording locations
 
 # %%
-prox_loc = 2
-dist_loc = 29
+prox_loc = 0
+dist_loc = 40
 
 from nrn.plot import nrnvyz # requires: %run ../src/single_cell_integration.py
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
@@ -146,12 +146,12 @@ pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['
 # %%
 
 def run_charact(Model,
-                prox_loc = 4,
-                dist_loc = 29,
-                start_at=20, # ms
-                space=120, # ms
-                interstim=2.5, # ms
-                single_sequence_delay=40, # ms
+                prox_loc = 0,
+                dist_loc = 40,
+                start_at=5, # ms
+                space=90, # ms
+                interstim=1, # ms
+                single_sequence_delay=30, # ms
                 pulse_amp = 20, # pA
                 Nrepeat=10,
                 full_output=False):
@@ -231,7 +231,7 @@ def run_charact(Model,
     return results
 
 Model = load_params('BRT-parameters.json')
-Model['qAMPA']=0.1
+Model['qAMPA'] = 0.3
 
 results = run_charact(Model, full_output=True)
 
@@ -263,19 +263,16 @@ for d, stim in enumerate(['prox', 'dist']):
     AX[0][d].set_title('$\epsilon$=%.1f%%' % efficacy, fontsize=7)
     
     
-# custom view ranges
-pt.set_common_ylims([ax[0] for ax in AX])
-AX[0][1].plot([0], [-69.5], '.w')
-AX[1][1].plot([0], [-69.5], '.w')
-#AX[0][1].set_ylim([AX[0][0].get_ylim()[0], -68])
-#AX[1][1].set_ylim([AX[0][0].get_ylim()[0], -68])
 scale = 5 # mV
+for i in range(2):
+    for l in range(2):
+        pt.draw_bar_scales(AX[l][i], Ybar=scale, Ybar_label='%imV ' % scale,
+                           Xbar=1e-12, remove_axis=True, color=COLORS[l])
+    pt.draw_bar_scales(AX[2][i], Ybar=10, Ybar_label='10mV ', Xbar=1e-12,
+                       remove_axis=True, color=COLORS[2])    
 for l in range(3):
-    pt.draw_bar_scales(AX[l][0], Ybar=2, Ybar_label='2mV ',Xbar=1e-12, remove_axis=True, color=COLORS[l])
+    pt.set_common_ylims(AX[l])
     
-for l in range(2):
-    pt.draw_bar_scales(AX[l][1], Ybar=0.2, Ybar_label='0.2mV ', Xbar=1e-12, remove_axis=True, color=COLORS[l])
-pt.draw_bar_scales(AX[2][1], Ybar=10, Ybar_label='10mV ', Xbar=1e-12, remove_axis=True, color=COLORS[2])
 
 # plot scale bars
 for d, stim in enumerate(['prox', 'dist']):
@@ -285,5 +282,7 @@ for d, stim in enumerate(['prox', 'dist']):
 pt.draw_bar_scales(inset, Xbar=20, Xbar_label='20ms ', Ybar=1e-12)
 
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+
+# %%
 
 # %%
