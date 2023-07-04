@@ -290,8 +290,9 @@ pt.plt.subplots_adjust(hspace=0.1)
 COLORS = ['tab:purple', 'tab:brown', 'tab:olive']
 for c, case in enumerate(results['CASES']):
     AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
-    AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
-               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], ':', lw=0.5, color='purple')
+    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-linear-pred-trial-average'], ':', lw=0.5, color=COLORS[c])    
+    #AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
+    #           results[results['CASES'][0]]['Vm-linear-pred-trial-average'], ':', lw=0.5, color='purple')
 
 # %% [markdown]
 # ### summary fig
