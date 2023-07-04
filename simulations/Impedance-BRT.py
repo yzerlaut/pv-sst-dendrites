@@ -151,7 +151,7 @@ def plot_parameter_variation(key,
 # ## Impact of Branching+Tapering
 
 # %%
-run_params_scan('branch-number', [1,2,3,4,5])
+run_params_scan('branch-number', [1,2,3,4])
 
 # %%
 fig = plot_parameter_variation('branch-number',
@@ -177,9 +177,9 @@ for i, results in enumerate(data['results']):
                np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0],
                color=color, lw=1.5)
 
-pt.set_plot(AX[0], xticks=[0,200,400], yscale='log', #ylim=[90, 9700], 
+pt.set_plot(AX[0], xticks=[0,100,200], yscale='log', yticks=[1e2,1e3], #ylim=[90, 9700], 
             xticks_labels=[])
-pt.set_plot(AX[1], xticks=[0,200,400], xlabel='dist. from soma ($\mu$m)', 
+pt.set_plot(AX[1], xticks=[0,100,200], xlabel='dist. from soma ($\mu$m)', 
             yticks=[0.1, 1], yticks_labels=['0.1', '1'], yscale='log')
 
 inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 1.5))
