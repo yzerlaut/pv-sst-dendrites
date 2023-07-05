@@ -42,4 +42,4 @@
 
 ## Usage/Setup
 
-- Part A) relies on the Allen Institute 
+- Part A) relies on the Allen Institute datasets
