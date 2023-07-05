@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -293,6 +293,7 @@ fig = plot_parameter_variation('soma-radius',
 KEYS = [\
     'branch-number',
     'tree-length',
+    'diameter-reduction-factor',
     'Ri',
     'gL',
     'root-diameter',
@@ -301,6 +302,7 @@ KEYS = [\
 TITLES = [\
     'Branching\n+Tapering',
     'Tree\nLength',
+    'Tapering',
     'Intracellular\n Resistivity',
     'Membrane\nConductance',
     'Root\nDiameter',
@@ -309,6 +311,7 @@ TITLES = [\
 LABELS=[\
     'branch\nnumber',
     'full length\n($\\mu$m)',
+    'diameter\nreduction factor',
     '$R_i$\n($\Omega$.cm)',
     '$g_L$\n(pS/$\\mu$m$^2$)',
     'root diam.\n($\\mu$m)',

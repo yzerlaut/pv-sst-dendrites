@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -76,7 +76,7 @@ Nsynapses = 10
 LOCS = {}
 BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 
-for case, bias, seed in zip(['uniform', 'biased'], [0, -1], [6,17]):
+for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,17]):
     
     np.random.seed(seed)
     LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
@@ -118,8 +118,8 @@ def PSP(segment_index, results, length=100):
 
 def run_sim(Model,
             CASES=['bias=0,rNA=0'],
-            Nrepeat=10,
-            Nsyns=1+np.arange(3)*5):
+            Nrepeat=5,
+            Nsyns=1+np.arange(10)):
 
     BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
     
@@ -242,7 +242,7 @@ def run_sim(Model,
                     
     return results
 
-results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=-1,rNA=0', 'bias=0,rNA=2.5'])
+results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=0,rNA=2.5'])
 
 #np.save('results.npy', results)
 
@@ -294,7 +294,7 @@ pt.annotate(inset, 'single-syn', (1.,0))
 # %%
 fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
 pt.plt.subplots_adjust(hspace=0.1)
-COLORS = ['tab:purple', 'tab:brown', 'tab:olive']
+COLORS = ['tab:purple', 'tab:brown', 'tab:olive', 'c']
 for c, case in enumerate(results['CASES']):
     AX[c].plot(results[case]['t-trial-average'], 
                results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
@@ -329,10 +329,10 @@ for c, case in enumerate(results['CASES']):
                np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
                ':', lw=0.5, color=COLORS[0])
     
-    pt.set_plot(inset, xticks=[0, 5, 10], xticks_labels=[])#, yticks=[0,10,20])
+    pt.set_plot(inset, xticks=[0, 5, 10], xticks_labels=[], fontsize=7)#, yticks=[0,10,20])
     INSETS.append(inset)
 
-pt.draw_bar_scales(AX[0], Xbar=10, Xbar_label='10ms', Ybar=10, Ybar_label='10mV')
+pt.draw_bar_scales(AX[0], Xbar=20, Xbar_label='20ms', Ybar=5, Ybar_label='5mV ')
 pt.set_common_ylims(AX)
 pt.set_common_ylims(INSETS)
 pt.set_plot(INSETS[2], xticks=[0, 5, 10], #yticks=[0,10,20],
@@ -341,5 +341,19 @@ pt.set_plot(INSETS[2], xticks=[0, 5, 10], #yticks=[0,10,20],
 
 # %%
 #pt.plt.show()
+
+# %%
+fig, ax = pt.plt.subplots(1)
+resp = np.linspace(90, 30, 20)
+ax.bar(np.arange(len(resp)), resp)
+pt.set_plot(ax, ylabel='efficacy $\epsilon$ (%)', xlabel='dist. to soma', xticks=[], yticks=[0, 30, 60, 90])
+ax2 = ax.twinx()
+distrib = np.linspace(1, 0, len(resp))
+ax2.plot(np.arange(len(resp)), distrib/distrib.sum(), color='orange')
+pt.annotate(ax, r'prox. biased:$\langle \epsilon \rangle$=%.1f%%' % np.mean(resp*distrib/distrib.mean()), (1, 0.3), color='orange')
+distrib = np.ones(len(resp))
+ax2.plot(np.arange(len(resp)), distrib/distrib.sum(), color='pink')
+pt.annotate(ax, r'uniform:       $\langle \epsilon \rangle$=%.1f%%' % np.mean(resp*distrib/distrib.mean()), (1, 0.1), color='pink')
+ax2.axis('off');
 
 # %%

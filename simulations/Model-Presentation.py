@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -118,8 +118,8 @@ pt.set_plot(AX[1], ['left'], yticks=[-70, -45, -20], yticks_labels=[], xticks=[]
 # ## Stimulation and Recording locations
 
 # %%
-prox_loc = 0
-dist_loc = 40
+prox_loc = 3
+dist_loc = 36
 
 from nrn.plot import nrnvyz # requires: %run ../src/single_cell_integration.py
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
@@ -231,7 +231,7 @@ def run_charact(Model,
     return results
 
 Model = load_params('BRT-parameters.json')
-Model['qAMPA'] = 0.3
+Model['qAMPA'] = 0.5
 
 results = run_charact(Model, full_output=True)
 
