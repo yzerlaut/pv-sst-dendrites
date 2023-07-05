@@ -127,7 +127,7 @@ def plot_parameter_variation(key,
 
     AX[0].annotate(title, (-0.7, 0.5), rotation=90, xycoords='axes fraction', va='center')
     AX[0].set_title('input resistance')
-    AX[1].set_title('transfer res. to soma')
+    AX[1].set_title('attenuation factor')
 
     for i, results in enumerate(data['results']):
         color = plt.cm.viridis_r(i/(len(data[key])-1))
@@ -137,7 +137,7 @@ def plot_parameter_variation(key,
                    color=color, lw=1.5)
 
     pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', yscale=yscale)
-    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', ylim=[0,1])
+    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='norm. to soma', ylim=[-.1,1.1])
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
     pt.bar_legend(fig, X=range(len(data[key])+1),
@@ -157,7 +157,7 @@ run_params_scan('branch-number', [1,2,3,4])
 
 # %%
 fig = plot_parameter_variation('branch-number',
-                               title='Branching+Tapering',
+                               title='Branching',
                                label='branch\nnumber')
 
 
