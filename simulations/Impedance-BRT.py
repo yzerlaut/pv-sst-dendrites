@@ -99,8 +99,25 @@ def run_imped_charact(Model,
     net, BRT, neuron = None, None, None
     return output
 
+def plot(results):
+
+    fig, AX = plt.subplots(1, 2, figsize=(3, 0.9))
+    plt.subplots_adjust(wspace=0.8, left=0.15)
+
+    #AX[0].annotate(title, (-0.7, 0.5), rotation=90, xycoords='axes fraction', va='center')
+    AX[0].set_title('input resistance')
+    AX[1].set_title('transfer resistance')
+
+    AX[0].plot(results['loc'], results['input_resistance'])
+    AX[1].plot(results['loc'], np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0])
+
+    pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', yticks=[1e2, 1e3], ylabel='M$\Omega$', yscale='log')
+    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='$R^{dist}_{soma}$ / $R_{soma}^{soma}$', ylim=[-.1,1.1])
+
+    return fig
+
 results = run_imped_charact(Model)
-#results = run_imped_charact(Model)
+fig = plot(results)
 
 # %%
 import copy
@@ -137,7 +154,7 @@ def plot_parameter_variation(key,
                    color=color, lw=1.5)
 
     pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', ylabel='M$\Omega$', yscale=yscale)
-    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='norm. to soma', ylim=[-.1,1.1])
+    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='norm. transfer res.', ylim=[-.1,1.1])
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
     pt.bar_legend(fig, X=range(len(data[key])+1),

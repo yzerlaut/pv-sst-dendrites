@@ -146,8 +146,7 @@ pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['
 # %%
 
 def run_charact(Model,
-                prox_loc = 0,
-                dist_loc = 40,
+                LOCS = [0, 5, 20, 30, 40],
                 start_at=5, # ms
                 space=90, # ms
                 interstim=1, # ms
@@ -162,16 +161,16 @@ def run_charact(Model,
     net, BRT, neuron = initialize(Model, with_network=True)
     
     spike_times = np.empty(0, dtype=int)
-    for d in range(2):
+    spike_IDs = np.empty(0, dtype=int)
+    for d in range(len(LOCS)):
         # loop over prox/dist stimulation
         spike_times = np.concatenate([spike_times, [start_at+d*space]])
+        spike_IDs = np.concatenate([spike_IDs, [d]])
         spike_times = np.concatenate([spike_times,\
                 spike_times[-1]+single_sequence_delay+interstim*np.arange(Nrepeat)])
+        spike_IDs = np.concatenate([spike_IDs, d*np.ones(Nrepeat)])
 
-    spike_IDs = np.ones(len(spike_times), dtype=int)
-    spike_IDs[:int(len(spike_times)/2)] = 0
-    
-    stimulation = nrn.SpikeGeneratorGroup(2, spike_IDs,
+    stimulation = nrn.SpikeGeneratorGroup(len(LOCS), spike_IDs,
                                           np.array(spike_times)*nrn.ms)
     net.add(stimulation)
     
@@ -179,20 +178,19 @@ def run_charact(Model,
                        model=EXC_SYNAPSES_EQUATIONS.format(**Model),
                        on_pre=ON_EXC_EVENT.format(**Model),
                        method='exponential_euler')
-
-    ES.connect(i=0, j=prox_loc) # 0 is prox
-    ES.connect(i=1, j=dist_loc) # 1 is dist
+    for i, d in enumerate(LOCS):
+        ES.connect(i=i, j=d) 
     net.add(ES)
 
     # recording
     M = nrn.StateMonitor(neuron, ('v'),
-                         record=[0, prox_loc, dist_loc]) # monitor soma+prox+loc
+                         record=LOCS) # monitor soma+prox+loc
     net.add(M)
     
     # running
     # --event only first
     neuron.I = 0*nrn.pA
-    net.run((start_at+2*space)*nrn.ms)
+    net.run((start_at+len(LOCS)*space)*nrn.ms)
     
     # --then current step
     neuron.I[0] = pulse_amp*nrn.pA
@@ -200,16 +198,17 @@ def run_charact(Model,
     neuron.I[0] = 0*nrn.pA
     
     results = {'start_at':start_at, 'space':space, 'Nrepeat':Nrepeat,
-               'interstim':interstim, 'single_sequence_delay':single_sequence_delay}
-    for i, loc in enumerate(['soma', 'prox', 'dist']):
+               'interstim':interstim, 'single_sequence_delay':single_sequence_delay,
+               'LOCS':LOCS}
+    for i, loc in enumerate(LOCS):
         results['lin_pred_%s' % loc] = np.ones(len(M.t))*Model['EL']
         
     # build_linear pred. trace from the single EPSP
-    for d, stim in enumerate(['prox', 'dist']):
+    for d, stim in enumerate(LOCS):
         t0 = start_at+d*space
         cond = (M.t/nrn.ms>t0) & (M.t/nrn.ms<(t0+single_sequence_delay))
         # first compute single EPSPs
-        for i, loc in enumerate(['soma', 'prox', 'dist']):
+        for i, loc in enumerate(LOCS):
             results['EPSP_at_%s' % loc] = M.v[i,:][cond]/nrn.mV-Model['EL']
             results['lin_pred_%s' % loc][cond] += results['EPSP_at_%s' % loc]
             # then build linear pred
@@ -221,7 +220,7 @@ def run_charact(Model,
     # input res from current input at soma
     results['Rinput_soma'] = 1e3*(M.v[0,-1]/nrn.mV-Model['EL'])/pulse_amp
     
-    for i, loc in enumerate(['soma', 'prox', 'dist']):
+    for i, loc in enumerate(LOCS):
         results['Vm_%s' % loc] = M.v[i,:]/nrn.mV
     results['t'] = M.t/nrn.ms
         
@@ -231,56 +230,65 @@ def run_charact(Model,
     return results
 
 Model = load_params('BRT-parameters.json')
-Model['qAMPA'] = 0.5
+#Model['qAMPA'] = 0.5
 
 results = run_charact(Model, full_output=True)
 
 # %%
-COLORS = ['k', 'tab:blue', 'tab:green']
+COLORS = ['grey' for i in range(len(results['LOCS']))]
 
-fig, AX = pt.plt.subplots(3, 2, figsize=(2.5,1.7))
-#fig, AX = pt.plt.subplots(3, 2, figsize=(10,8))
+fig, AX = pt.plt.subplots(len(results['LOCS']), len(results['LOCS']),
+                          figsize=(1.1*len(results['LOCS']),0.8*len(results['LOCS'])))
+
+epsilons = []
+
 pt.plt.subplots_adjust(hspace=0, wspace=0.1)
-for d, stim in enumerate(['prox', 'dist']):
+for d, stim in enumerate(results['LOCS']):
     t0 = results['start_at']+d*results['space']-10
     cond = (results['t']>t0) & (results['t']<(t0+results['space']))
-    for l, label in enumerate(['soma', 'prox', 'dist']):
+    for l, label in enumerate(results['LOCS']):
         AX[l][d].plot(results['t'][cond], results['Vm_%s' % label][cond],
                       label=label, color=COLORS[l], lw=0.7)
         AX[l][d].plot(results['t'][cond], results['lin_pred_%s' % label][cond],
                       '--', lw=0.4, label=label, color=COLORS[l])
         AX[l][d].set_xlim([t0, t0+results['space']])
         
-    inset = pt.inset(AX[2][d], (0, -0.4, 1, .1))
-    inset.plot(np.ones(2)*(results['start_at']+d*results['space']), np.arange(2), 'k-', lw=0.5)
+    inset = pt.inset(AX[d][d], (0, -0.1, 1, .1))
+    inset.plot(np.ones(2)*(results['start_at']+d*results['space']), np.arange(2), 'r-', lw=0.5)
     for k in range(results['Nrepeat']):
         inset.plot(np.ones(2)*(results['start_at']+d*results['space']+\
-                               results['single_sequence_delay']+k*results['interstim']), np.arange(2), 'k-', lw=0.5)
+                               results['single_sequence_delay']+k*results['interstim']), np.arange(2), 'r-', lw=0.5)
     inset.set_xlim([t0, t0+results['space']])
     inset.axis('off')
     efficacy = 100*np.max(results['Vm_%s' % label][cond]-results['Vm_%s' % label][cond][0])/\
         np.max(results['lin_pred_%s' % label][cond]-results['lin_pred_%s' % label][cond][0])
-    AX[0][d].set_title('$\epsilon$=%.1f%%' % efficacy, fontsize=7)
+    epsilons.append(efficacy)
+    
+    AX[0][d].set_title('stim.@%.1f$\mu$m\n$\epsilon_{soma}$=%.1f%%' % (\
+                            1e6*SEGMENTS['distance_to_soma'][stim], efficacy))
+    pt.annotate(AX[d][len(results['LOCS'])-1],
+                'rec.@%.1f$\mu$m' % (1e6*SEGMENTS['distance_to_soma'][stim]), (1, 0))
     
     
 scale = 5 # mV
-for i in range(2):
-    for l in range(2):
+for i in range(len(results['LOCS'])):
+    for l in range(len(results['LOCS'])):
         pt.draw_bar_scales(AX[l][i], Ybar=scale, Ybar_label='%imV ' % scale,
                            Xbar=1e-12, remove_axis=True, color=COLORS[l])
-    pt.draw_bar_scales(AX[2][i], Ybar=10, Ybar_label='10mV ', Xbar=1e-12,
-                       remove_axis=True, color=COLORS[2])    
-for l in range(3):
+for l in range(len(results['LOCS'])):
     pt.set_common_ylims(AX[l])
     
-
+"""
 # plot scale bars
-for d, stim in enumerate(['prox', 'dist']):
-    for l, label in enumerate(['soma', 'prox', 'dist']):
+for d, stim in enumerate(results['LOCS']):
+    for l, label in enumerate(results['LOCS']):
         if d==1:
             AX[l][d].annotate(' '+label, (1,0), xycoords='axes fraction', color=COLORS[l])
 pt.draw_bar_scales(inset, Xbar=20, Xbar_label='20ms ', Ybar=1e-12)
+"""
 
+fig, ax = pt.plot(1e6*SEGMENTS['distance_to_soma'][results['LOCS']], epsilons, lw=1)
+pt.set_plot(ax, xlabel='dist. from soma', ylabel='suppression (%)', yticks=[30, 60, 90])
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
