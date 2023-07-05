@@ -70,3 +70,26 @@ def load(ID):
     
     return cell
 
+if __name__=='__main__':
+
+    swc = sys.argv[-1]
+
+    from brian2 import *
+
+    morpho = nrn.Morphology.from_swc_file(swc)
+    # print(dir(morpho))
+    # for m in morpho[1]:
+        # print(m.diameter)
+
+    gL = 1e-4*siemens/cm**2
+    EL = -70*mV
+    eqs = '''
+    Im=gL * (EL - v) : amp/meter**2
+    I : amp (point current)
+    '''
+    neuron = SpatialNeuron(morphology=morpho, model=eqs, Cm=1*uF/cm**2, Ri=100*ohm*cm)
+    neuron.v = EL + 10*mV
+
+    nrn.run(10*ms)
+
+
