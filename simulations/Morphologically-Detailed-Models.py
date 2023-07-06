@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -26,17 +26,20 @@ import nrn
 from nrn.plot import nrnvyz
 from utils.params import load as load_params
 
-sys.path.append('..')
+sys.path.append('/home/yann.zerlaut/work/pv-sst-dendrites/') #'..')
+
 import plot_tools as pt
 import matplotlib.pylab as plt
-from src.morphology import load as load_morphology
+
+sys.path.append('../src')
+import morphology
 
 # %% [markdown]
 # ## Basket cell
 
 # %%
 #cell = load_morphology('864691135396580129_296758')
-cell = load_morphology('864691137053906294_301107')
+cell = morphology.load('864691137053906294_301107')
 Params = load_params('PV-parameters.json')
 
 # %%
@@ -82,14 +85,18 @@ results = {'distance_to_soma':[],
            'input_res' : []}
 
 step = 50. # pA
-for comp, nsyn in enumerate(cell.SEGMENTS['Nsyn']):
+
+for comp in np.unique(cell.synapses_morpho_index):
+    
     # current step
     neuron.I[comp] = step*nrn.pA
     net.run(50.*nrn.ms)
-    for n in range(nsyn):
+    
+    for n in range(cell.SEGMENTS['Nsyn'][comp]):
         # we just duplicate the value according to the number of synapses in this compartment
         results['distance_to_soma'].append(cell.SEGMENTS['distance_to_soma'][comp])
         results['input_res'].append(1e3*(neuron.v[0]/nrn.mV-Params['EL'])/step) # MOhm
+        
     # relaxation
     neuron.I[comp] = 0*nrn.pA
     net.run(50.*nrn.ms)
@@ -104,49 +111,16 @@ net, M, neuron = None, None, None
 
 
 # %%
-bins = np.linspace(0, 200, 100)
+bins = np.linspace(0, 200, 20)
 
 binned = np.digitize(1e6*np.array(results['distance_to_soma']), bins=bins)
 
 fig, ax = pt.plt.subplots(1, figsize=(2,1))
 
-for b in np.unique(binned):
+for b in np.unique(binned)[:-1]:
     cond = (binned==b)
     ax.errorbar([bins[b]], [np.mean(np.array(results['input_res'])[cond])],
                 yerr=[np.std(np.array(results['input_res'])[cond])], fmt='ko-', ms=2, lw=1)
-pt.set_plot(ax, xlim=[0,200])
-
-# %%
-binned==1
-
-# %%
-binned
-
-# %%
-pt.plt.hist(1e6*np.array(results['distance_to_soma']))
-
-# %%
-fig, ax = pt.plt.subplots(1, figsize=(5,1.4))
-ax.plot(t, v)
-ax.set_ylabel('$V_m$ (mV)')
-ax.set_xlabel('time (ms)')
-
-# %%
-COMP_LIST, COMP_NAMES, NSEG_INDICES = nrn.morpho_analysis.get_compartment_list(cell.morpho)
-
-# %%
-getattr(neuron.morphology, COMP_NAMES[1])
-
-# %%
-NSEG_INDICES
-
-# %%
-len(cell.SEGMENTS['Nsyn'])
-
-# %%
-len(np.concatenate(NSEG_INDICES))
-
-# %%
-cell.SEGMENTS.keys()
+pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma', ylabel='M$\Omega$')
 
 # %%

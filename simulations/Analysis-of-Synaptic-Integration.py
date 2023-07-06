@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -71,12 +71,12 @@ BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
 
 
 # %%
-Nsynapses = 10
+Nsynapses = 40
 
 LOCS = {}
 BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 
-for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,17]):
+for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,5]):
     
     np.random.seed(seed)
     LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
@@ -93,15 +93,16 @@ for c, ax, bias, case in zip(range(2), AX, [0, 1],
     vis.add_dots(ax, LOCS[case], 5, color='tab:cyan')
 
     inset = pt.inset(ax, [0.8, 0.7, 0.3, 0.3])
-    bins = np.linspace(0, 100e-6, 10)
+    bins = np.linspace(0, Model['tree-length']*1e-6, 10)
     inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], 
                bins=bins, color='tab:cyan')
     inset.plot(bins, get_distr(bins, Model, bias=bias)*Nsynapses, color='r', lw=1)
-    pt.set_plot(inset, xticks=[], yticks=[], ylabel='count', xlabel='dist.')
+    pt.set_plot(inset, xticks=[], yticks=[], ylabel='count', xlabel='dist.',
+               xlim=[0,Model['tree-length']*1e-6])
     INSETS.append(inset)
     
 pt.set_common_ylims(INSETS) 
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Simulations of Synaptic integration
@@ -118,8 +119,8 @@ def PSP(segment_index, results, length=100):
 
 def run_sim(Model,
             CASES=['bias=0,rNA=0'],
-            Nrepeat=5,
-            Nsyns=1+np.arange(10)):
+            Nrepeat=10,
+            Nsyns=4+np.arange(3)*6):
 
     BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
     
@@ -214,9 +215,18 @@ def run_sim(Model,
     for case in CASES:
         for key in ['Vm', 'Vm-linear-pred']:
             Vms = []
+            results[case]['%s-maxs-evoked' % key] = []
             for repeat in range(results['repeat']):
+                results[case]['%s-maxs-evoked' % key].append([])
                 i0 = repeat*N_1repeat
                 Vms.append(results[case][key][i0:i0+N_1repeat])
+                for i, Nsyn in enumerate(results['Nsyns']):
+                    t0 = repeat*results['interstim']*len(results['Nsyns'])+\
+                            i*results['interstim']+results['start'] # window starting at stim onset
+                    cond = (results[case]['t']>t0) & (results[case]['t']<(t0+results['interstim']))
+                    results[case]['%s-maxs-evoked' % key][-1].append(\
+                            np.max(results[case][key][cond]-results['single-syn']['Vm'][0]))
+            results[case]['%s-maxs-evoked' % key] = np.array(results[case]['%s-maxs-evoked' % key])
             results[case][key+'-trial-average'] = np.mean(Vms, axis=0)
         results[case]['t-trial-average'] = results[case]['t'][:N_1repeat]
 
@@ -265,6 +275,9 @@ for c, case in enumerate(results['CASES']):
     for key in ['Vm', 'Vm-linear-pred']:
         AX[c].plot(np.concatenate([[0],results['Nsyns']]),
                    np.concatenate([[0],results[case]['%s-%s-evoked' % (key, resp)]]))
+        pt.scatter(results['Nsyns'], np.mean(results[case]['%s-maxs-evoked' % (key)], axis=0), 
+                   sy=np.std(results[case]['%s-maxs-evoked' % (key)], axis=0),
+                   ax=AX[c], ms=2)
     AX[c].set_title('%s\n$\epsilon=$%.1f%%' % (case, 100*epsilon(results,
                                                                  resp=resp,
                                                                  evaluate_on='end_point')))
@@ -307,40 +320,69 @@ for c, case in enumerate(results['CASES']):
 # ### summary fig
 
 # %%
-fig, AX = pt.plt.subplots(len(results['CASES']),
-                          figsize=(6, 0.6*len(results['CASES'])))
-pt.plt.subplots_adjust(hspace=0.1)
+trial_pick = 0
+
+fig, AX = pt.plt.subplots(len(results['CASES'])+1,
+                          figsize=(5, 0.6*(1+len(results['CASES']))))
+pt.plt.subplots_adjust(hspace=0.1, right=.8)
 
 COLORS = ['dimgrey', 'tab:brown', 'tab:olive']
 INSETS = []
+
+c, case = 0, results['CASES'][0]
+cond = (results[case]['t']>(trial_pick*len(results['Nsyns'])*results['interstim'])) &\
+    (results[case]['t']<((1+trial_pick)*len(results['Nsyns'])*results['interstim']))
+AX[c].plot(results[case]['t'][cond], results[case]['Vm-linear-pred'][cond], ':', lw=0.5, color=COLORS[0])
+AX[c].plot(results[case]['t'][cond], results[case]['Vm'][cond], color=COLORS[c], lw=0.8)
+pt.set_plot(AX[c], [])
+
 for c, case in enumerate(results['CASES']):
+    """
     AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
                results[results['CASES'][0]]['Vm-linear-pred-trial-average'], 
                ':', lw=0.5, color=COLORS[0])
-    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], 
+    """
+    AX[c+1].fill_between(results[results['CASES'][0]]['t-trial-average'],
+                       0*results[results['CASES'][0]]['t-trial-average']+Model['EL'],
+               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], lw=0, alpha=.2, color=COLORS[0])
+    AX[c+1].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], 
                alpha=.8, color=COLORS[c])
-    pt.set_plot(AX[c], [])
+    pt.set_plot(AX[c+1], [])
     
-    inset = pt.inset(AX[c], (1.1, 0.2, 0.1, 0.8))
+    inset = pt.inset(AX[c+1], (1.1, 0.05, 0.1, 0.95))
+    """
     inset.plot(np.concatenate([[0],results['Nsyns']]),
                np.concatenate([[0],results[case]['Vm-max-evoked']]),
-               alpha=.8, color=COLORS[c])
-    inset.plot(np.concatenate([[0],results['Nsyns']]),
-               np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
-               ':', lw=0.5, color=COLORS[0])
-    
-    pt.set_plot(inset, xticks=[0, 5, 10], xticks_labels=[], fontsize=7)#, yticks=[0,10,20])
+               alpha=.8, color=COLORS[c], lw=1.5)
+    """
+    inset.fill_between(np.concatenate([[0],results['Nsyns']]), 
+                       0*np.concatenate([[0],results['Nsyns']]),
+                       np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
+                       alpha=0.1, color=COLORS[0], lw=0)
+    pt.scatter(results['Nsyns'], np.mean(results[case]['Vm-maxs-evoked'], axis=0), 
+               sy=np.std(results[case]['Vm-maxs-evoked'], axis=0),
+               ax=inset, color=COLORS[c], lw=0.5, ms=1)
+
+    pt.set_plot(inset, xticks=[0, 8, 16], xticks_labels=[], fontsize=7, yticks=[0,7,14])
     INSETS.append(inset)
 
 pt.draw_bar_scales(AX[0], Xbar=20, Xbar_label='20ms', Ybar=5, Ybar_label='5mV ')
 pt.set_common_ylims(AX)
-pt.set_common_ylims(INSETS)
-pt.set_plot(INSETS[2], xticks=[0, 5, 10], #yticks=[0,10,20],
-            ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7)
+#pt.set_common_ylims(INSETS)
+pt.set_plot(INSETS[2], xticks=[0, 8, 16], xticks_labels=[0, 8, 16], 
+            ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7, yticks=[0,7,14])
+
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 
 # %%
-#pt.plt.show()
+fig, ax = pt.figure()
+pt.annotate(ax, r"$\langle \epsilon  \rangle $=71.9%", (0,0))
+ax.axis('off')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+
+# %%
+np.save('../data/BRT-3cases-5points.npy', results)
 
 # %%
 fig, ax = pt.plt.subplots(1)

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -109,14 +109,19 @@ def plot(results):
     AX[1].set_title('transfer resistance')
 
     AX[0].plot(results['loc'], results['input_resistance'])
-    AX[1].plot(results['loc'], np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0])
+    AX[1].plot(results['loc'],
+               np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0])
+               #np.array(results['transfer_resistance_to_soma']))
 
-    pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', yticks=[1e2, 1e3], ylabel='M$\Omega$', yscale='log')
-    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)', ylabel='$R^{dist}_{soma}$ / $R_{soma}^{soma}$', ylim=[-.1,1.1])
+    pt.set_plot(AX[0], xlabel='dist. from soma ($\mu$m)', yticks=[1e2, 1e3],
+                ylabel='M$\Omega$', yscale='log', xticks=np.arange(3)*100)
+    pt.set_plot(AX[1], xlabel='dist. from soma ($\mu$m)',
+                ylim=[0,1.1], yticks=np.arange(3)*0.5, xticks=np.arange(3)*100,
+                ylabel='$R^{dist}_{soma}$ / $R_{soma}^{soma}$')
 
     return fig
 
-results = run_imped_charact(Model)
+#results = run_imped_charact(Model)
 fig = plot(results)
 
 # %%
@@ -186,8 +191,8 @@ run_params_scan('branch-number', [1,2,3,4])
 key='branch-number'
 data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
 
-fig, AX = pt.plt.subplots(2, figsize=(1., 1.5))
-pt.plt.subplots_adjust(hspace=0.1, right=0.8, left=0.15)
+fig, AX = pt.plt.subplots(2, figsize=(1.1, 1.5))
+pt.plt.subplots_adjust(hspace=0.15, right=0.8, left=0.15)
 
 for i, results in enumerate(data['results']):
     color = pt.viridis_r(i/(len(data[key])-1))
@@ -199,7 +204,9 @@ for i, results in enumerate(data['results']):
 pt.set_plot(AX[0], xticks=[0,100,200], yscale='log', yticks=[1e2,1e3], #ylim=[90, 9700], 
             xticks_labels=[])
 pt.set_plot(AX[1], xticks=[0,100,200], xlabel='dist. from soma ($\mu$m)', 
-            yticks=[0.1, 1], yticks_labels=['0.1', '1'], yscale='lin')
+            ylim=[0.3, 1.1], 
+            yticks=0.4+np.arange(3)*0.3, 
+            yscale='lin')
 
 inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 1.5))
 pt.bar_legend(fig, X=range(len(data[key])+1),
@@ -236,7 +243,7 @@ pt.set_common_xlims(AX)
 # ## Impact of Tapering (diameter reduction rule)
 
 # %%
-run_params_scan('diameter-reduction-factor', [0.3, 0.5, 0.7, 0.9])
+run_params_scan('diameter-reduction-factor', [0.6, 0.7, 0.8, 0.9, 1.0])
 
 # %%
 fig = plot_parameter_variation('diameter-reduction-factor',
@@ -259,7 +266,7 @@ fig = plot_parameter_variation('tree-length',
 # ## Impact of Intracellular Resistance
 
 # %%
-run_params_scan('Ri', [25, 50, 100, 150, 200])
+run_params_scan('Ri', [50, 100, 150, 200, 300])
 
 # %%
 fig = plot_parameter_variation('Ri',
@@ -271,7 +278,7 @@ fig = plot_parameter_variation('Ri',
 # ## Impact of Transmembrane Resistance
 
 # %%
-run_params_scan('gL', [0.5, 1, 2.5, 5, 10])
+run_params_scan('gL', [0.25, 0.5, 1, 2.5, 5])
 
 # %%
 fig = plot_parameter_variation('gL',

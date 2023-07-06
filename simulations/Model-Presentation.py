@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -63,7 +63,7 @@ ax.set_yticks([]);
 # # AMPA vs NMDA synaptic events
 
 # %%
-dist_loc = 20
+dist_loc = 35
 t0, space, interstim = 30, 210, 10 # ms
 spikes = t0+np.arange(5)*interstim
 
@@ -93,7 +93,7 @@ for r, NA_ratio in enumerate([0, 2.5]):
     M = nrn.StateMonitor(neuron, ('v'),
                          record=[0, dist_loc]) # monitor soma+prox+loc
 
-    for b, bg_current in enumerate([0, 40]):
+    for b, bg_current in enumerate([0, 20]):
         
         # running
         neuron.I[dist_loc] = bg_current*nrn.pA
@@ -146,10 +146,10 @@ pt.annotate(ax, '\n\n\ndistal location\n(%i $\mu$m from soma)' % (1e6*SEGMENTS['
 # %%
 
 def run_charact(Model,
-                LOCS = [0, 5, 20, 30, 40],
+                LOCS = [0, 4, 20, 33, 40],
                 start_at=5, # ms
                 space=90, # ms
-                interstim=1, # ms
+                interstim=1.0, # ms
                 single_sequence_delay=30, # ms
                 pulse_amp = 20, # pA
                 Nrepeat=10,
@@ -230,7 +230,6 @@ def run_charact(Model,
     return results
 
 Model = load_params('BRT-parameters.json')
-#Model['qAMPA'] = 0.5
 
 results = run_charact(Model, full_output=True)
 
@@ -264,7 +263,7 @@ for d, stim in enumerate(results['LOCS']):
         np.max(results['lin_pred_%s' % label][cond]-results['lin_pred_%s' % label][cond][0])
     epsilons.append(efficacy)
     
-    AX[0][d].set_title('stim.@%.1f$\mu$m\n$\epsilon_{soma}$=%.1f%%' % (\
+    AX[0][d].set_title('stim.@%.1f$\mu$m\n$\epsilon$=%.1f%%' % (\
                             1e6*SEGMENTS['distance_to_soma'][stim], efficacy))
     pt.annotate(AX[d][len(results['LOCS'])-1],
                 'rec.@%.1f$\mu$m' % (1e6*SEGMENTS['distance_to_soma'][stim]), (1, 0))
@@ -287,10 +286,60 @@ for d, stim in enumerate(results['LOCS']):
 pt.draw_bar_scales(inset, Xbar=20, Xbar_label='20ms ', Ybar=1e-12)
 """
 
-fig, ax = pt.plot(1e6*SEGMENTS['distance_to_soma'][results['LOCS']], epsilons, lw=1)
-pt.set_plot(ax, xlabel='dist. from soma', ylabel='suppression (%)', yticks=[30, 60, 90])
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+#fig, ax = pt.plot(1e6*SEGMENTS['distance_to_soma'][results['LOCS']], epsilons, lw=1)
+#pt.set_plot(ax, xlabel='dist. from soma', ylabel='suppression (%)', yticks=[30, 60, 90])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+
+# %% [markdown]
+# # Table of Parameters
 
 # %%
+# generate Markdown string from Model
+table = "|Name|Value|Unit|\n"
+table +="|----|:----|:--:|\n"
+template = "|Name|Value|Unit|"
+def find_unit(key):
+    if ('radius' in key) or ('-diameter' in key) or ('length' in key) or (key[:3]=='tau'):
+        return 'um'
+    elif (key[:3]=='tau') or (key=='dt'):
+        return 'ms'
+    elif key[0]=='E':
+        return 'mV'
+    elif (key=='gL'):
+        return 'pS/um^2'
+    else:
+        return ''
+for key in Model:
+    table += template.replace('Name',key).replace('Value', str(Model[key])).replace('Unit', find_unit(key))+'\n'
+    
+print(table)
+
+# %% [markdown]
+# |Name|Value|Unit|
+# |----|:----|:--:|
+# |branch-number|4||
+# |tree-length|200.0|um|
+# |soma-radius|15.0|um|
+# |root-diameter|1.0|um|
+# |diameter-reduction-factor|0.7|um|
+# |nseg_per_branch|10||
+# |gL|2.5|pS/um^2|
+# |cm|1.0||
+# |Ri|150.0||
+# |EL|-70|mV|
+# |cMg|1.0||
+# |etaMg|0.33||
+# |V0NMDA|12.5||
+# |Mg_NMDA|1.0||
+# |Ee|0|mV|
+# |qAMPA|0.5||
+# |tauRiseAMPA|0.5|um|
+# |tauDecayAMPA|5|um|
+# |qNMDAtoAMPAratio|0.0||
+# |tauRiseNMDA|3|um|
+# |tauDecayNMDA|70|um|
+# |dt|0.025||
+# |nAMPA|1.435055183349871||
+# |nNMDA|1.2030285365713829||
 
 # %%
