@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -64,8 +64,8 @@ ax.set_yticks([]);
 
 # %%
 dist_loc = 35
-t0, space, interstim = 30, 210, 10 # ms
-spikes = t0+np.arange(5)*interstim
+t0, space, interstim = 20, 250, 5 # ms
+spikes = t0+np.arange(10)*interstim
 
 fig, AX = pt.plt.subplots(1, 2, figsize=(1.9,1.4))
 
@@ -93,7 +93,7 @@ for r, NA_ratio in enumerate([0, 2.5]):
     M = nrn.StateMonitor(neuron, ('v'),
                          record=[0, dist_loc]) # monitor soma+prox+loc
 
-    for b, bg_current in enumerate([0, 20]):
+    for b, bg_current in enumerate([0, 80]):
         
         # running
         neuron.I[dist_loc] = bg_current*nrn.pA
@@ -107,9 +107,9 @@ for r, NA_ratio in enumerate([0, 2.5]):
 pt.set_common_ylims(AX)
 pt.set_common_xlims(AX)
 pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
-pt.set_plot(AX[0], ['left'], yticks=[-70, -45, -20], xticks=[])
-pt.set_plot(AX[1], ['left'], yticks=[-70, -45, -20], yticks_labels=[], xticks=[])
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+pt.set_plot(AX[0], ['left'], yticks=[-70, -50, -30], xticks=[])
+pt.set_plot(AX[1], ['left'], yticks=[-70, -50, -30], yticks_labels=[], xticks=[])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
 # # Synaptic integration in the proximal and distal segments

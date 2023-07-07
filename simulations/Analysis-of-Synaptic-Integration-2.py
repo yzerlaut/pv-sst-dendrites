@@ -28,25 +28,64 @@ Model = load_params('BRT-parameters.json')
 
 
 # %% [markdown]
+#
 # # Distribute synapses with distance-dependent densities
 
 # %%
 # distribution as a function of the bias factor !
 def get_distr(x, Model, bias=0):
-    if bias>=0:
-        distrib = 1-bias*x/(Model['tree-length']*1e-6)
+    if bias>0:
+        distrib = 2/Model['tree-length']*(1-bias*x/Model['tree-length'])
     else:
-        distrib = -bias*x/(Model['tree-length']*1e-6)
-    return distrib/distrib.sum()
+        distrib = 1/Model['tree-length']+0*x
+    return distrib
 
 def proba_of_branch_locs(BRANCH_LOCS, Model, bias=0):
     return get_distr(SEGMENTS['distance_to_soma'][BRANCH_LOCS], Model, bias=bias)
 
-BRT, neuron = initialize(Model)
-SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
+def find_locations(Nsynapses, Model, bias=0):
+    x = np.linspace(0, Model['tree-length'], 10000)
+    proba_integ = np.cumsum(get_distr(x, Model, bias=bias)[::-1])/len(x)*Model['tree-length']
+    proba_increment = 1./Nsynapses
+    locs = [0]
+    for i in range(Nsynapses-1):
+        iL = np.flatnonzero((proba_integ[locs[-1]:]-proba_integ[locs[-1]])>proba_increment)[0]
+        locs.append(iL+locs[-1])
+    xlocs = Model['tree-length']-np.array([x[l] for l in locs])[::-1]
+    return np.clip(xlocs-Model['tree-length']/Nsynapses/2, 0, np.inf)
 
-n, N = Model['nseg_per_branch'], Model['branch-number']
-BRANCH_LOCS = np.arange(n*N+1)
+def find_synaptic_locations(Nsynapses, Model, BRANCH_LOCS, bias=0):
+    
+    locs = find_locations(Nsynapses, Model, bias=bias)
+    
+    BRT, neuron = initialize(Model)
+    SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
+
+    SYN_LOCS = []
+    for l in locs:
+        SYN_LOCS.append(BRANCH_LOCS[np.argmin((l-1e6*SEGMENTS['distance_to_soma'][BRANCH_LOCS])**2)])
+        
+    return SYN_LOCS
+    
+Nsynapses = 20
+x = np.linspace(0, Model['tree-length'], 1000)
+
+fig, AX = pt.plt.subplots(1, 2, figsize=(3.5,1))
+pt.plt.subplots_adjust(wspace=0.8)
+
+
+for ax, bias, title in zip(AX, [0,1], ['uniform', 'biased']):
+    ax.plot(x, np.cumsum(get_distr(x, Model, bias=bias))/len(x)*Model['tree-length'], 'k-')
+    #ax.plot(x, get_distr(x, Model, bias=bias)*Model['tree-length']/2, color='k', lw=3, alpha=0.4)
+    locs = find_locations(Nsynapses, Model, bias=bias)
+    for l in locs:
+        ax.plot([l,l], np.arange(2), color='tab:brown', lw=0.2)
+    pt.set_plot(ax, xlabel='dist. from soma', ylabel='cum. proba', title=title+10*' ')
+    
+    inset = pt.inset(ax, [0.8, 1.2, 0.3, 0.25])
+    inset.plot(x, get_distr(x, Model, bias=bias)*Model['tree-length']/2, 'k-')
+    pt.set_plot(inset, xticks=[], yticks=[], ylabel='proba', xlabel='dist.', ylim=[-0.1,1.1])
+
 
 # %% [markdown]
 # ### Plot
@@ -54,53 +93,61 @@ BRANCH_LOCS = np.arange(n*N+1)
 # %%
 # select a given dendrite, the longest one !
 from nrn.plot import nrnvyz
-Model['soma-radius'] = 7
+
 BRT, neuron = initialize(Model)
 SEGMENTS = nrn.morpho_analysis.compute_segments(BRT)
 vis = nrnvyz(SEGMENTS)
 
 n, N = Model['nseg_per_branch'], Model['branch-number']
+#BRANCH_LOCS = np.concatenate([np.arange(n+1),
+#                              1+Model['nseg_per_branch']*N+np.arange(3*n)])
 BRANCH_LOCS = np.arange(n*N+1)
 
 fig, ax = pt.plt.subplots(1, figsize=(2,2))
-vis.plot_segments(ax=ax, color='tab:grey')
+vis.plot_segments(ax=ax, color='tab:grey', bar_scale_args={'Ybar':20, 'Ybar_label':'20um ', 'Xbar':1e-12})
 vis.add_dots(ax, BRANCH_LOCS, 2, color='tab:cyan')
+#vis.add_dots(ax, BRANCH_LOCS[SYN_LOCS], 4, color='tab:red')
 ax.set_title('n=%i segments' % len(SEGMENTS['name']), fontsize=6)
 BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
 
 
 # %%
 Nsynapses = 40
+Ncluster = 6
+
+def find_cluster_syn(loc, Ncluster, LOCS):
+    
+    i0 = np.argmin((SEGMENTS['distance_to_soma'][LOCS]*1e6-loc)**2)
+    iend = min([len(LOCS), i0+int(Ncluster/2)+1])
+    istart = iend-Ncluster
+    return LOCS[istart:iend]
+
+
+n, N = Model['nseg_per_branch'], Model['branch-number']
+BRANCH_LOCS = np.arange(n*N+1)
 
 LOCS = {}
-BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
 
-for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,5]):
+for case, bias, seed in zip(['uniform', 'biased'], [0, 1], [6,11]):
     
-    np.random.seed(seed)
-    LOCS[case] = np.random.choice(BRANCH_LOCS, Nsynapses,
-                                  p=proba_of_branch_locs(BRANCH_LOCS, Model, bias=bias))
+    LOCS[case] = find_synaptic_locations(Nsynapses, Model, BRANCH_LOCS, bias=bias)
     
-fig, AX = pt.plt.subplots(1, 2, figsize=(3,1.8))
-pt.plt.subplots_adjust(wspace=.2, hspace=.6)
-INSETS = []
-for c, ax, bias, case in zip(range(2), AX, [0, 1],
-                             ['uniform', 'biased']):
-    
-    vis.plot_segments(ax=ax, color='tab:grey',
-                      bar_scale_args=None, diameter_magnification=2.5)
-    vis.add_dots(ax, LOCS[case], 5, color='tab:cyan')
+fig, AX = pt.plt.subplots(2, 2, figsize=(3,3))
+pt.plt.subplots_adjust(wspace=0, hspace=.2)
 
-    inset = pt.inset(ax, [0.8, 0.7, 0.3, 0.3])
-    bins = np.linspace(0, Model['tree-length']*1e-6, 10)
-    inset.hist(SEGMENTS['distance_to_soma'][LOCS[case]], 
-               bins=bins, color='tab:cyan')
-    inset.plot(bins, get_distr(bins, Model, bias=bias)*Nsynapses, color='r', lw=1)
-    pt.set_plot(inset, xticks=[], yticks=[], ylabel='count', xlabel='dist.',
-               xlim=[0,Model['tree-length']*1e-6], fontsize=7)
-    INSETS.append(inset)
+for Ax, loc in zip(AX, [30, 170]):
     
-pt.set_common_ylims(INSETS) 
+    for c, ax, bias, case in zip(range(2), Ax, [0, 1],
+                                 ['uniform', 'biased']):
+        
+        cluster = find_cluster_syn(loc, Ncluster, LOCS[case])
+        
+        ax.set_title('cluster @ %.0f$\mu$m\n%s distrib.' % (loc, case), fontsize=7)
+        vis.plot_segments(ax=ax, color='grey',
+                          bar_scale_args=None, diameter_magnification=2.5)
+        vis.add_dots(ax, LOCS[case], 3, color='tab:cyan')
+        vis.add_dots(ax, cluster, 12, color='tab:purple')
+
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %% [markdown]
@@ -110,24 +157,24 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 # we restart from the default parameters
 Model = load_params('BRT-parameters.json')
 
-def PSP(segment_index, results, length=100):
+def PSP(segment_index, results, length=40):
     """ Extract the PSP from the 'single-syn' case simulation """
     t0 = results['start']+segment_index*results['interstim']
     cond = (results['single-syn']['t']>t0) & (results['single-syn']['t']<(t0+length))
     return results['single-syn']['t'][cond]-t0, results['single-syn']['Vm'][cond]-results['single-syn']['Vm'][0]
 
 def run_sim(Model,
-            CASES=['bias=0,rNA=0'],
-            Nrepeat=10,
-            Nsyns=4+np.arange(3)*6):
+            CASES=['loc=50,bias=0,rNA=0'],
+            Nrepeat=1, 
+            Ntot_synapses=40,
+            Nsyns=1+np.arange(3)*6):
 
     BRANCH_LOCS = np.arange(Model['nseg_per_branch']*Model['branch-number']+1)
     
     # initialize results with protocol parameters
-    results = {'start':50, 'interspike':1.0, 'interstim':100,
+    results = {'start':10, 'interspike':0.5, 'interstim':50,
                'seed':10, 'repeat':Nrepeat,
-               'CASES':CASES,
-               'Nsyns':Nsyns}
+               'CASES':CASES, 'Nsyns':Nsyns}
     
     ###################################
     ####       run simulations     ####
@@ -148,24 +195,24 @@ def run_sim(Model,
 
         else:
             # extract and ratio amp-a-to-nmda ratio
-            bias = float(case.split(',')[0].replace('bias=', ''))
-            Model['qNMDAtoAMPAratio'] = float(case.split('rNA=')[1])
+            loc = float(case.split('oc=')[1].split(',')[0]) # extract loc=XX,
+            bias = float(case.split('ias=')[1].split(',')[0]) # extract bias=XX,
+            Model['qNMDAtoAMPAratio'] = float(case.split('rNA=')[1]) # extract rNA=XX
             
+            SYN_LOCS = find_synaptic_locations(Ntot_synapses, Model, BRANCH_LOCS, bias=bias)
+
             results[case]['spike_times'] = np.empty(0, dtype=int)
             results[case]['spike_IDs'] = np.empty(0, dtype=int)
             
             for repeat in range(results['repeat']):
 
                 for i, Nsyn in enumerate(results['Nsyns']):
-
-
-                    spike_IDs = np.random.choice(BRANCH_LOCS, Nsyn,
-                                                 p=proba_of_branch_locs(BRANCH_LOCS, Model,
-                                                                        bias=bias))
-                    # spike_IDs = 5+bias*20*np.ones(Nsyn) # REMOVE (just to debug)
-
+                    
+                    # from proximal toward distal or from distal toward proximal
+                    spike_IDs = find_cluster_syn(loc, Nsyn, SYN_LOCS)
                     results[case]['spike_IDs'] = np.concatenate([results[case]['spike_IDs'], spike_IDs])
-                    t0 = results['start']+repeat*len(results['Nsyns'])*results['interstim']+i*results['interstim']
+                    t0 = results['start']+repeat*len(results['Nsyns'])*results['interstim']+\
+                                    i*results['interstim']
                     spike_times = t0+np.arange(Nsyn)*results['interspike']
                     results[case]['spike_times'] = np.concatenate([results[case]['spike_times'],spike_times])
 
@@ -251,7 +298,8 @@ def run_sim(Model,
                     
     return results
 
-results = run_sim(Model, CASES=['bias=0,rNA=0', 'bias=1,rNA=0', 'bias=0,rNA=2.5'])
+results = run_sim(Model, CASES=['loc=30,bias=0,rNA=0','loc=30,bias=1,rNA=0',
+                                'loc=170,bias=0,rNA=0','loc=170,bias=1,rNA=0'])
 
 #np.save('results.npy', results)
 
@@ -274,13 +322,17 @@ for c, case in enumerate(results['CASES']):
     for key in ['Vm', 'Vm-linear-pred']:
         AX[c].plot(np.concatenate([[0],results['Nsyns']]),
                    np.concatenate([[0],results[case]['%s-%s-evoked' % (key, resp)]]))
-        pt.scatter(results['Nsyns'], np.mean(results[case]['%s-maxs-evoked' % (key)], axis=0), 
-                   sy=np.std(results[case]['%s-maxs-evoked' % (key)], axis=0),
-                   ax=AX[c], ms=2)
     AX[c].set_title('%s\n$\epsilon=$%.1f%%' % (case, 100*epsilon(results,
                                                                  resp=resp,
                                                                  evaluate_on='end_point')))
     pt.set_plot(AX[c], ylabel='%s depol. (mV)' % resp, xlabel='n$_{syn}$')
+    
+fig, AX = pt.plt.subplots(1, len(results['CASES']),
+                          figsize=(1.5*len(results['CASES']), 1))
+pt.plt.subplots_adjust(wspace=1.1)
+for c, case in enumerate(results['CASES']):
+    AX[c].plot(results['Nsyns'],
+               100*results[case]['Vm-%s-evoked' % resp]/results[case]['Vm-linear-pred-%s-evoked' % resp])
 
 # %% [markdown]
 # ### raw data
@@ -306,7 +358,7 @@ pt.annotate(inset, 'single-syn', (1.,0))
 # %%
 fig, AX = pt.plt.subplots(len(results['CASES']), figsize=(6, 0.6*len(results['CASES'])))
 pt.plt.subplots_adjust(hspace=0.1)
-COLORS = ['tab:purple', 'tab:brown', 'tab:olive', 'c']
+COLORS = [pt.tab10(i) for i in range(10)]
 for c, case in enumerate(results['CASES']):
     AX[c].plot(results[case]['t-trial-average'], 
                results[case]['Vm-trial-average'], alpha=.8, color=COLORS[c])
@@ -321,80 +373,57 @@ for c, case in enumerate(results['CASES']):
 # %%
 trial_pick = 0
 
-fig, AX = pt.plt.subplots(len(results['CASES'])+1,
-                          figsize=(5, 0.6*(1+len(results['CASES']))))
+fig, AX = pt.plt.subplots(len(results['CASES']),
+                          figsize=(4, 0.4*(1+len(results['CASES']))))
 pt.plt.subplots_adjust(hspace=0.1, right=.8)
 
-COLORS = ['dimgrey', 'tab:brown', 'tab:olive']
+COLORS = ['dimgrey', 'tab:brown', 'dimgrey', 'tab:brown',]
 INSETS = []
 
-c, case = 0, results['CASES'][0]
-cond = (results[case]['t']>(trial_pick*len(results['Nsyns'])*results['interstim'])) &\
-    (results[case]['t']<((1+trial_pick)*len(results['Nsyns'])*results['interstim']))
-AX[c].plot(results[case]['t'][cond], results[case]['Vm-linear-pred'][cond], ':', lw=0.5, color=COLORS[0])
-AX[c].plot(results[case]['t'][cond], results[case]['Vm'][cond], color=COLORS[c], lw=0.8)
-pt.set_plot(AX[c], [])
-
 for c, case in enumerate(results['CASES']):
-    """
-    AX[c].plot(results[results['CASES'][0]]['t-trial-average'],
-               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], 
-               ':', lw=0.5, color=COLORS[0])
-    """
-    AX[c+1].fill_between(results[results['CASES'][0]]['t-trial-average'],
+    AX[c].fill_between(results[results['CASES'][0]]['t-trial-average'],
                        0*results[results['CASES'][0]]['t-trial-average']+Model['EL'],
-               results[results['CASES'][0]]['Vm-linear-pred-trial-average'], lw=0, alpha=.2, color=COLORS[0])
-    AX[c+1].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], 
+               results[results['CASES'][c]]['Vm-linear-pred-trial-average'], lw=0, alpha=.2, color=COLORS[c])
+    AX[c].plot(results[case]['t-trial-average'], results[case]['Vm-trial-average'], 
                alpha=.8, color=COLORS[c])
-    pt.set_plot(AX[c+1], [])
+    pt.set_plot(AX[c], [])
     
-    inset = pt.inset(AX[c+1], (1.1, 0.05, 0.1, 0.95))
-    """
+    inset = pt.inset(AX[c], (1.1, 0.05, 0.1, 0.85))
+
     inset.plot(np.concatenate([[0],results['Nsyns']]),
                np.concatenate([[0],results[case]['Vm-max-evoked']]),
                alpha=.8, color=COLORS[c], lw=1.5)
-    """
     inset.fill_between(np.concatenate([[0],results['Nsyns']]), 
                        0*np.concatenate([[0],results['Nsyns']]),
-                       np.concatenate([[0], results[results['CASES'][0]]['Vm-linear-pred-max-evoked']]),
-                       alpha=0.1, color=COLORS[0], lw=0)
+                       np.concatenate([[0], results[results['CASES'][c]]['Vm-linear-pred-max-evoked']]),
+                       alpha=0.1, color=COLORS[c], lw=0)
     pt.scatter(results['Nsyns'], np.mean(results[case]['Vm-maxs-evoked'], axis=0), 
                sy=np.std(results[case]['Vm-maxs-evoked'], axis=0),
                ax=inset, color=COLORS[c], lw=0.5, ms=1)
-
-    pt.set_plot(inset, xticks=[0, 8, 16], xticks_labels=[], fontsize=7, yticks=[0,7,14])
+    
+    pt.set_plot(inset,  xticks_labels=[] if c<3 else None, fontsize=7, num_yticks=2)
     INSETS.append(inset)
 
-pt.draw_bar_scales(AX[0], Xbar=20, Xbar_label='20ms', Ybar=5, Ybar_label='5mV ')
-pt.set_common_ylims(AX)
+    pt.draw_bar_scales(AX[c], Xbar=20 if c==0 else 1e-12,
+                       Xbar_label='20ms' if c==0 else '', Ybar=5, Ybar_label='5mV ')
+    
+#pt.set_common_ylims(AX)
 #pt.set_common_ylims(INSETS)
-pt.set_plot(INSETS[2], xticks=[0, 8, 16], xticks_labels=[0, 8, 16], 
-            ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7, yticks=[0,7,14])
+pt.set_plot(INSETS[-1], num_yticks=2,
+            ylabel=30*' '+'max. depol. (mV)', xlabel='n$_{syn}$', fontsize=7)
 
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 
 # %%
-fig, ax = pt.figure()
-pt.annotate(ax, r"$\langle \epsilon  \rangle $=71.9%", (0,0))
-ax.axis('off')
+COLORS = ['dimgrey', 'tab:brown', 'dimgrey', 'tab:brown',]
+fig, ax = pt.plt.subplots(1, 2, figsize=(1.5,1))
+pt.plt.subplots_adjust(wspace=1.5)
+for k in range(2):
+    for c, case in enumerate(results['CASES'][2*k:2*k+2]):
+        E = results[case]['Vm-maxs-evoked'][0,-1]/results[case]['Vm-linear-pred-maxs-evoked'][0,-1]
+        ax[k].bar([c], [100*E], color=COLORS[c], alpha=.7)
+    pt.set_plot(ax[k], xticks=[], yticks=np.arange(4)*(30-10*k), ylabel='efficacy $\epsilon$ (%)')
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
-
-# %%
-np.save('../data/BRT-3cases-5points.npy', results)
-
-# %%
-fig, ax = pt.plt.subplots(1)
-resp = np.linspace(90, 30, 20)
-ax.bar(np.arange(len(resp)), resp)
-pt.set_plot(ax, ylabel='efficacy $\epsilon$ (%)', xlabel='dist. to soma', xticks=[], yticks=[0, 30, 60, 90])
-ax2 = ax.twinx()
-distrib = np.linspace(1, 0, len(resp))
-ax2.plot(np.arange(len(resp)), distrib/distrib.sum(), color='orange')
-pt.annotate(ax, r'prox. biased:$\langle \epsilon \rangle$=%.1f%%' % np.mean(resp*distrib/distrib.mean()), (1, 0.3), color='orange')
-distrib = np.ones(len(resp))
-ax2.plot(np.arange(len(resp)), distrib/distrib.sum(), color='pink')
-pt.annotate(ax, r'uniform:       $\langle \epsilon \rangle$=%.1f%%' % np.mean(resp*distrib/distrib.mean()), (1, 0.1), color='pink')
-ax2.axis('off');
 
 # %%

@@ -8,7 +8,7 @@
     "soma-radius":15.0, " [um]":"",
     "root-diameter":1.0," [um]":"",
     "diameter-reduction-factor":0.70," ## N.B. 0.5**(2/3) --> Rall branching rule":"",
-    "nseg_per_branch": 10,
+    "nseg_per_branch": 20,
     " ################################################# ": "",
     " # ---------- BIOPHYSICAL PROPS ----------------- #": "",
     " ################################################# ": "",

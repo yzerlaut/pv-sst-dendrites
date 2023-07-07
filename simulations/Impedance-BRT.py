@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -121,7 +121,7 @@ def plot(results):
 
     return fig
 
-#results = run_imped_charact(Model)
+results = run_imped_charact(Model)
 fig = plot(results)
 
 # %%
@@ -191,7 +191,7 @@ run_params_scan('branch-number', [1,2,3,4])
 key='branch-number'
 data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
 
-fig, AX = pt.plt.subplots(2, figsize=(1.1, 1.5))
+fig, AX = pt.plt.subplots(2, figsize=(0.9, 1.6))
 pt.plt.subplots_adjust(hspace=0.15, right=0.8, left=0.15)
 
 for i, results in enumerate(data['results']):
@@ -208,13 +208,13 @@ pt.set_plot(AX[1], xticks=[0,100,200], xlabel='dist. from soma ($\mu$m)',
             yticks=0.4+np.arange(3)*0.3, 
             yscale='lin')
 
-inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 1.5))
+inset = pt.inset(AX[1], (1.4, 0.5, 0.1, 0.8))
 pt.bar_legend(fig, X=range(len(data[key])+1),
               ticks = np.arange(len(data[key]))+0.5,
               ticks_labels = [str(k) for k in data[key]],
               colormap=pt.viridis_r, ax_colorbar=inset,
               label='branch number')
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
 BRANCHES = [1,2,3,4]
