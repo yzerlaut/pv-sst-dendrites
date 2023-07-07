@@ -4,3 +4,6 @@
 [submodule "plot_tools"]
 	path = plot_tools
 	url = https://github.com/yzerlaut/plot_tools
+[submodule "physion"]
+	path = physion
+	url = https://github.com/yzerlaut/physion
