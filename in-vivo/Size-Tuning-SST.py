@@ -71,6 +71,9 @@ def init_summary(DATASET):
     return SUMMARY
 
 
+# %%
+init_summary(DATASET)
+
 # %% [markdown]
 # ## Analysis
 
@@ -259,7 +262,7 @@ def plot_summary(SUMMARY,
     pt.set_plot(inset, xticks=[], ylabel='suppr. index', yticks=[0, 0.5, 1], ylim=[0, 1.09])
     return fig
 
-SUMMARY = np.load('data/dFoF-summary.npy', allow_pickle=True).item()
+SUMMARY = np.load('../data/dFoF-summary.npy', allow_pickle=True).item()
 fig = plot_summary(SUMMARY, average_by='ROIs')
 fig = plot_summary(SUMMARY, average_by='sessions')
 

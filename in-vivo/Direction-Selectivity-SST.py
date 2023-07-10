@@ -301,16 +301,23 @@ def generate_comparison_figs(SUMMARY,
 
 SUMMARY = np.load('../data/dFoF-ff-gratings.npy', allow_pickle=True).item()
 fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='sessions', norm='norm. ')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='ROIs', norm='norm. ')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '2.svg'))
 fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='ROIs', norm='norm. ',
                                    colors=['k', 'tab:grey'])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '3.svg'))
 fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='sessions', norm='norm. ',
                                    colors=['k', 'tab:grey'])
 ax.set_title('WT: full vs half contrast');
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '4.svg'))
+
+# %%
+SUMMARY['GluN3']['FILES']
 
 # %%
 for quantity in ['rawFluo', 'neuropil', 'dFoF']:
-    SUMMARY = np.load('data/%s-ff-gratings.npy' % quantity, allow_pickle=True).item()
+    SUMMARY = np.load('../data/%s-ff-gratings.npy' % quantity, allow_pickle=True).item()
     _ = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'])
 
 # %%
@@ -382,6 +389,17 @@ import plot_tools as pt
 import warnings
 warnings.filterwarnings("ignore") # disable the UserWarning from pynwb (arrays are not well oriented)
 
+def selectivity_index(angles, resp):
+    """
+    computes the selectivity index: (Pref-Orth)/(Pref+Orth)
+    clipped in [0,1]
+    """
+    imax = np.argmax(resp)
+    iop = np.argmin(((angles[imax]+90)%(180)-angles)**2)
+    if (resp[imax]>0):
+        return min([1,max([0,(resp[imax]-resp[iop])/(resp[imax]+resp[iop])])])
+    else:
+        return 0
 
 def cell_tuning_example_fig(filename,
                             contrast=1.0,
@@ -460,21 +478,20 @@ def cell_tuning_example_fig(filename,
         if i==(Nsamples-1):
             inset.set_xlabel('angle ($^{o}$)', fontsize=7)
 
-        #SI = selectivity_index(angles, y)
-        #inset.annotate('SI=%.2f ' % SI, (0, 1), ha='right', weight='bold', fontsize=8,
-        #               color=('k' if responsive else 'lightgray'), xycoords='axes fraction')
-        inset.annotate(('responsive' if responsive else 'unresponsive'), (1, 1), ha='right',
-                        weight='bold', fontsize=6, color=(plt.cm.tab10(2) if responsive else plt.cm.tab10(3)),
-                        xycoords='axes fraction')
+        SI = selectivity_index(angles, y)
+        inset.annotate('SI=%.2f ' % SI, (1, 1), ha='right', style='italic', fontsize=6,
+                       color=('k' if responsive else 'lightgray'), xycoords='axes fraction')
         
     return fig
 
 folder = os.path.join(os.path.expanduser('~'), 'CURATED','SST-WT-NR1-GluN3-2023')
 fig = cell_tuning_example_fig(os.path.join(folder, '2023_02_15-13-30-47.nwb'),
-                             contrast=1)
+                             contrast=1, seed=21)
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %%
-fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][0])
+fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][2], seed=3)
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %% [markdown]
 # # Visualizing some raw population data
@@ -533,12 +550,14 @@ settings = {'Locomotion': {'fig_fraction': 1, 'subsampling': 2, 'color': '#1f77b
               'normalization': 'per-line',
               'subquantity': 'dF/F'}}
 
-tlim = [900, 1300]
-plot_raw(data, tlim=tlim, settings=settings)
+tlim = [910, 1300]
+fig, _ = plot_raw(data, tlim=tlim, settings=settings)
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
 from physion.dataviz.imaging import show_CaImaging_FOV
-show_CaImaging_FOV(data, key='max_proj', NL=3, roiIndices='all')
+fig, _, _ = show_CaImaging_FOV(data, key='max_proj', NL=3, roiIndices='all')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
 show_CaImaging_FOV(data, key='max_proj', NL=3)
