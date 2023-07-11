@@ -113,13 +113,16 @@ BRANCH_LOCS = np.array(BRANCH_LOCS, dtype=int)
 
 # %%
 Nsynapses = 40
-Ncluster = 6
+Ncluster = 10
 
 def find_cluster_syn(loc, Ncluster, LOCS):
     
     i0 = np.argmin((SEGMENTS['distance_to_soma'][LOCS]*1e6-loc)**2)
     iend = min([len(LOCS), i0+int(Ncluster/2)+1])
     istart = iend-Ncluster
+    if istart<0:
+        istart=0
+        iend=Ncluster
     return LOCS[istart:iend]
 
 
@@ -141,7 +144,6 @@ for Ax, loc in zip(AX, [30, 170]):
                                  ['uniform', 'biased']):
         
         cluster = find_cluster_syn(loc, Ncluster, LOCS[case])
-        
         ax.set_title('cluster @ %.0f$\mu$m\n%s distrib.' % (loc, case), fontsize=7)
         vis.plot_segments(ax=ax, color='grey',
                           bar_scale_args=None, diameter_magnification=2.5)
@@ -297,11 +299,23 @@ def run_sim(Model,
                                     results[case][key+'-trial-average'][cond]-results['single-syn']['Vm'][0])
                     
     return results
+"""
+results = run_sim(Model, CASES=['loc=30,bias=0,rNA=0',
+                                'loc=30,bias=1,rNA=0',
+                                'loc=170,bias=0,rNA=0',
+                                'loc=170,bias=1,rNA=0'])
 
-results = run_sim(Model, CASES=['loc=30,bias=0,rNA=0','loc=30,bias=1,rNA=0',
-                                'loc=170,bias=0,rNA=0','loc=170,bias=1,rNA=0'])
+"""
 
 #np.save('results.npy', results)
+
+# %%
+locs = np.linspace(20, 180, 7)
+CASES = []
+for l in locs:
+    CASES += ['loc=%.1f,bias=0,rNA=0' % l, 'loc=%.1f,bias=1,rNA=0' % l]
+results = run_sim(Model, CASES=CASES)
+
 
 # %%
 def epsilon(results,
@@ -416,14 +430,15 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 
 # %%
-COLORS = ['dimgrey', 'tab:brown', 'dimgrey', 'tab:brown',]
-fig, ax = pt.plt.subplots(1, 2, figsize=(1.5,1))
+COLORS = ['tab:grey', 'tab:red']
+fig, ax = pt.plt.subplots(1, figsize=(2,1))
 pt.plt.subplots_adjust(wspace=1.5)
-for k in range(2):
+bottom=35
+for k, l in enumerate(locs):
     for c, case in enumerate(results['CASES'][2*k:2*k+2]):
-        E = results[case]['Vm-maxs-evoked'][0,-1]/results[case]['Vm-linear-pred-maxs-evoked'][0,-1]
-        ax[k].bar([c], [100*E], color=COLORS[c], alpha=.7)
-    pt.set_plot(ax[k], xticks=[], yticks=np.arange(4)*(30-10*k), ylabel='efficacy $\epsilon$ (%)')
+        E = results[case]['Vm-maxs-evoked'][0,-2]/results[case]['Vm-linear-pred-maxs-evoked'][0,-2]
+        ax.bar([k+-0.2+c*0.4], [100*E-bottom], color=COLORS[c], alpha=1, width=0.35, bottom=bottom)
+pt.set_plot(ax, xticks=range(len(locs)), xticks_labels=['%i'%l if k%2==0 else '' for k, l in enumerate(locs)],
+            xlabel='cluster dist. from soma ($\mu$m)   ',
+            ylabel='efficacy $\epsilon$ (%)   ')
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
-
-# %%

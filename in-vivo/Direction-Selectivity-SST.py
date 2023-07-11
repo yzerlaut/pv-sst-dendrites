@@ -313,7 +313,31 @@ ax.set_title('WT: full vs half contrast');
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '4.svg'))
 
 # %%
-SUMMARY['GluN3']['FILES']
+fig, AX = plt.subplots(1, 2, figsize=(3,1))
+plt.subplots_adjust(wspace=0.9, right=0.8)
+inset = pt.inset(AX[1], [2.1, 0.3, 0.5, 0.7])
+for k, key, c, ax in zip(range(2), ['WT', 'GluN1'], ['k', 'tab:blue'], AX):
+    resp_c05 = np.concatenate([r for r in SUMMARY[key+'_c=0.5']['RESPONSES']])
+    resp_c1 = np.concatenate([r for r in SUMMARY[key]['RESPONSES']])
+    for index in [1,5]:
+        x, y = [0 ,0.5, 1], [0,np.mean(resp_c05[:, index]), np.mean(resp_c1[:, index])]
+        sy = [0,stats.sem(resp_c05[:, index]),stats.sem(resp_c1[:, index])]
+        ax.plot(x, y, '-' if index==1 else '--', color=c, label='pref.' if index==1 else 'orth.')
+        pt.scatter(x, y, sy=sy, ax=ax, color=c)
+        if index==1:
+            rel_increase = (np.mean(resp_c1[:,index])-np.mean(resp_c05[:,index]))/np.mean(resp_c05[:,index])
+            inset.bar([k], [np.mean(rel_increase)], color=c, alpha=1/index)
+    pt.set_plot(ax, xlabel='contrast', title=key, xticks=[0,0.5,1], ylabel='$\delta$ $\Delta$F/F')
+pt.set_plot(inset, ylabel='rel. increase\n ($\delta_{1}$-$\delta_{0.5}$)/$\delta_{0.5}$')
+AX[0].legend(frameon=False, loc=(1,1))
+
+# %%
+SUMMARY = np.load('../data/%s-ff-gratings.npy' % quantity, allow_pickle=True).item()
+for quantity in ['dFoF']:
+    _, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='ROIs', norm='norm. ')
+    _, ax = generate_comparison_figs(SUMMARY, ['GluN1', 'GluN1_c=0.5'], average_by='ROIs', norm='norm. ')
+    #_, ax = generate_comparison_figs(SUMMARY, ['WT_c=0.5', 'GluN1_c=0.5'], average_by='ROIs', norm='norm. ')
+    #_, ax = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='ROIs', norm='norm. ')
 
 # %%
 for quantity in ['rawFluo', 'neuropil', 'dFoF']:
