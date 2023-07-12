@@ -6,7 +6,6 @@ physion_folder = os.path.join(pathlib.Path(__file__).resolve().parent,
 sys.path.append(os.path.join(physion_folder))
 from physion.analysis.process_NWB import EpisodeData
 
-
 stat_test_props = dict(interval_pre=[-1.5,0],
                        interval_post=[1,2.5],
                        test='ttest',

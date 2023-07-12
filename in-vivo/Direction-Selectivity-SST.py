@@ -678,7 +678,8 @@ def cell_tuning_example_fig(filename,
                     responsive = True
                     responsive_angles.append(angle)
 
-            pt.plot(angles, np.array(y), sy=np.array(sy) if len(contrasts)==1 else None, ax=inset, no_set=True)
+            pt.plot(angles, np.array(y), sy=np.array(sy) if len(contrasts)==1 else None,
+                    color=color, ax=inset, no_set=True)
         inset.plot(angles, 0*np.array(angles), 'k:', lw=0.5)
         inset.set_ylabel('$\delta$ $\Delta$F/F     ', fontsize=7)
         inset.set_xticks(angles)
@@ -693,20 +694,213 @@ def cell_tuning_example_fig(filename,
         
     return fig
 
-fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][2], seed=5,
+fig = cell_tuning_example_fig(SUMMARY['WT']['FILES'][10], seed=0,
                               contrasts=[0.5,1])
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '2.svg'))
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %%
-fig = cell_tuning_example_fig(SUMMARY['WT']['FILES'][0], seed=5, Nsamples=10,
-                              contrasts=[0.5,1])
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
+fig = cell_tuning_example_fig(SUMMARY['WT']['FILES'][1], seed=7, Nsamples=10,
+                              contrasts=[1], colors=['k'])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %%
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %%
-np.random.seed(4)
-np.random.choice(range(10), 5)
+dFoF_inclusion_cond = 0.1
+MAX_EVOKED = 20
+
+def generate_comparison_figs(SUMMARY, 
+                             cases=['WT'],
+                             average_by='ROIs',
+                             colors=['k', 'tab:blue', 'tab:green'],
+                             norm='',
+                             ms=2):
+    
+    fig, ax = plt.subplots(1, figsize=(2, 1))
+    plt.subplots_adjust(top=0.9, bottom=0.2, right=0.6)
+    inset = pt.inset(ax, (1.7, 0.2, 0.3, 0.8))
+
+    fig2, AX = plt.subplots(1, 2, figsize=(4,0.8))
+    plt.subplots_adjust(wspace=0.9, right=0.5)
+    inset2 = pt.inset(AX[1], [2.1, 0.3, 0.5, 0.7])
+    
+    fig3, AX3 = plt.subplots(1,2,figsize=(2.5,1))
+    
+    shifted_angle = SUMMARY[cases[0]]['RESPONSES'][0]['shifted_angle']
+    
+    AX[0].legend(frameon=False, loc=(1,1))
+
+    for i, case in enumerate(cases):
+
+        frac = 100*np.mean([r['frac_responsive'] for r in SUMMARY[case]['RESPONSES']])
+        pt.pie([frac, 100-frac], ax=AX3[i], COLORS=[colors[i], 'lightgrey'])
+        AX3[i].set_title('resp: %.1f%%' % frac, fontsize=7)
+        
+        resp = {}
+        for key in ['resp_c=0.5', 'resp_c=1.0']:
+            resp[key] = []
+        for rSession in SUMMARY[case]['RESPONSES']:
+            # loop over sessions
+            rS05, rS10 = [], []
+            for r05, r10 in zip(rSession['resp_c=0.5'], rSession['resp_c=1.0']):
+                # loop over rois
+                if np.max(r05)<MAX_EVOKED and (np.max(r10)<MAX_EVOKED): # TRESHOLD MAX
+                    rS05.append(list(np.clip(r05, dFoF_inclusion_cond, np.inf))) # + CLIP
+                    rS10.append(list(np.clip(r10, dFoF_inclusion_cond, np.inf))) # + CLIP
+            if average_by=='sessions':
+                for key, rS in zip(['resp_c=0.5', 'resp_c=1.0'], [rS05, rS10]):
+                    resp[key].append(list(np.mean(rS, axis=0)))
+            else:
+                for key, rS in zip(['resp_c=0.5', 'resp_c=1.0'], [rS05, rS10]):
+                    resp[key] += rS
+        for key in ['resp_c=0.5', 'resp_c=1.0']:
+            resp[key] = np.array(resp[key])
+            
+        # NORMALIZATION
+        included = resp['resp_c=0.5'][:,1]>dFoF_inclusion_cond
+        norm_factor = resp['resp_c=0.5'][included,1] # pref. @ contrast = 0.5
+        
+        for key, alpha in zip(['resp_c=0.5', 'resp_c=1.0'], [0.5, 1]):
+            
+            resp[key] = resp[key][included,:]
+            resp[key] = np.clip(resp[key], 0, 8)
+            
+            resp[key] = np.divide(resp[key].T, norm_factor).T
+
+            pt.scatter(shifted_angle+2*i, np.mean(resp[key], axis=0),
+                       sy=stats.sem(resp[key], axis=0), ax=ax, color=colors[i],
+                       ms=ms, lw=0.5, alpha=alpha)
+            
+        #inset.bar([i], [100*(np.mean(resp['resp_c=1.0'],axis=0)[1]-1)], 
+        #          yerr=[100*stats.sem(resp['resp_c=1.0'],axis=0)[1]], color=colors[i])
+        
+        for index in [1,5]:
+            x, y = [0 ,0.5, 1], [0,np.mean(resp['resp_c=0.5'][:, index]), np.mean(resp['resp_c=1.0'][:, index])]
+            sy = [0,stats.sem(resp['resp_c=0.5'][:, index]),stats.sem(resp['resp_c=1.0'][:, index])]
+            AX[i].plot(x, y, '-' if index==1 else '--', color=colors[i], label='pref.' if index==1 else 'orth.')
+            pt.scatter(x, y, sy=sy, ax=AX[i], color=colors[i], ms=ms)
+            
+            rel_increase = (resp['resp_c=1.0'][:,index]-resp['resp_c=0.5'][:,index])/resp['resp_c=0.5'][:,index]
+            inset2.bar([i+3*(index-1)/4], [100*np.mean(rel_increase)],
+                       yerr=[100*stats.sem(rel_increase)], color=colors[i], alpha=1/index**0.3)
+            
+        AX[i].plot([0,0.5], [1,1], 'k:', lw=0.5, color=colors[i])
+        pt.set_plot(AX[i], xlabel='contrast', title=case, 
+                    yticks=[0,1,2],
+                    xticks=[0,0.5,1], ylabel='norm. $\delta$ $\Delta$F/F')
+
+        inset2.annotate(i*'\n'+'\nn=%i %s' % (len(resp[key]), average_by),
+                       (0,0), fontsize=7,
+                       va='top',color=colors[i], xycoords='axes fraction')
+            
+    pt.set_common_ylims(AX)
+    pt.set_plot(inset, xticks=[], ylabel='increase at full contrast\n (% of half contrast resp.)')
+    pt.set_plot(inset2, xticks=[], ylabel='% rel. increase\n ($r_{1}$-$r_{0.5}$)/$r_{0.5}$')
+
+    ylabel=norm+'$\delta$ %s' % SUMMARY['quantity'].replace('dFoF', '$\Delta$F/F')
+    pt.set_plot(ax, xlabel='angle ($^o$) from pref.',
+                ylabel=ylabel,
+                yticks=[0,1,2],
+                xticks=shifted_angle,
+                xticks_labels=['%.0f'%s if (i%4==1) else '' for i,s in enumerate(shifted_angle)])
+
+    
+    return fig, fig2, fig3
+
+SUMMARY = np.load('../data/dFoF-contrast-dep-ff-gratings.npy', allow_pickle=True).item()
+FIGS = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='ROIs', norm='norm. ')
+FIGS[1].savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
+FIGS[2].savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '2.svg'))
+
+# %%
+SUMMARY['WT']['RESPONSES'][0].keys()
+
+# %%
+fig, AX = plt.subplots(1, 2, figsize=(3,1))
+plt.subplots_adjust(wspace=0.9, right=0.8)
+inset = pt.inset(AX[1], [2.1, 0.3, 0.5, 0.7])
+for k, key, c, ax in zip(range(2), ['WT', 'GluN1'], ['k', 'tab:blue'], AX):
+    resp_c05 = np.concatenate([r['resp_c=0.5'] for r in SUMMARY[key]['RESPONSES']])
+    resp_c1 = np.concatenate([r['resp_c=1.0'] for r in SUMMARY[key]['RESPONSES']])
+    for index in [1,5]:
+        x, y = [0 ,0.5, 1], [0,np.mean(resp_c05[:, index]), np.mean(resp_c1[:, index])]
+        sy = [0,stats.sem(resp_c05[:, index]),stats.sem(resp_c1[:, index])]
+        ax.plot(x, y, '-' if index==1 else '--', color=c, label='pref.' if index==1 else 'orth.')
+        pt.scatter(x, y, sy=sy, ax=ax, color=c)
+        if index==1:
+            rel_increase = (np.mean(resp_c1[:,index])-np.mean(resp_c05[:,index]))/np.mean(resp_c05[:,index])
+            inset.bar([k], [np.mean(rel_increase)], color=c, alpha=1/index)
+    pt.set_plot(ax, xlabel='contrast', title=key, xticks=[0,0.5,1], ylabel='$\delta$ $\Delta$F/F')
+pt.set_plot(inset, ylabel='rel. increase\n ($\delta_{1}$-$\delta_{0.5}$)/$\delta_{0.5}$')
+AX[0].legend(frameon=False, loc=(1,1))
+
+# %%
+fig, ax = plt.subplots(1, figsize=(2, 1))
+plt.subplots_adjust(top=0.9, bottom=0.2, right=0.6)
+inset = pt.inset(ax, (1.7, 0.2, 0.3, 0.8))
+
+shifted_angle = SUMMARY[cases[0]]['RESPONSES'][0]['shifted_angle']
+
+
+
+for i, case in enumerate(cases):
+
+    resp = {}
+    for key in ['resp_c=0.5', 'resp_c=1.0']:
+
+        if average_by=='sessions':
+            resp[key] = np.array([np.mean(r[key], axis=0) for r in SUMMARY[case]['RESPONSES']])
+        else:
+            resp[key] = np.concatenate([r[key] for r in SUMMARY[key]['RESPONSES']])
+
+        resp[key] = np.clip(resp[key], 0, 10) # CLIP RESPONSIVE TO POSITIVE VALUES
+
+    norm_factor = np.mean(resp['resp_c=0.5'],axis=0)[1] # pref. @ contrast = 0.5
+
+    for key, alpha in zip(['resp_c=0.5', 'resp_c=1.0'], [0.5, 1]):
+
+        resp[key] /= norm_factor
+
+        pt.scatter(shifted_angle+2*i, np.mean(resp[key], axis=0),
+                   sy=stats.sem(resp[key], axis=0), ax=ax, color=colors[i],
+                   ms=ms, lw=0.5, alpha=alpha)
+
+    #inset.bar([i], [np.mean(resp['resp_c=1.0'],axis=0)[1]], color=colors[i])
+
+    try:
+        if average_by=='sessions':
+            inset.annotate(i*'\n'+'\nN=%i %s (%i ROIs, %i mice)' % (len(resp),
+                                                average_by, np.sum([len(r) for r in SUMMARY[key]['RESPONSES']]),
+                                                len(np.unique(SUMMARY[key]['subjects']))),
+                           (0,0), fontsize=7,
+                           va='top',color=colors[i], xycoords='axes fraction')
+        else:
+            inset.annotate(i*'\n'+'\nn=%i %s (%i sessions, %i mice)' % (len(resp),
+                                                average_by, len(SUMMARY[key]['RESPONSES']),
+                                                                len(np.unique(SUMMARY[key]['subjects']))),
+                           (0,0), fontsize=7,
+                           va='top',color=colors[i], xycoords='axes fraction')
+    except BaseException as be:
+        pass
+
+#pt.set_plot(inset, xticks=[], ylabel='select. index', yticks=[0, 0.5, 1], ylim=[0, 1.09])
+
+ylabel=norm+'$\delta$ %s' % SUMMARY['quantity'].replace('dFoF', '$\Delta$F/F')
+pt.set_plot(ax, xlabel='angle ($^o$) from pref.',
+            ylabel=ylabel,
+            #yticks=[0.4,0.6,0.8,1],
+            xticks=shifted_angle,
+            xticks_labels=['%.0f'%s if (i%4==1) else '' for i,s in enumerate(shifted_angle)])
+
+return fig, ax
+
+SUMMARY = np.load('../data/dFoF-contrast-dep-ff-gratings.npy', allow_pickle=True).item()
+fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='sessions', norm='norm. ')
+
+# %%
+SUMMARY = np.load('../data/dFoF-contrast-dep-ff-gratings.npy', allow_pickle=True).item()
+
+SUMMARY
 
 # %%
