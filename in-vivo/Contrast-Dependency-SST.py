@@ -21,9 +21,10 @@ import matplotlib.pylab as plt
 from scipy import stats
 
 #sys.path.append('./')
-from analysis import compute_tuning_response_per_cells
+from analysis import compute_tuning_response_per_cells, shift_orientation_according_to_pref
 sys.path.append('../physion/src')
 from physion.analysis.read_NWB import Data, scan_folder_for_NWBfiles
+from physion.analysis.process_NWB import EpisodeData
 sys.path.append('../')
 import plot_tools as pt
 
@@ -80,8 +81,92 @@ def init_summary(DATASET):
     return SUMMARY
 
 
+# %%
+SUMMARY = init_summary(DATASET)
+
 # %% [markdown]
 # ## Analysis
+#
+# --> Find the cells responding at half contrast and compute the tuning curves
+
+# %%
+stat_test_props = dict(interval_pre=[-1.5,0],
+                       interval_post=[1,2.5],
+                       test='ttest',
+                       positive=True)
+
+response_significance_threshold = 0.01
+
+def compute_responses(data,
+                      imaging_quantity='dFoF',                                                                                                                                                                                
+                      stat_test_props=stat_test_props,                                                                                                                                                                        
+                      response_significance_threshold = response_significance_threshold,                                                                                                                                      
+                      contrast=1,                                                                                                                                                                                             
+                      protocol_name='ff-gratings-8orientation-2contrasts-10repeats',                                                                                                                                          
+                      verbose=True):                                                                                                                                                                                          
+                                                                                                                                                                                                                                              
+    RESPONSES = {'roi':[], 'resp_c=0.5':[], 'resp_c=1.0':[]}                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                              
+    protocol_id = data.get_protocol_id(protocol_name=protocol_name)                                                                                                                                                                           
+                                                                                                                                                                                                                                              
+    EPISODES = EpisodeData(data,                                                                                                                                                                                                              
+                           quantities=[imaging_quantity],                                                                                                                                                                                     
+                           protocol_id=protocol_id,                                                                                                                                                                                           
+                           verbose=verbose)                                                                                                                                                                                                   
+                                                                                                                                                                                                                                              
+    shifted_angle = EPISODES.varied_parameters['angle']-\
+                            EPISODES.varied_parameters['angle'][1]                                                                                                                                                                            
+    
+    RESPONSES['shifted_angle'] = shifted_angle
+                                                                                                                                                                                                                                              
+    for roi in np.arange(data.nROIs):                                                                                                                                                                                                         
+        
+        cell_resp = EPISODES.compute_summary_data(stat_test_props,                                                                                                                                                                            
+                        response_significance_threshold=response_significance_threshold,                                                                                                                                                      
+                        response_args=dict(quantity=imaging_quantity, roiIndex=roi))                                                                                                                                                          
+                                                                                                                                                                                                                                              
+        half_contrast_cond = (cell_resp['contrast']==0.5)
+        full_contrast_cond = (cell_resp['contrast']==1.0)
+        # if significant in at least one orientation at half contrast
+        if np.sum(cell_resp['significant']):
+
+            RESPONSES['roi'].append(roi)
+            ipref = np.argmax(cell_resp['value'])
+            prefered_angle = cell_resp['angle'][ipref]
+
+            RESPONSES['resp_c=0.5'].append(np.zeros(len(shifted_angle)))
+            RESPONSES['resp_c=1.0'].append(np.zeros(len(shifted_angle)))
+
+            for angle, value05 in zip(cell_resp['angle'][half_contrast_cond],
+                                      cell_resp['value'][half_contrast_cond]):
+                new_angle = shift_orientation_according_to_pref(angle,
+                                                                pref_angle=prefered_angle,
+                                                                start_angle=-22.5,
+                                                                angle_range=180)
+                iangle = np.flatnonzero(shifted_angle==new_angle)[0]
+                RESPONSES['resp_c=0.5'][-1][iangle] = value05
+                
+            for angle, value10 in zip(cell_resp['angle'][full_contrast_cond],
+                                      cell_resp['value'][full_contrast_cond]):
+                new_angle = shift_orientation_according_to_pref(angle,
+                                                                pref_angle=prefered_angle,
+                                                                start_angle=-22.5,
+                                                                angle_range=180)
+                iangle = np.flatnonzero(shifted_angle==new_angle)[0]
+                RESPONSES['resp_c=1.0'][-1][iangle] = value10
+                
+    RESPONSES['frac_responsive'] = len(RESPONSES['roi'])/data.nROIs
+    return RESPONSES
+
+RESPONSES = compute_responses(Data(SUMMARY['WT']['FILES'][0], verbose=False), verbose=False)
+
+# %%
+fig, ax = plt.subplots(1)
+pt.plot(RESPONSES['shifted_angle'], np.mean(RESPONSES['resp_c=1.0'], axis=0),
+        sy=stats.sem(RESPONSES['resp_c=1.0'], axis=0), ax=ax, color='k')
+pt.plot(RESPONSES['shifted_angle'], np.mean(RESPONSES['resp_c=0.5'], axis=0),
+        sy=stats.sem(RESPONSES['resp_c=0.5'], axis=0), ax=ax, color='dimgrey')
+
 
 # %%
 # -------------------------------------------------- #
@@ -128,16 +213,17 @@ def compute_summary_responses(DATASET,
     
     for key in ['WT', 'GluN1', 'GluN3']:
 
-        SUMMARY[key]['RESPONSES'], SUMMARY[key]['OSI'], SUMMARY[key]['FRAC_RESP'] = [], [], []
-        SUMMARY[key+'_c=0.5']['RESPONSES'], SUMMARY[key+'_c=0.5']['OSI'], SUMMARY[key+'_c=0.5']['FRAC_RESP'] = [], [], []
+        SUMMARY[key]['RESPONSES'] = []
 
         for f in SUMMARY[key]['FILES'][:Nmax]:
 
             data = Data(f, verbose=False)
-            
+
+                
             print('analyzing "%s" [...] ' % f)
             data = Data(f, verbose=False)
 
+          
             if quantity=='dFoF':
                 data.build_dFoF(roi_to_neuropil_fluo_inclusion_factor=\
                                         roi_to_neuropil_fluo_inclusion_factor,
@@ -154,41 +240,15 @@ def compute_summary_responses(DATASET,
             else:
                 print('quantity not recognized !!')
             
-            protocol = 'ff-gratings-8orientation-2contrasts-15repeats' if\
-                        ('ff-gratings-8orientation-2contrasts-15repeats' in data.protocols) else\
-                        'ff-gratings-8orientation-2contrasts-10repeats'
-
-            # at full contrast
-            responses, frac_resp, shifted_angle = compute_tuning_response_per_cells(data,
-                                                                                    imaging_quantity=quantity,
-                                                                                    contrast=1,
-                                                                                    protocol_name=protocol,
-                                                                                    stat_test_props=stat_test_props,
-                                                                                    response_significance_threshold=response_significance_threshold,
-                                                                                    verbose=False)
+            SUMMARY[key]['RESPONSES'].append(compute_responses(data))
             
-            SUMMARY[key]['RESPONSES'].append(responses)
-            SUMMARY[key]['OSI'].append([orientation_selectivity_index(r[1], r[5]) for r in responses])
-            SUMMARY[key]['FRAC_RESP'].append(frac_resp)
-
-            # for those two genotypes (not run for the GluN3-KO), we add:
-            if key in ['WT', 'GluN1']:
-                # at half contrast
-                responses, frac_resp, shifted_angle = compute_tuning_response_per_cells(data,
-                                                                                        contrast=0.5,
-                                                                                        protocol_name=protocol,
-                                                                                        stat_test_props=stat_test_props,
-                                                                                        response_significance_threshold=response_significance_threshold,
-                                                                                        verbose=False)
-                
-                SUMMARY[key+'_c=0.5']['RESPONSES'].append(responses)
-                SUMMARY[key+'_c=0.5']['OSI'].append([orientation_selectivity_index(r[1], r[5]) for r in responses])
-                SUMMARY[key+'_c=0.5']['FRAC_RESP'].append(frac_resp)
-                
-    SUMMARY['shifted_angle'] = shifted_angle
-    
     return SUMMARY
 
+SUMMARY = compute_summary_responses(DATASET, quantity='dFoF', verbose=False)
+
+# %%
+quantity = 'dFoF'
+np.save('../data/%s-contrast-dep-ff-gratings.npy' % quantity, SUMMARY)
 
 # %% [markdown]
 # ## Varying the preprocessing parameters
@@ -309,8 +369,8 @@ fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='ROIs
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '3.svg'))
 fig, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='sessions', norm='norm. ',
                                    colors=['k', 'tab:grey'])
-ax.set_title('WT: full vs half contrast')
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '4.svg'))
+ax.set_title('WT: full vs half contrast');
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '4.svg'))
 
 # %%
 fig, AX = plt.subplots(1, 2, figsize=(3,1))
@@ -330,6 +390,14 @@ for k, key, c, ax in zip(range(2), ['WT', 'GluN1'], ['k', 'tab:blue'], AX):
     pt.set_plot(ax, xlabel='contrast', title=key, xticks=[0,0.5,1], ylabel='$\delta$ $\Delta$F/F')
 pt.set_plot(inset, ylabel='rel. increase\n ($\delta_{1}$-$\delta_{0.5}$)/$\delta_{0.5}$')
 AX[0].legend(frameon=False, loc=(1,1))
+
+# %%
+SUMMARY = np.load('../data/%s-ff-gratings.npy' % quantity, allow_pickle=True).item()
+for quantity in ['dFoF']:
+    _, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT_c=0.5'], average_by='ROIs', norm='norm. ')
+    _, ax = generate_comparison_figs(SUMMARY, ['GluN1', 'GluN1_c=0.5'], average_by='ROIs', norm='norm. ')
+    #_, ax = generate_comparison_figs(SUMMARY, ['WT_c=0.5', 'GluN1_c=0.5'], average_by='ROIs', norm='norm. ')
+    #_, ax = generate_comparison_figs(SUMMARY, ['WT', 'GluN1'], average_by='ROIs', norm='norm. ')
 
 # %%
 for quantity in ['rawFluo', 'neuropil', 'dFoF']:
@@ -577,136 +645,5 @@ fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
 
 # %%
 show_CaImaging_FOV(data, key='max_proj', NL=3)
-
-# %%
-import sys, os
-import numpy as np
-import matplotlib.pylab as plt
-sys.path.append('../physion/src')
-from physion.analysis.read_NWB import Data, scan_folder_for_NWBfiles
-from physion.analysis.process_NWB import EpisodeData
-from physion.utils import plot_tools as pt
-from physion.dataviz.episodes.trial_average import plot_trial_average
-sys.path.append('../')
-import plot_tools as pt
-
-import warnings
-warnings.filterwarnings("ignore") # disable the UserWarning from pynwb (arrays are not well oriented)
-
-def selectivity_index(angles, resp):
-    """
-    computes the selectivity index: (Pref-Orth)/(Pref+Orth)
-    clipped in [0,1]
-    """
-    imax = np.argmax(resp)
-    iop = np.argmin(((angles[imax]+90)%(180)-angles)**2)
-    if (resp[imax]>0):
-        return min([1,max([0,(resp[imax]-resp[iop])/(resp[imax]+resp[iop])])])
-    else:
-        return 0
-
-def cell_tuning_example_fig(filename,
-                            contrasts=[1.0],
-                            colors=['darkgrey', 'dimgrey'],
-                            stat_test_props = dict(interval_pre=[-1,0], 
-                                                   interval_post=[1,2],
-                                                   test='ttest',
-                                                   positive=True),
-                            response_significance_threshold = 0.01,
-                            Nsamples = 10, # how many cells we show
-                            seed=10):
-    
-    
-    data = Data(filename)
-    
-    EPISODES = EpisodeData(data,
-                           quantities=['dFoF'],
-                           protocol_id=np.flatnonzero(['8orientation' in p for p in data.protocols]),
-                           with_visual_stim=True,
-                           verbose=True)
-    
-    fig, AX = pt.plt.subplots(Nsamples, len(EPISODES.varied_parameters['angle']), 
-                          figsize=(7,7*Nsamples/10))
-    plt.subplots_adjust(right=0.75, left=0.1, top=0.97, bottom=0.05, wspace=0.1, hspace=0.8)
-    
-    for Ax in AX:
-        for ax in Ax:
-            ax.axis('off')
-
-    np.random.seed(seed)
-    for i, r in enumerate(np.random.choice(np.arange(data.vNrois), 
-                                           min([Nsamples, data.vNrois]), replace=False)):
-
-        # SHOW trial-average
-        plot_trial_average(EPISODES,
-                           condition=(EPISODES.contrast==contrasts[0]) if len(contrasts)==1 else None,
-                           column_key='angle',
-                           color_key='contrast' if len(contrasts)>1 else '',
-                           color=colors[0] if len(contrasts)==1 else colors,
-                           quantity='dFoF',
-                           ybar=1., ybarlabel='1dF/F',
-                           xbar=1., xbarlabel='1s',
-                           roiIndex=r,
-                           with_stat_test=(len(contrasts)==1),
-                           stat_test_props=stat_test_props,
-                           with_screen_inset=True,
-                           with_std=(len(contrasts)==1),
-                           AX=[AX[i]], no_set=False)
-        AX[i][0].annotate('roi #%i  ' % (r+1), (0,0), ha='right', xycoords='axes fraction')
-
-        # SHOW summary angle dependence
-        inset = pt.inset(AX[i][-1], (2.2, 0.2, 1.2, 0.8))
-
-        for contrast, color in zip(contrasts, colors):
-            
-            angles, y, sy, responsive_angles = [], [], [], []
-            responsive = False
-
-            for a, angle in enumerate(EPISODES.varied_parameters['angle']):
-
-                stats = EPISODES.stat_test_for_evoked_responses(episode_cond=\
-                                                EPISODES.find_episode_cond(key=['angle', 'contrast'],
-                                                                           value=[angle, contrast]),
-                                                                response_args=dict(quantity='dFoF', roiIndex=r),
-                                                                **stat_test_props)
-
-                angles.append(angle)
-                y.append(np.mean(stats.y-stats.x))    # means "post-pre"
-                sy.append(np.std(stats.y-stats.x))    # std "post-pre"
-
-                if stats.significant(threshold=response_significance_threshold):
-                    responsive = True
-                    responsive_angles.append(angle)
-
-            pt.plot(angles, np.array(y), sy=np.array(sy) if len(contrasts)==1 else None, ax=inset, no_set=True)
-        inset.plot(angles, 0*np.array(angles), 'k:', lw=0.5)
-        inset.set_ylabel('$\delta$ $\Delta$F/F     ', fontsize=7)
-        inset.set_xticks(angles)
-        #inset.set_xticklabels(['%i'%a if (i%2==0) else '' for i, a in enumerate(angles)], fontsize=7)
-        inset.set_xticklabels(['0','','45','', ' 90', '', '  135', ''], fontsize=7)
-        if i==(Nsamples-1):
-            inset.set_xlabel('angle ($^{o}$)', fontsize=7)
-
-        SI = selectivity_index(angles, y)
-        inset.annotate('SI=%.2f ' % SI, (1, 1), ha='right', style='italic', fontsize=6,
-                       color=('k' if responsive else 'lightgray'), xycoords='axes fraction')
-        
-    return fig
-
-fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][2], seed=5,
-                              contrasts=[0.5,1])
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '2.svg'))
-
-# %%
-fig = cell_tuning_example_fig(SUMMARY['WT']['FILES'][0], seed=5, Nsamples=10,
-                              contrasts=[0.5,1])
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
-
-# %%
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
-
-# %%
-np.random.seed(4)
-np.random.choice(range(10), 5)
 
 # %%
