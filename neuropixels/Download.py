@@ -50,5 +50,3 @@ if DOWNLOAD_COMPLETE_DATASET:
             except OSError:
                 shutil.rmtree(directory)
                 print(" Truncated spikes file, re-downloading")
-
-# %%
