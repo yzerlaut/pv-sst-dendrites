@@ -171,3 +171,42 @@ results = get_spike_counts(Optotagging['PV_sessions'][index],
                            Optotagging['PV_positive_units'][index])
 fig = spectrum_fig(results, pos_color='tab:red')
 
+
+# %% [markdown]
+# # Wavelet-Based analysis: spike-triggered wavelet envelope
+
+# %%
+from wavelet_transform import my_cwt
+
+# %%
+def wavelet_fig(results,
+                freqs = np.logspace(-1, 2, 30)
+                pos_color = 'tab:red'):
+
+    print('wavelet-transform [...]')
+    coefs = my_cwt(results['negative_rate'], freqs, results['dt'])
+    envelope = np.abs(coefs)
+
+    fig, ax = plt.subplots(1, figsize=(3,2))
+
+    ax.plot(freqs, np.mean(envelope, axis=1),
+            color='tab:grey', label='average')
+
+    print('spike-triggered analysis[...]')
+    all_spikes = np.concatenate(results['positive_spikes'])
+    spikeTrig_env = np.zeros(len(freqs))
+    for s in all_spikes:
+        i = np.argmin((results['t']-s)**2)
+        spikeTrig_env += envelope[:,i]
+    spikeTrig_env /= len(all_spikes)
+
+    print(' done ! ')
+    ax.plot(freqs, spikeTrig_env,
+            color=pos_color, label='spike triggered')
+    ax.legend()
+    pt.set_plot(ax, xscale='log', yscale='log', xlabel='freq. (Hz)', 
+            ylabel='rate envelope (Hz)', yticks=[0.1, 1])
+
+
+
+
