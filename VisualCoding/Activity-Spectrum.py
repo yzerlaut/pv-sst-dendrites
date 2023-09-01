@@ -169,5 +169,5 @@ fig = spectrum_fig(results, pos_color='tab:orange')
 index = 4 
 results = get_spike_counts(Optotagging['PV_sessions'][index],
                            Optotagging['PV_positive_units'][index])
-fig = spectrum_fig(results, pos_color='tab:orange')
+fig = spectrum_fig(results, pos_color='tab:red')
 
