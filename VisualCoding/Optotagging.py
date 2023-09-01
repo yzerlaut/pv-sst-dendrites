@@ -46,12 +46,12 @@ sessions.full_genotype.value_counts()
 
 # %%
 PV_sessions = sessions[(sessions.full_genotype.str.find('Pvalb-IRES-Cre') > -1) & \
-                        (sessions.session_type == 'brain_observatory_1.1') & \
+                        #(sessions.session_type == 'brain_observatory_1.1') & \
                         #(sessions.session_type == 'functional_connectivity') & \
                         (['VISp' in acronyms for acronyms in sessions.ecephys_structure_acronyms])]
 
 SST_sessions = sessions[(sessions.full_genotype.str.find('Sst-IRES-Cre') > -1) & \
-                        (sessions.session_type == 'brain_observatory_1.1') & \
+                        #(sessions.session_type == 'brain_observatory_1.1') & \
                         #(sessions.session_type == 'functional_connectivity') & \
                         (['VISp' in acronyms for acronyms in sessions.ecephys_structure_acronyms])]
 
@@ -59,23 +59,19 @@ SST_sessions = sessions[(sessions.full_genotype.str.find('Sst-IRES-Cre') > -1) &
 # # 2) Identifying positive units
 
 # %%
-session = cache.get_session_data(PV_sessions.index.values[0])
+session = cache.get_session_data(PV_sessions.index.values[7])
 
 # %%
 session.optogenetic_stimulation_epochs
 
 # %%
-columns = ['stimulus_name', 'duration','level']
-session.optogenetic_stimulation_epochs.drop_duplicates(columns).sort_values(by=columns).drop(columns=['start_time','stop_time'])
-
-# %%
-trials = session.optogenetic_stimulation_epochs[session.optogenetic_stimulation_epochs.stimulus_name=='fast_pulses']
+trials = session.optogenetic_stimulation_epochs[session.optogenetic_stimulation_epochs.stimulus_name=='pulse']
 trials = session.optogenetic_stimulation_epochs[(session.optogenetic_stimulation_epochs.duration > 0.009) & \
                                                 (session.optogenetic_stimulation_epochs.duration < 0.02)]
 units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
 
 def optotagging_spike_counts(session, trials, units,
-                             time_resolution = 1e-3):
+                             time_resolution = 5e-4):
     
     duration = np.mean(trials.duration.values)
     bin_edges = np.arange(-duration, 2*duration, time_resolution)
@@ -118,30 +114,30 @@ def plot_optotagging_response(spikes_matrix,
     
     Rates = spikes_matrix.mean(dim='trial_id').T / time_resolution
     plt.imshow(Rates, 
-               extent=[np.min(spikes_matrix.time_relative_to_stimulus_onset.values),
-                       np.max(spikes_matrix.time_relative_to_stimulus_onset.values),
+               extent=[1e3*np.min(spikes_matrix.time_relative_to_stimulus_onset.values),
+                       1e3*np.max(spikes_matrix.time_relative_to_stimulus_onset.values),
                        0, spikes_matrix.shape[2]],
                aspect='auto', vmin=0, vmax=np.min([100, 1.2*np.max(Rates)]))
 
     if duration is not None:
         for bound in [0, duration]:
-            plt.plot([bound, bound],[0, spikes_matrix.shape[2]], ':', color='white', linewidth=1.0)
-        plt.xticks([0, duration])
+            plt.plot([1e3*bound, 1e3*bound],[0, spikes_matrix.shape[2]], ':', color='white', linewidth=1.0)
+        plt.xticks([0, 1e3*duration])
         
-    plt.xlabel('time (s)')
+    plt.xlabel('time (ms)')
     plt.ylabel('Unit #')
 
     cb = plt.colorbar(fraction=0.046, pad=0.04)
     cb.set_label('Mean firing rate (Hz)\n(n=%i trials)' % len(spikes_matrix.trial_id.values))
     
-plot_optotagging_response(spikes_matrix, duration=0.01)
+plot_optotagging_response(spikes_matrix)
 
 
 # %%
 def analyze_optotagging_responses(session, trials, units,
                                   spikes_matrix=None,
-                                  inclusion_evoked_factor=4.,
-                                  inclusion_min_evoked=10.,
+                                  inclusion_evoked_factor=3.,
+                                  inclusion_min_evoked=20.,
                                   label='',
                                   with_fig=False):
     
@@ -193,18 +189,16 @@ def analyze_optotagging_responses(session, trials, units,
         
     return cre_pos_units, fig
     
-
-    
-_ = analyze_optotagging_responses(session, trials, units, spikes_matrix,
+_ = analyze_optotagging_responses(session, trials, units,# spikes_matrix,
                                   with_fig=True)
 
 # %%
 trials = session.optogenetic_stimulation_epochs[\
                 (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
                 (session.optogenetic_stimulation_epochs.duration > 0.009) &
-                (session.optogenetic_stimulation_epochs.duration < 0.02) & 
-                (session.optogenetic_stimulation_epochs.level>=2)]
-_ = analyze_optotagging_responses(session, trials, units, spikes_matrix,
+                (session.optogenetic_stimulation_epochs.duration < 0.02)]
+
+_ = analyze_optotagging_responses(session, trials, units, #spikes_matrix,
                                   label='10ms pulse', with_fig=True)
 
 # %%
@@ -257,8 +251,7 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         trials = session.optogenetic_stimulation_epochs[\
                         (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
                         (session.optogenetic_stimulation_epochs.duration > 0.009) &
-                        (session.optogenetic_stimulation_epochs.duration < 0.02) & 
-                        (session.optogenetic_stimulation_epochs.level>=2)]
+                        (session.optogenetic_stimulation_epochs.duration < 0.02)]
 
         # final units
         positive_units, fig = analyze_optotagging_responses(session, trials, units,
@@ -267,10 +260,12 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         fig.suptitle('%s : #%i\n' % (Key, iSession+1))
         fig.savefig(os.path.join('..', 'figures', 'VisualCoding', 
                     'Optotagging', Key+'-%i.png' % (iSession+1)))
-
+        plt.close(fig)
+        
         Optotagging[Key].append(Sessions.index.values[iSession])
         Optotagging[Key.replace('sessions', 'positive_units')].append(positive_units)
 
+        
 np.save(os.path.join('..', 'data', 'Optotagging-Results.npy'), Optotagging)
 
 # %%

@@ -46,58 +46,19 @@ Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
 
 # %% [markdown]
-# # 2) Analyze using the pre-computed visual response metrics
+# # 2) Compute the
 
 # %%
-analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('brain_observatory_1.1')
+analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('functional_connectivity')
 
 # %%
-from scipy.stats import mannwhitneyu
+session_table = cache.get_session_table()
+sessions_cond = (session_table['session_type']=='functional_connectivity')
 
-fig, ax = plt.subplots(1)
-inset = pt.inset(ax, [1.4, -0.05, 0.3, 0.6])
+sessionID = session_table.index.values[0]
 
-# choose attribute and set label
-attr, label = 'g_osi_sg', 'OSI'
+session = cache.get_session_data(sessionID)
 
-RESP = {'Others':[]}
-for i, Key in enumerate(['PV', 'SST']):
-    RESP[Key] = []
-    positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-    for unit in positive_IDs:
-        if len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0:
-            value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
-            if np.isfinite(value):
-                RESP[Key].append(value)
-    for unit in analysis_metrics[\
-                    analysis_metrics.ecephys_structure_acronym.isin(['VISp'])].index.values:
-        if (unit not in positive_IDs) and (len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0):
-            value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
-            if np.isfinite(value):
-                RESP['Others'].append(value)
-                
-
-COLORS=['lightgrey', 'tab:red', 'tab:orange']
-for i, Key in enumerate(['Others', 'PV', 'SST']):
-    pt.annotate(ax, i*'\n'+'n=%i units' % len(RESP[Key]), (1,1), color=COLORS[i], ha='right', va='top')
-    ax.hist(RESP[Key], bins=np.linspace(0, 1, 30), color=COLORS[i],
-             label=Key.replace('_sessions', '+ units'), alpha=1 if i==0 else 0.6, density=True)
-    pt.violin(RESP[Key], X=[i], COLORS=[COLORS[i]], ax=inset)
-    
-inset.set_xticks([])
-inset.set_yticks([0, 0.5, 1])
-inset.set_ylabel(label)
-inset.set_title('PV vs SST, p=%.1e' % mannwhitneyu(RESP['PV'], RESP['SST']).pvalue)
-ax.set_xlabel(label)
-ax.set_yticks([])
-ax.set_ylabel('density')
-ax.legend(loc=(1.1, 0.8))
-
-# %% [markdown]
-# # 3) Recover the Original Orientation-Dependent PSTH
-
-# %%
-analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('brain_observatory_1.1')
 # %%
 def compute_orientation_spike_resp(unit, analysis_metrics,
                                    time_resolution = 1e-3,
