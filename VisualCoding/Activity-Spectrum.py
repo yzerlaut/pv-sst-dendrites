@@ -26,6 +26,8 @@ import sys
 sys.path.append('..')
 import plot_tools as pt
 # pt.set_style('dark')
+sys.path.append('../src')
+import fourier_for_real as fourier
 import matplotlib.pyplot as plt
 
 from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
@@ -49,147 +51,123 @@ Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
 # # 2) Compute the
 
 # %%
-analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('functional_connectivity')
+def get_spike_counts(sessionID, positive_units,
+                     structure='VISp',
+                     dt=5e-3):
+    session = cache.get_session_data(sessionID)
+    unit_metrics = cache.get_unit_analysis_metrics_for_session(sessionID)
+    # time interval
+    stims = session.get_stimulus_table()
+    tstart= stims[stims.index==0].start_time.values[0]
+    tstop = stims[stims.index==(len(stims)-1)].stop_time.values[0]
 
-# %%
-session_table = cache.get_session_table()
-sessions_cond = (session_table['session_type']=='functional_connectivity')
+    t_binned = tstart+np.arange(int((tstop-tstart)/dt))*dt
+    positive_units_rate, negative_units_rate = 0*t_binned, 0*t_binned
 
-sessionID = session_table.index.values[0]
-
-session = cache.get_session_data(sessionID)
-
-# %%
-def compute_orientation_spike_resp(unit, analysis_metrics,
-                                   time_resolution = 1e-3,
-                                   t_pre = 50e-3, t_post = 50e-3):
-    """
-    orientation response of a given unit
-    at its preferred phase and preferred spatial frequency !
-    """
-    # unit condition in analysis_metrics
-    unit_cond = analysis_metrics.index.values==unit
-    # get the session for that unit
-    session_id = analysis_metrics[unit_cond].ecephys_session_id.values[0]
-    session = cache.get_session_data(session_id)
-    stim_table = session.get_stimulus_table()
-
-    # get the spikes of that unit
-    spike_times = session.spike_times[unit]
-
-    # get the stimulus information
-    stim_table = session.get_stimulus_table()
-    # pick static gratings at preferred freq and preferred phase !
-    print('preferred phase:', analysis_metrics[unit_cond].pref_phase_sg.values[0])
-    print('preferred spatial freq:', analysis_metrics[unit_cond].pref_sf_sg.values[0])
-    static_gratings = (stim_table.stimulus_name=='static_gratings') &\
-                    (stim_table.orientation!='null') & \
-                    (stim_table.spatial_frequency.values.astype('str')==str(analysis_metrics[unit_cond].pref_sf_sg.values[0])) &\
-                    (stim_table.phase.astype('str')==str(analysis_metrics[unit_cond].pref_phase_sg.values[0]))
-    
-    # build the bins for the psth
-    duration = np.mean(stim_table[static_gratings].duration) # find stim duration
-    bin_edges = np.arange(0-t_pre, duration+t_post, time_resolution)
-    time_resolution = np.mean(np.diff(bin_edges))
-
-    spike_matrix = np.zeros( (np.sum(static_gratings),
-                              len(bin_edges)) )
-
-    for trial_idx, trial_start in enumerate(stim_table[static_gratings].start_time.values):
-
-        in_range = (spike_times > (trial_start + bin_edges[0])) * \
-                   (spike_times < (trial_start + bin_edges[-1]))
-
-        binned_times = ((spike_times[in_range] - (trial_start + bin_edges[0])) / time_resolution).astype('int')
-        spike_matrix[trial_idx, binned_times] = 1
-
-    return xr.DataArray(
-        name='spike_counts',
-        data=spike_matrix,
-        coords={
-            'trial_id': stim_table[static_gratings].index.values,
-            'time_relative_to_stimulus_onset': bin_edges
-        },
-        dims=['trial_id', 'time_relative_to_stimulus_onset']
-    ), stim_table.orientation[static_gratings].values.astype('float')
+    # fetch all spike times (need to discard invalid times here)
+    spike_times = session.spike_times
 
 
-Key = 'PV'
-positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-i = np.argmax(OSI[Key])
-spikes_matrix, orientations = \
-        compute_orientation_spike_resp(positive_IDs[i], analysis_metrics)
+    results = {'dt':dt, 'positive_spikes':[], 'negative_spikes':[]}
+
+    structure_cond = [structure in x for x in unit_metrics.ecephys_structure_acronym.values]
+    nPos, nNeg = 0., 0.
+    for unitID in unit_metrics.index[structure_cond]:
+        if unitID in positive_units:
+            positive_units_rate[1:] += np.histogram(spike_times[unitID], bins=t_binned)[0]
+            nPos += 1.
+            results['positive_spikes'].append(spike_times[unitID])
+        else:
+            negative_units_rate[1:] += np.histogram(spike_times[unitID], bins=t_binned)[0]
+            nNeg += 1.
+            results['negative_spikes'].append(spike_times[unitID])
+
+    results.update({'t':t_binned,
+                   'positive_rate':positive_units_rate/nPos/dt,
+                   'negative_rate':negative_units_rate/nNeg/dt})
+
+    return results
+
+index = 4 
+results = get_spike_counts(Optotagging['PV_sessions'][index],
+                           Optotagging['PV_positive_units'][index])
 
 # %%
 
-def show_single_unit_response(spikes_matrix, orientations,
-                              smoothing = 10, # bins (i.e. *time_resolution),
-                              color='k', ms=1):
-    
-    time_resolution = np.mean(np.diff(spikes_matrix.time_relative_to_stimulus_onset))
+def spectrum_fig(results,
+                 tlim=[50, 55],
+                 freq_range = [0.05, 50],
+                 rate_smoothing=50e-3,
+                 pos_color='tab:red'):
 
     fig = plt.figure(figsize=(6,2))
-    plt.subplots_adjust(left=0.1, top=0.8, right=0.95)
-    AX1, AX2 = [], []
+    plt.subplots_adjust(hspace=0.1, wspace=1.2, bottom=0.2)
 
-    for o, ori in enumerate(np.unique(orientations)):
-        ax1 = plt.subplot2grid((5, len(np.unique(orientations))), (0, o), rowspan=3)
-        ax2 = plt.subplot2grid((5, len(np.unique(orientations))), (3, o), rowspan=2)
+    # raw data - spikes
+    ax = plt.subplot2grid((2,5), (0,0), colspan=3)
+    n=0
+    for spikes in results['positive_spikes']:
+        cond = (spikes>tlim[0]) & (spikes<tlim[1])
+        ax.scatter(spikes[cond], n+np.zeros(np.sum(cond)), color=pos_color, s=0.5)
+        n+=1
+    for spikes in results['negative_spikes']:
+        cond = (spikes>tlim[0]) & (spikes<tlim[1])
+        ax.scatter(spikes[cond], n+np.zeros(np.sum(cond)), color='tab:grey', s=0.5)
+        n+=1
 
-        ax1.set_title('$\\theta$=%.1f$^o$' % ori)
-        cond = (orientations==ori)
-        for t, trial in enumerate(np.arange(len(orientations))[cond]):
-            spike_cond = spikes_matrix[trial,:]==1
-            ax1.plot(spikes_matrix.time_relative_to_stimulus_onset.values[spike_cond],
-                    spikes_matrix[trial,:][spike_cond]+t, '.', ms=ms, color=color)
-        ax2.bar(spikes_matrix.time_relative_to_stimulus_onset.values,
-                 gaussian_filter1d(spikes_matrix[cond,:].mean(axis=0) / time_resolution, smoothing), 
-                 width=time_resolution, color=color)
-        AX1.append(ax1)
-        AX2.append(ax2)
-        if ax1==AX1[0]:
-            ax1.set_ylabel('trial #')
-            ax2.set_ylabel('rate (Hz)')
-            ax2.set_xlabel(80*' '+'time (s)')
-        else:
-            ax1.set_yticklabels([])
-            ax2.set_yticklabels([])
-        ax1.set_xticklabels([])
-    pt.set_common_xlims(AX1+AX2)
-    for AX in [AX1, AX2]:
-        pt.set_common_ylims(AX)
-        for ax in AX:
-            ax.set_xticks([0, 0.25])
-        
+    pt.set_plot(ax, [], xlim=tlim, ylabel='units')
+
+
+    # raw data - smoothed rates
+    ax = plt.subplot2grid((2,5), (1,0), colspan=3)
+    smoothing = int(rate_smoothing/results['dt'])
+    cond = (results['t']>tlim[0]) & (results['t']<tlim[1])
+    ax.plot(results['t'][cond], gaussian_filter1d(results['negative_rate'][cond], smoothing), color='tab:grey')
+    ax.plot(results['t'][cond], gaussian_filter1d(results['positive_rate'][cond], smoothing), color=pos_color)
+    pt.set_plot(ax, ['left'], xlim=tlim, ylabel='rate (Hz)')
+    pt.draw_bar_scales(ax, Xbar=0.5, Xbar_label='0.5s', Ybar=1e-12)
+
+    # spectrum
+    ax = plt.subplot2grid((2,5), (0,3), rowspan=2, colspan=2)
+
+    negSpectrum = np.abs(fourier.FT(results['negative_rate'], len(results['t']), results['dt']))
+    posSpectrum = np.abs(fourier.FT(results['positive_rate'], len(results['t']), results['dt']))
+    freq = fourier.time_to_freq(len(results['t']), results['dt'])
+
+    smoothing = 50
+
+    cond = (freq>freq_range[0]) & (freq<freq_range[1])
+    negSpectrum_clean = gaussian_filter1d(negSpectrum[cond], smoothing)
+    ax.plot(freq[cond], negSpectrum_clean/negSpectrum_clean[0], color='tab:grey')
+    posSpectrum_clean = gaussian_filter1d(posSpectrum[cond], smoothing)
+    ax.plot(freq[cond], posSpectrum_clean/posSpectrum_clean[0], color=pos_color)
+
+    pt.set_plot(ax, xscale='log', yscale='log', xlabel='freq. (Hz)', 
+            ylabel='norm. pow.', yticks=[0.1, 1])
+
     return fig
 
-fig = show_single_unit_response(spikes_matrix, orientations, ms=0.5, color='tab:red')
-fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], OSI[Key][i]), color='k')
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.png'))
+
+fig = spectrum_fig(results)
+
 
 # %%
-# loop over all units
+index = 11 
+results = get_spike_counts(Optotagging['SST_sessions'][index],
+                           Optotagging['SST_positive_units'][index])
+fig = spectrum_fig(results, pos_color='tab:orange')
 
-for Key, color in zip(['PV', 'SST'], ['tab:red', 'tab:orange']):
-    positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-    for k, i in enumerate(np.argsort(OSI[Key])[::-1]):
-        fig = show_single_unit_response(\
-                *compute_orientation_spike_resp(positive_IDs[i], analysis_metrics),
-                ms=0.5, color=color)
-        fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], OSI[Key][i]), color='k')
-        fig.savefig(os.path.join('..', 'figures', 'VisualCoding', Key+'-resp', '%i.png' % (k+1)))
-        plt.close(fig)
 
-# %%
-for k, i in enumerate(np.concatenate([\
-                            np.argsort(analysis_metrics.g_osi_sg.values)[::-1][:10],
-                            np.argsort(analysis_metrics.g_osi_sg.values)[::-1][::200][1:]])):
-    unit = analysis_metrics.index.values[i]
-    fig = show_single_unit_response(\
-            *compute_orientation_spike_resp(unit, analysis_metrics),
-            ms=1, color='k')
-    fig.suptitle('unit %i, OSI=%.2f \n \n' % (unit, analysis_metrics.g_osi_sg.values[i]), color='k')
-    fig.savefig(os.path.join('..', 'figures', 'VisualCoding', 'Others-resp', '%i.png' % (k+1)))
-    plt.close(fig)
+# %%                                       
+index = 10  
+results = get_spike_counts(Optotagging['SST_sessions'][index],
+                           Optotagging['SST_positive_units'][index])
+fig = spectrum_fig(results, pos_color='tab:orange')
 
-# %%
+
+# %%                                       
+index = 4 
+results = get_spike_counts(Optotagging['PV_sessions'][index],
+                           Optotagging['PV_positive_units'][index])
+fig = spectrum_fig(results, pos_color='tab:orange')
+

@@ -24,6 +24,8 @@ import xarray as xr
 import sys
 sys.path.append('..')
 import plot_tools as pt
+sys.path.append('../src')
+import fourier_for_real as fourier
 # pt.set_style('dark')
 import matplotlib.pyplot as plt
 
