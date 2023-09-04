@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -26,7 +26,7 @@ import nrn
 from nrn.plot import nrnvyz
 from utils.params import load as load_params
 
-sys.path.append('/home/yann.zerlaut/work/pv-sst-dendrites/') #'..')
+sys.path.append('..')
 
 import plot_tools as pt
 import matplotlib.pylab as plt
