@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -26,9 +26,9 @@ import nrn
 from nrn.plot import nrnvyz
 from utils.params import load as load_params
 
-sys.path.append('/home/yann.zerlaut/work/pv-sst-dendrites/') #'..')
-
+sys.path.append('..')
 import plot_tools as pt
+
 import matplotlib.pylab as plt
 
 sys.path.append('../src')
@@ -43,6 +43,9 @@ cell = morphology.load('864691137053906294_301107')
 Params = load_params('PV-parameters.json')
 
 # %%
+Params
+
+# %%
 fig, ax = plt.subplots(1, figsize=(10,10))
 vis = nrnvyz(cell.SEGMENTS)
 vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
@@ -53,6 +56,22 @@ vis.add_dots(ax, range(len(cell.SEGMENTS['x'])), cell.SEGMENTS['Nsyn']/4)
 
 # %% [markdown]
 # ### Input Impedance Characterization
+
+# %%
+
+
+# %%
+bins = np.linspace(0, 200, 20)
+
+binned = np.digitize(1e6*np.array(results['distance_to_soma']), bins=bins)
+
+fig, ax = pt.plt.subplots(1, figsize=(2,1))
+
+for b in np.unique(binned)[:-1]:
+    cond = (binned==b)
+    ax.errorbar([bins[b]], [np.mean(np.array(results['input_res'])[cond])],
+                yerr=[np.std(np.array(results['input_res'])[cond])], fmt='ko-', ms=2, lw=1)
+pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma', ylabel='M$\Omega$')
 
 # %%
 net = nrn.Network()
@@ -108,19 +127,3 @@ for key in results.keys():
 #net.remove(M)
 net.remove(neuron)
 net, M, neuron = None, None, None
-
-
-# %%
-bins = np.linspace(0, 200, 20)
-
-binned = np.digitize(1e6*np.array(results['distance_to_soma']), bins=bins)
-
-fig, ax = pt.plt.subplots(1, figsize=(2,1))
-
-for b in np.unique(binned)[:-1]:
-    cond = (binned==b)
-    ax.errorbar([bins[b]], [np.mean(np.array(results['input_res'])[cond])],
-                yerr=[np.std(np.array(results['input_res'])[cond])], fmt='ko-', ms=2, lw=1)
-pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma', ylabel='M$\Omega$')
-
-# %%
