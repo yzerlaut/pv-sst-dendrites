@@ -2,12 +2,16 @@
 
 ## Channel Types and Density in All Compartments
 
+### Library of Channels
+
+
+
 ### PV+ cells
 
-
-| **Current Type**  |  **Name**  |  **Density** |
+| **Channel Type**  |  **Name**  |  **Density** |
 | --- | --- | --- |
-| passive current  |  `pas`  | 4.5 |
+| passive current  |  `pas`  | 1.315 10<sup>-4</sup> |
+| fast sodium current |  `Nafx`  | 0.135 |
 | --- | --- | --- |
 
 ### SST+ cells
