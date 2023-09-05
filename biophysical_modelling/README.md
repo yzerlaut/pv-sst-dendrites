@@ -4,7 +4,8 @@
 
 | **Channel Type**  |  **Description**  | **Link to `mod` file** |
 | --- | --- | --- |
-| Passive current                |                                     |    |
+| Passive current                | classical leak current                         |    |
+| Fast Sodium channel | classical Na+ channel, with a fast inactivation | [`Nafx.mod`](https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/nafx.mod) |
 | A-type Potassium current       | see Klee, Ficker & Heinemann (1995) | [`kaproxin.mod`](https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/kaproxin.mod)  |
 | --- | --- | --- |
 
