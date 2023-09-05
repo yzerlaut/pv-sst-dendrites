@@ -3,9 +3,10 @@
 ## Library of Channels
 
 | **Channel Type**  |  **Description**  | **Link to `mod` file** |
-| --- | --- |
+| --- | --- | --- |
 | Passive current                |                                     |    |
-| A-type Potassium current       | see Klee, Ficker & Heinemann (1995) | (`kaproxin.mod`)[https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/kaproxin.mod]  |
+| A-type Potassium current       | see Klee, Ficker & Heinemann (1995) | [`kaproxin.mod`](https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/kaproxin.mod)  |
+| --- | --- | --- |
 
 ## Channel Types and Density in All Compartments
 
