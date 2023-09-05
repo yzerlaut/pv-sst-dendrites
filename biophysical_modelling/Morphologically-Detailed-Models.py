@@ -51,6 +51,9 @@ vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
 # plot number of synapses in each segment !
 vis.add_dots(ax, range(len(cell.SEGMENTS['x'])), cell.SEGMENTS['Nsyn']/4)
 
+# %%
+np.unique(cell.SEGMENTS['name'])
+
 # %% [markdown]
 # ### Input Impedance Characterization
 

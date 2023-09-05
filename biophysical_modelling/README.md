@@ -5,15 +5,15 @@
 | **Channel Type**  |  **Description**  | **Link to `mod` file** |
 | --- | --- | --- |
 | Passive current                | classical leak current                         |    |
-| Fast Sodium channel | classical Na+ channel, with a fast inactivation | [`Nafx.mod`](https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/nafx.mod) |
-| A-type Potassium current       | see Klee, Ficker & Heinemann (1995) | [`kaproxin.mod`](https://github.com/ModelDBRepository/237595/blob/master/Multicompartmental_Biophysical_models/mechanism/kaproxin.mod)  |
+| Fast Sodium channel | classical Na+ channel, with a fast inactivation | [`nafx.mod`](./mechanisms/nafx.mod) |
+| A-type Potassium current       | see Klee, Ficker & Heinemann (1995) | [`kaproxin.mod`](./mechanisms/kaproxin.mod)  |
 | --- | --- | --- |
 
 ## Channel Types and Density in All Compartments
 
 ### PV+ cells
 
-|     | **Channel Type**  |  **Name**  |  **Density** (mS/cm<sup>2</sup>) |
+|     | **Channel Type**  |  **Name**  |  **Density** (S/cm<sup>2</sup>) |
 | --- | --- | --- | --- |
 | **soma** |     |     |     |
 |          | Passive current                               | `pas` | 1.32 10<sup>-4</sup> |
