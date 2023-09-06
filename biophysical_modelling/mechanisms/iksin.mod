@@ -88,10 +88,3 @@ if (fabs(vd)<1e-04){ vd = vd+0.00001 }
 
 	
 UNITSON
-
-
-
-
-
-
-
