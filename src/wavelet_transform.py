@@ -36,7 +36,7 @@ def my_cwt(data, frequencies, dt, w0=6.):
     """
     wavelet transform with normalization to catch the amplitude of a sinusoid
     """
-    output = np.zeros([len(frequencies), len(data)], dtype=np.complex)
+    output = np.zeros([len(frequencies), len(data)], dtype=np.complex128)
 
     for ind, freq in enumerate(frequencies):
         wavelet_data = np.conj(get_Morlet_of_right_size(freq, dt, w0=w0))
@@ -140,7 +140,8 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description='Wavelet',
                                    formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument("-w", "--wavelet", default='ricker')
+    parser.add_argument("--wavelet", default='ricker')
+    parser.add_argument("--width", type=float, default=6.0)
     parser.add_argument("--noise_level",help="noise level",\
                         type=float, default=0.)
     parser.add_argument("--nfreq",help="discretization of frequencies",\
@@ -161,7 +162,9 @@ if __name__ == '__main__':
         
     if args.show_wavelet:
         for f in [10., 40., 70.]:
-            plt.plot(*make_wavelet_of_right_size(f, dt, with_t=True))
+            plt.plot(*make_wavelet_of_right_size(f, dt,
+                                                 w0=args.width,
+                                                 with_t=True))
     else:
 
         # ### artificially generated signal, transient oscillations
