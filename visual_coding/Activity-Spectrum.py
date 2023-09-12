@@ -50,35 +50,9 @@ Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
 
 # %%
-sessionID = Optotagging['PV_sessions'][0]
-session = cache.get_session_data(sessionID)
-unit_metrics = cache.get_unit_analysis_metrics_for_session(sessionID)
-# time interval
-stims = session.get_stimulus_table()
-
-# %%
-for movie in ['one', 'three']:
-    x = stims[stims.stimulus_name=='natural_movie_%s' % movie]
-    for block in np.unique(x.stimulus_block):
-        X = stims[\
-                (stims.stimulus_name=='natural_movie_%s' % movie) &\
-                (stims.stimulus_block==block) ]
-        print(np.unique(np.diff(X.start_time))) #.values[0], X.stop_time.values[-1])
-        
-
-# %%
-x = stims[stims.stimulus_name=='natural_movie_one']
-
-i=0
-for t0, t1 in zip(x.start_time, x.stop_time):
-    plt.plot([t0,t1], [i,i])
-    i+=1
-
-
-# %%
 def get_spike_counts(sessionID, positive_units,
                      structure='VISp',
-                     stim='all', # either "spontaneous", "all"
+                     stim='all', # either "spontaneous", "natural-movies" or "all"
                      spontaneous_only=True,
                      dt=5e-3, smoothing=20e-3,
                      tstart=-np.inf, 
@@ -117,6 +91,7 @@ def get_spike_counts(sessionID, positive_units,
             results['negUnits_spikes'].append(spike_times[unitID])
 
     # now restricting to specific samples
+    print('--- STIM : %s' % stim)
     
     if stim=='spontaneous':
         
@@ -160,28 +135,137 @@ def get_spike_counts(sessionID, positive_units,
     return results
 
 # %%
-DATA ={}
+for stim in []:#['all', 'natural-movies', 'spontaneous']:
 
-for key in ['PV', 'SST']:
-    DATA[key] = []
-    
-    for index in range(len(Optotagging['%s_sessions'%key])):
-        print(key, 'session #', index+1)
-        results = get_spike_counts(Optotagging['%s_sessions' % key][index],
-                                   Optotagging['%s_positive_units' % key][index],
-                                   #tstart=50, tstop=150,
-                                   spontaneous_only=False,
-                                   dt=2.5e-3, smoothing=2.5e-3)
-        
-        DATA[key].append(results)            
-            
-np.save('../data/visual-coding-spikes-data.npy', DATA)
+    DATA ={}
+    for key in ['PV', 'SST']:
+        DATA[key] = []
+
+        for index in range(len(Optotagging['%s_sessions'%key])):
+            print(key, 'session #', index+1)
+            results = get_spike_counts(Optotagging['%s_sessions' % key][index],
+                                       Optotagging['%s_positive_units' % key][index],
+                                       stim=stim,
+                                       dt=2.5e-3, smoothing=2.5e-3)
+
+            DATA[key].append(results)            
+
+    np.save('../data/visual-coding-%s-spikes-data.npy' % stim, DATA)
 
 # %% [markdown]
 # # 2) Load summary data
 
 # %%
 DATA = np.load('../data/visual-coding-spikes-data-spontaneous.npy', allow_pickle=True).item()
+
+# %% [markdown]
+# # Wavelet-Based analysis: cross-correl with wavelet
+
+# %%
+from wavelet_transform import my_cwt
+
+def spiketimes_to_binary(spikes, t, dt):
+    
+    binary = 0*t
+    cond = spikes<t[-1]
+    binary[np.array((spikes[cond]-t[0])/dt, dtype=int)] = 1.
+    return binary
+
+
+def compute_crosscorrel(results, freqs,
+                        wavelet_width=2.,
+                        verbose=False):
+    
+    if verbose:
+        print('wavelet-transform [...]')
+    coefs = np.real(my_cwt(results['negUnits_rate'], freqs, results['dt'],
+                           w0=wavelet_width))
+    results['freqs'] = freqs
+    
+    if verbose:
+        print('cross-correl analysis[...]')
+        
+    #for units in ['negUnits', 'posUnits']:
+    for units in ['posUnits']: # only for positive units
+
+        # all Positive units together, session data
+        all_spikes = np.concatenate(results['%s_spikes' % units])
+        binary = spiketimes_to_binary(all_spikes, results['t'], results['dt'])
+        results['%s-spike-wavelet-correl_per_session'%units] =\
+                    [np.corrcoef(binary, coefs[i, :])[0,1] for i in range(len(freqs))]
+        
+        # now unit per unit
+        results['%s-spike-wavelet-correl'%units] = []
+        for spikes in results['%s_spikes' % units]:
+            
+            binary = spiketimes_to_binary(spikes, results['t'], results['dt'])
+            results['%s-spike-wavelet-correl'%units].append(\
+                        [np.corrcoef(binary, coefs[i, :])[0,1] for i in range(len(freqs))])
+            
+    if verbose:
+        print(' done !')
+            
+            
+#DATA = np.load('../data/visual-coding-all-spikes-data.npy', allow_pickle=True).item()
+#results = DATA['PV'][0]
+#np.sum(spiketimes_to_binary(results['posUnits_spikes'][1], results['t'], results['dt'])[:400])
+#plt.plot(results['posUnits_spikes'][1][:5], 2*np.ones(5), 'o')
+#print(np.min([np.min(x) for x in results['posUnits_spikes']]), results['t'][0])
+#print(np.max([np.max(x) for x in results['posUnits_spikes']]), results['t'][-1])
+
+# %%
+#for stim in ['natural-movies', 'spontaneous']:
+for stim in ['all', 'natural-movies', 'spontaneous']:
+
+    RESULTS ={'freqs': np.logspace(-1, 2, 20)}
+    
+    DATA = np.load('../data/visual-coding-%s-spikes-data.npy' % stim, allow_pickle=True).item()
+
+    for key in ['PV', 'SST']:
+            
+        RESULTS['%s_posUnits_spike-wavelet-correl' % key] = []
+
+        for index in range(len(Optotagging['%s_sessions'%key])):
+            print(key, 'session #', index+1)
+
+            if len(DATA[key][index]['posUnits_spikes'])>0 and (len(DATA[key][index]['t'])>0):
+
+                compute_crosscorrel(DATA[key][index], RESULTS['freqs'])
+
+                for units in ['posUnits']:
+                    #
+                    RESULTS['%s_posUnits_spike-wavelet-correl' % key] += \
+                                    DATA[key][index]['posUnits-spike-wavelet-correl']
+
+    np.save('../data/visual-coding-%s-spikes-wavelet-correl.npy' % stim, RESULTS)
+
+# %%
+#for stim in ['natural-movies', 'spontaneous']:
+for stim in ['all', 'natural-movies', 'spontaneous']:
+    
+    RESULTS = np.load('../data/visual-coding-%s-spikes-wavelet-correl.npy' % stim, allow_pickle=True).item()
+
+    fig, AX = plt.subplots(1, 2, figsize=(6,2))
+
+    for key, ax, color in zip(['PV', 'SST'], AX, ['tab:red', 'tab:orange']):
+        
+        pt.plot(RESULTS['freqs'], np.mean(RESULTS['%s_posUnits_spike-wavelet-correl' % key], axis=0),
+                sy=np.std(RESULTS['%s_posUnits_spike-wavelet-correl' % key], axis=0),
+                color=color,ax=ax)
+
+        pt.set_plot(ax, xscale='log',
+                    #yticks=[0.1, 1], 
+                    #yscale='log', 
+                    xlabel='freq. (Hz)', 
+                    title='%s-cre mice (n=%i units)' % (key, len(RESULTS['%s_posUnits_spike-wavelet-correl' % key])),
+                    ylabel='wavelet-spike cross-correl' if key=='PV' else '')
+        
+    pt.annotate(AX[1], stim, (1,0.5), va='center')
+
+    pt.set_common_ylims(AX)
+
+# %%
+break_now()
 
 
 # %% [markdown]
@@ -240,7 +324,8 @@ def spectrum_fig(results,
 
     return fig
 
-fig = spectrum_fig(DATA['PV'][4])
+#DATA = np.load('../data/visual-coding-spikes-data-spontaneous.npy', allow_pickle=True).item()
+fig = spectrum_fig(DATA['PV'][2])
 
 
 # %%
@@ -250,6 +335,9 @@ fig = spectrum_fig(DATA['SST'][11], pos_color='tab:orange')
 # %%
 fig = spectrum_fig(DATA['SST'][10], pos_color='tab:orange')
 
+
+# %%
+binary.shape
 
 # %% [markdown]
 # # Wavelet-Based analysis: spike-triggered wavelet envelope
