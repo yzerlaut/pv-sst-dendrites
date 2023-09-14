@@ -42,16 +42,10 @@ net = nrn.Network()
 
 nrn.defaultclock.dt = 0.025*nrn.ms
 
-# Starting from an empty equation string:
-Equation_String= '''
-Im = + 0*amp/meter**2 : amp/meter**2
-vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, useful for mechanisms
-I_inj : amp (point current)
-'''
 
 # calcium dynamics following: HighVoltageActivationCalciumCurrent + LowThresholdCalciumCurrent
 Equation_String = nrn.CalciumConcentrationDynamics(contributing_currents='IHVACa',
-                                               name='CaDynamics').insert(Equation_String)
+                                                   name='CaDynamics').insert(nrn.Equation_String)
 
 # intrinsic currents
 Na_inactivation_speed_factor = 10 
@@ -63,9 +57,10 @@ CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
                                                         'Rb':Na_inactivation_speed_factor*0.124}),
             nrn.DelayedRectifierPotassiumChannelCurrent(name='K'),
             nrn.SlowlyInactivatingPotassiumCurrent(name='Kslowin'),
+            nrn.HyperpolarizationActivatedCationCurrent2(name='H'),
+            nrn.ATypePotassiumCurrentProximal(name='KAprox'),
+            nrn.ATypePotassiumCurrentDistal(name='KAdist'),
             nrn.HighVoltageActivationCalciumCurrent(name='HVACa'),
-            nrn.LowThresholdCalciumCurrent(name='T'),
-            nrn.MuscarinicPotassiumCurrent(name='Musc'),
             nrn.CalciumDependentPotassiumCurrent(name='KCa')]
 
 
@@ -81,7 +76,8 @@ class Cell:
         self.morpho.dend.distal = nrn.Cylinder(x=[0, 500]*nrn.um, diameter=3*nrn.um)
 cell = Cell()
 
-neuron = nrn.SpatialNeuron(morphology=cell.morpho, model=eqs,
+neuron = nrn.SpatialNeuron(morphology=cell.morpho,
+                           model=eqs,
                            Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
                            Ri=Params['Ri'] * nrn.ohm * nrn.cm)
 net.add(neuron)
@@ -101,12 +97,20 @@ neuron.gbar_Pas = 1.3e-4*nrn.siemens/nrn.cm**2
 neuron.gbar_Na = 1.3e-1*nrn.siemens/nrn.cm**2
 neuron.gbar_K =  3.6e-2*nrn.siemens/nrn.cm**2
 # dendrites
-neuron.dend.gbar_Na = 0*nrn.siemens/nrn.cm**2 #40*1e-12*siemens/um**2
-neuron.dend.gbar_K = 0*nrn.siemens/nrn.cm**2 #30*1e-12*siemens/um**2
-# neuron.dend.distal.gbar_Na = 40*1e-12*siemens/um**2
-# neuron.dend.distal.gbar_K = 30*1e-12*siemens/um**2
+neuron.dend.distal.gbar_Na = 0*1.3e-2*nrn.siemens/nrn.cm**2
+neuron.dend.distal.gbar_K =  0*3.6e-3*nrn.siemens/nrn.cm**2
 
+## -- SLOW-INACTIVATION POTASSIUM CURRENT -- ##
 neuron.gbar_Kslowin = 7.3e-4*nrn.siemens/nrn.cm**2
+
+## -- H-TYPE CATION CURRENT -- ##
+neuron.gbar_H = 1.0e-5*nrn.siemens/nrn.cm**2
+
+## -- A-TYPE POTASSIUM CURRENT -- ##
+neuron.gbar_KAprox = 3.20e-3*nrn.siemens/nrn.cm**2
+neuron.dend.gbar_KAprox = 1.00e-3*nrn.siemens/nrn.cm**2
+neuron.dend.distal.gbar_KAdist = 9.00e-4*nrn.siemens/nrn.cm**2
+neuron.dend.distal.gbar_KAprox = 2.16e-3*nrn.siemens/nrn.cm**2
 
 ## -- HIGH-VOLTAGE-ACTIVATION CALCIUM CURRENT -- ##
 neuron.gbar_HVACa = 0.00e-00*nrn.siemens/nrn.cm**2
@@ -114,14 +118,6 @@ neuron.gbar_HVACa = 0.00e-00*nrn.siemens/nrn.cm**2
 ## -- CALCIUM-DEPENDENT POTASSIUM CURRENT -- ##
 neuron.gbar_KCa =0.00e-00*nrn.siemens/nrn.cm**2
 
-## -- T-CURRENT (Calcium) -- ##
-neuron.gbar_T =0.00e-00*nrn.siemens/nrn.cm**2
-
-## -- M-CURRENT (Potassium) -- ##
-neuron.gbar_Musc = 0.00e-00*nrn.siemens/nrn.cm**2
-
-# ## -- H-CURRENT (non-specific) -- ##
-# neuron.gbar_H = 0*1e-12*siemens/um**2 # set to zero !!
 
 soma_loc, dend_loc = 0, 2
 mon = nrn.StateMonitor(neuron, ['v', 'I_inj', 'InternalCalcium'], record=[soma_loc, dend_loc])
@@ -132,7 +128,7 @@ neuron.main.I_inj = 200*nrn.pA
 net.run(200*nrn.ms)
 neuron.main.I_inj = 0*nrn.pA
 net.run(100*nrn.ms)
-neuron.dend.I_inj = 300*nrn.pA
+neuron.dend.I_inj = 100*nrn.pA
 net.run(200*nrn.ms)
 neuron.dend.I_inj = 0*nrn.pA
 net.run(200*nrn.ms)
@@ -150,6 +146,11 @@ AX[0].legend()
 AX[1].plot(mon.t / nrn.ms, mon[soma_loc].InternalCalcium/nrn.nM, color='blue', label='soma')
 AX[1].plot(mon.t / nrn.ms, mon[dend_loc].InternalCalcium/nrn.nM, color='red', label='dend')
 AX[1].set_ylabel('[Ca$^{2+}$] (nM)')
+
+AX[2].plot(mon.t / nrn.ms, mon[soma_loc].I_inj/nrn.pA, color='blue', label='soma')
+AX[2].plot(mon.t / nrn.ms, mon[dend_loc].I_inj/nrn.pA, color='red', label='dend')
+AX[2].set_ylabel('Iinj (pA)')
+AX[2].set_xlabel('time (ms)')
 
 net.remove(neuron)
 net.remove(mon)
