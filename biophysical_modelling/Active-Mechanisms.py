@@ -53,7 +53,6 @@ CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
             nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
                                                         'E_Na':55.,
                                                         'Ra':Na_inactivation_speed_factor*0.182,
-                                                        
                                                         'Rb':Na_inactivation_speed_factor*0.124}),
             nrn.DelayedRectifierPotassiumChannelCurrent(name='K'),
             nrn.SlowlyInactivatingPotassiumCurrent(name='Kslowin'),
