@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -120,7 +120,7 @@ for b in np.unique(binned)[:-1]:
     cond = (binned==b)
     ax.errorbar([bins[b]], [np.mean(np.array(results['input_res'])[cond])],
                 yerr=[np.std(np.array(results['input_res'])[cond])], fmt='ko-', ms=2, lw=1)
-pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma', ylabel='M$\Omega$')
+pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma ($\mu$m)', ylabel='M$\Omega$')
 
 # %% [markdown]
 # ## Responses to current steps
@@ -133,29 +133,18 @@ nrn.defaultclock.dt = 0.025*nrn.ms
 # Starting from an empty equation string:
 Equation_String= '''
 Im = + 0*amp/meter**2 : amp/meter**2
-vc = 40+clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, useful for mechanisms
+vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, useful for mechanisms
 I_inj : amp (point current)
 '''
-
-# calcium dynamics following: HighVoltageActivationCalciumCurrent + LowThresholdCalciumCurrent
-Equation_String = nrn.CalciumConcentrationDynamics(contributing_currents='IHVACa',
-                                               name='CaDynamics').insert(Equation_String)
 
 # intrinsic currents
 Na_inactivation_speed_factor = 3.0
 CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':-68}),
-            # FastSodiumChannelCurrent(name='Na'),
-            # SodiumChannelCurrent(name='Na'),
             nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
                                                     'E_Na':55.,
                                                     'Ra':Na_inactivation_speed_factor*0.182,
                                                     'Rb':Na_inactivation_speed_factor*0.124}),
-            nrn.DelayedRectifierPotassiumChannelCurrent(name='K'),
-            nrn.SlowlyInactivatingPotassiumCurrent(name='Kslowin'),
-            nrn.HighVoltageActivationCalciumCurrent(name='HVACa'),
-            nrn.LowThresholdCalciumCurrent(name='T'),
-            nrn.MuscarinicPotassiumCurrent(name='Musc'),
-            nrn.CalciumDependentPotassiumCurrent(name='KCa')]
+            nrn.DelayedRectifierPotassiumChannelCurrent(name='K')]
 
 
 for current in CURRENTS:
@@ -170,7 +159,6 @@ net.add(neuron)
 
 # initial conditions:
 neuron.v = Params['EL']*nrn.mV
-neuron.InternalCalcium = 100*nrn.nM
 
 for current in CURRENTS:
     current.init_sim(neuron)
@@ -188,39 +176,21 @@ neuron.dend.gbar_K = 0*nrn.siemens/nrn.cm**2 #30*1e-12*siemens/um**2
 # neuron.dend.distal.gbar_Na = 40*1e-12*siemens/um**2
 # neuron.dend.distal.gbar_K = 30*1e-12*siemens/um**2
 
-neuron.gbar_Kslowin=  7.3e-4*nrn.siemens/nrn.cm**2
-
-## -- HIGH-VOLTAGE-ACTIVATION CALCIUM CURRENT -- ##
-neuron.gbar_HVACa = 0.00e-00*nrn.siemens/nrn.cm**2
-
-## -- CALCIUM-DEPENDENT POTASSIUM CURRENT -- ##
-neuron.gbar_KCa =0.00e-00*nrn.siemens/nrn.cm**2
-
-## -- T-CURRENT (Calcium) -- ##
-neuron.gbar_T =0.00e-00*nrn.siemens/nrn.cm**2
-
-## -- M-CURRENT (Potassium) -- ##
-neuron.gbar_Musc = 0.00e-00*nrn.siemens/nrn.cm**2
-
-# ## -- H-CURRENT (non-specific) -- ##
-# neuron.gbar_H = 0*1e-12*siemens/um**2 # set to zero !!
-
 soma_loc, dend_loc = 0, 2
-mon = nrn.StateMonitor(neuron, ['v', 'I_inj', 'InternalCalcium'], record=[soma_loc, dend_loc])
+mon = nrn.StateMonitor(neuron, ['v', 'I_inj'], record=[soma_loc, dend_loc])
 net.add(mon)
 
 net.run(100*nrn.ms)
-neuron.main.I_inj = 400*nrn.pA
+neuron.main.I_inj = 200*nrn.pA
 net.run(200*nrn.ms)
 neuron.main.I_inj = 0*nrn.pA
 net.run(100*nrn.ms)
-neuron.dend.I_inj = 400*nrn.pA
+neuron.dend.I_inj = 200*nrn.pA
 net.run(200*nrn.ms)
 neuron.dend.I_inj = 0*nrn.pA
 net.run(200*nrn.ms)
 
 # %%
-# # # ## Run the various variants of the model to reproduce Figure 12
 import matplotlib.pylab as plt
 fig, AX = plt.subplots(3,1, figsize=(12,4))
 
@@ -229,13 +199,11 @@ AX[0].plot(mon.t / nrn.ms, mon[dend_loc].v/nrn.mV, color='red', label='dend')
 AX[0].set_ylabel('Vm (mV)')
 AX[0].legend()
 
-AX[1].plot(mon.t / nrn.ms, mon[soma_loc].InternalCalcium/nrn.nM, color='blue', label='soma')
-AX[1].plot(mon.t / nrn.ms, mon[dend_loc].InternalCalcium/nrn.nM, color='red', label='dend')
-AX[1].set_ylabel('[Ca$^{2+}$] (nM)')
-
 net.remove(neuron)
 net.remove(mon)
 
 net, M, neuron = None, None, None
+
+# %%
 
 # %%
