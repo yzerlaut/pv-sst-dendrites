@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Simulation of Morphologically-detailed models
+# # Single Branch Stimulation
 
 # %%
 import sys, os, json, pandas
@@ -37,18 +37,47 @@ import morphology
 # ## Basket cell
 
 # %%
-cell = load_morphology('864691135396580129_296758')
-#cell = morphology.load('864691137053906294_301107')
+#cell = load_morphology('864691135396580129_296758')
+cell = morphology.load('864691137053906294_301107')
 Params = load_params('PV-parameters.json')
 
 # %%
-fig, ax = plt.subplots(1, figsize=(10,10))
+fig, ax = plt.subplots(1, figsize=(4,4))
 vis = nrnvyz(cell.SEGMENTS)
 vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
                   bar_scale_args={'Ybar':100, 'Xbar':1e-9,
                                   'Ybar_label':'100$\mu$m ', 'fontsize':6}, ax=ax)
 # plot number of synapses in each segment !
 vis.add_dots(ax, range(len(cell.SEGMENTS['x'])), cell.SEGMENTS['Nsyn']/4)
+
+# %%
+net = nrn.Network()
+
+EL = Params['EL']*nrn.mV
+#gL = 2*nrn.psiemens/nrn.umeter**2
+eqs='''
+Im = gL * (EL - v) : amp/meter**2
+gL : siemens/meter**2
+I : amp (point current)
+'''
+neuron = nrn.SpatialNeuron(morphology=cell.morpho, model=eqs,
+                           Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
+                           Ri=Params['Ri'] * nrn.ohm * nrn.cm)
+neuron.v = Params['EL']*nrn.mV
+
+net.add(neuron)
+
+M = nrn.StateMonitor(neuron, ('v'), record=[0]) # soma + dend loc
+net.add(M)
+
+# relax
+net.run(30.*nrn.ms)
+
+t, v = M.t/nrn.second, M.v[0]/nrn.mV
+net.remove(M)
+net.remove(neuron)
+
+net, M, neuron = None, None, None
 
 # %% [markdown]
 # ### Input Impedance Characterization
