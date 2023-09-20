@@ -66,6 +66,12 @@ CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
             nrn.DelayedRectifierPotassiumChannelCurrent(name='K'),
             nrn.ATypePotassiumCurrentProximal(name='KAprox'),
             nrn.ATypePotassiumCurrentDistal(name='KAdist')]
+CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
+            nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
+                                                        'E_Na':55.,
+                                                        'Ra':Na_inactivation_speed_factor*0.182,
+                                                        'Rb':Na_inactivation_speed_factor*0.124}),
+            nrn.PotassiumChannelCurrent(name='K')]
 
 for current in CURRENTS:
     Equation_String = current.insert(Equation_String)
@@ -92,31 +98,36 @@ CONDS = {\
 
 for c in CONDS:
 
-    ## --       PASSIVE CURRENT        -- ##
+    ## --       PASSIVE CURRENT       -- ##
     neuron.gbar_Pas[CONDS[c]] = Params['gPas_%s'%c]*nrn.siemens/nrn.cm**2
     ## --       SODIUM CURRENT        -- ##
-    neuron.gbar_Na[CONDS[c]] = Params['gNa_%s'%c]*nrn.siemens/nrn.cm**2
-    ## --   PROX A-TYPE K CURRENT        -- ##
+    neuron.gbar_Na[CONDS[c]] = 0*Params['gNa_%s'%c]*nrn.siemens/nrn.cm**2
+    ## --     POTASSIUM CURRENT       -- ##
+    neuron.gbar_K[CONDS[c]] = 0*Params['gK_%s'%c]*nrn.siemens/nrn.cm**2
+    """
+    ## -- PROX A-TYPE K CURRENT       -- ##
     neuron.gbar_KAprox[CONDS[c]] = Params['gKAprox_%s'%c]*nrn.siemens/nrn.cm**2
-    ## --   DIST A-TYPE K CURRENT        -- ##
+    ## --  DIST A-TYPE K CURRENT      -- ##
     neuron.gbar_KAdist[CONDS[c]] = Params['gKAdist_%s'%c]*nrn.siemens/nrn.cm**2
+    """
 
 soma_loc, dend_loc = 0, 2
 mon = nrn.StateMonitor(neuron, ['v'], record=[soma_loc])
 net.add(mon)
 
-net.run(50*nrn.ms)
-neuron.I_inj[0] = 200*nrn.pA
-net.run(200*nrn.ms)
+net.run(1*nrn.ms)
+# net.run(50*nrn.ms)
+# neuron.I_inj[0] = 200*nrn.pA
+# net.run(200*nrn.ms)
 
 # %%
 # # # ## Run the various variants of the model to reproduce Figure 12
 import matplotlib.pylab as plt
-fig, AX = plt.subplots(3,1, figsize=(12,4))
+fig, ax = plt.subplots(3,1, figsize=(8,2))
 
-AX[0].plot(mon.t / nrn.ms, mon[soma_loc].v/nrn.mV, color='blue', label='soma')
-AX[0].set_ylabel('Vm (mV)')
-AX[0].legend()
+ax.plot(mon.t / nrn.ms, mon[soma_loc].v/nrn.mV, color='blue', label='soma')
+ax.set_ylabel('Vm (mV)')
+ax.legend()
 
 net.remove(neuron)
 net.remove(mon)
