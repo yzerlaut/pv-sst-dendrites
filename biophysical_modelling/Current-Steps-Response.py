@@ -52,7 +52,7 @@ nrn.defaultclock.dt = 0.025*nrn.ms
 
 Equation_String= """
 Im = + 0*amp/meter**2 : amp/meter**2
-vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, needed for mechanisms
+# vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, needed for mechanisms
 I_inj : amp (point current)
 """
 
@@ -79,7 +79,7 @@ for current in CURRENTS:
 eqs = nrn.Equations(Equation_String)
 
 neuron = nrn.SpatialNeuron(morphology=cell.morpho,
-                           model=eqs,
+                           model=eqs, method='exponential_euler',
                            Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
                            Ri=Params['Ri'] * nrn.ohm * nrn.cm)
 net.add(neuron)
@@ -101,29 +101,28 @@ for c in CONDS:
     ## --       PASSIVE CURRENT       -- ##
     neuron.gbar_Pas[CONDS[c]] = Params['gPas_%s'%c]*nrn.siemens/nrn.cm**2
     ## --       SODIUM CURRENT        -- ##
-    neuron.gbar_Na[CONDS[c]] = 0*Params['gNa_%s'%c]*nrn.siemens/nrn.cm**2
+    neuron.gbar_Na[CONDS[c]] = 0.7*Params['gNa_%s'%c]*nrn.siemens/nrn.cm**2
     ## --     POTASSIUM CURRENT       -- ##
-    neuron.gbar_K[CONDS[c]] = 0*Params['gK_%s'%c]*nrn.siemens/nrn.cm**2
-    """
+    neuron.gbar_K[CONDS[c]] = Params['gK_%s'%c]*nrn.siemens/nrn.cm**2
     ## -- PROX A-TYPE K CURRENT       -- ##
-    neuron.gbar_KAprox[CONDS[c]] = Params['gKAprox_%s'%c]*nrn.siemens/nrn.cm**2
+    # neuron.gbar_KAprox[CONDS[c]] = Params['gKAprox_%s'%c]*nrn.siemens/nrn.cm**2
     ## --  DIST A-TYPE K CURRENT      -- ##
-    neuron.gbar_KAdist[CONDS[c]] = Params['gKAdist_%s'%c]*nrn.siemens/nrn.cm**2
-    """
+    # neuron.gbar_KAdist[CONDS[c]] = Params['gKAdist_%s'%c]*nrn.siemens/nrn.cm**2
 
 soma_loc, dend_loc = 0, 2
 mon = nrn.StateMonitor(neuron, ['v'], record=[soma_loc])
 net.add(mon)
 
-net.run(1*nrn.ms)
-# net.run(50*nrn.ms)
-# neuron.I_inj[0] = 200*nrn.pA
-# net.run(200*nrn.ms)
+net.run(10*nrn.ms)
+neuron.I_inj[0] = 400*nrn.pA
+net.run(12*nrn.ms)
+neuron.I_inj[0] = 0*nrn.pA
+net.run(10*nrn.ms)
 
 # %%
 # # # ## Run the various variants of the model to reproduce Figure 12
 import matplotlib.pylab as plt
-fig, ax = plt.subplots(3,1, figsize=(8,2))
+fig, ax = plt.subplots(1, figsize=(8,2))
 
 ax.plot(mon.t / nrn.ms, mon[soma_loc].v/nrn.mV, color='blue', label='soma')
 ax.set_ylabel('Vm (mV)')
