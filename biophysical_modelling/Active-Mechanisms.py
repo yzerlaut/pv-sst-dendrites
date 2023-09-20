@@ -42,7 +42,6 @@ net = nrn.Network()
 
 nrn.defaultclock.dt = 0.025*nrn.ms
 
-
 # calcium dynamics following: HighVoltageActivationCalciumCurrent + LowThresholdCalciumCurrent
 Equation_String = nrn.CalciumConcentrationDynamics(contributing_currents='IHVACa',
                                                    name='CaDynamics').insert(nrn.Equation_String)
@@ -157,4 +156,6 @@ net.remove(mon)
 net, M, neuron = None, None, None
 
 plt.show()
+
 # %%
+# # # ##

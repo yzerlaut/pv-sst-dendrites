@@ -22,14 +22,14 @@ def load(ID):
     """
     
     ### --- MESHWORK file 1 (the one with the same coordinates than the swc file !)
-    cell = meshwork.load_meshwork('../data/%s/%s.h5' % (ID, ID))
+    cell = meshwork.load_meshwork('../biophysical_modelling/morphologies/%s/%s.h5' % (ID, ID))
 
     ## --- METADATA file
-    with open('../data/%s/%s_metadata.json' % (ID, ID)) as f:
+    with open('../biophysical_modelling/morphologies/%s/%s_metadata.json' % (ID, ID)) as f:
         cell.infos = json.load(f)
 
     ## --- SWC file
-    cell.morpho = nrn.Morphology.from_swc_file('../data/%s/%s.swc' % (ID, ID))
+    cell.morpho = nrn.Morphology.from_swc_file('../biophysical_modelling/morphologies/%s/%s.swc' % (ID, ID))
     cell.SEGMENTS = nrn.morpho_analysis.compute_segments(cell.morpho)
     cell.soma_coords = np.array([cell.SEGMENTS['x'][0],
                                  cell.SEGMENTS['y'][0],
@@ -65,13 +65,23 @@ def load(ID):
     cell.SEGMENTS['Nsyn'] = np.histogram(cell.synapses_morpho_index,
                                  bins=np.arange(len(cell.SEGMENTS['x'])+1))[0]
     
-    # 4) compute the path distance to soma
+    # 5) compute the path distance to soma
     cell.syn_dist_to_soma = [cell.skeleton.distance_to_root[p]/1_000 for p in post_syn_sites]
+
+    # 6) get dendritic branches if computed
+    if os.path.isfile('../biophysical_modelling/morphologies/%s/dendritic_branches.npy' % ID):
+        cell.branches = np.load('../biophysical_modelling/morphologies/%s/dendritic_branches.npy'%ID,
+                                allow_pickle=True).item()
+
     
     return cell
 
 if __name__=='__main__':
 
+    ID = '864691135396580129_296758'
+    cell = load(ID)
+
+    """
     swc = sys.argv[-1]
 
     from brian2 import *
@@ -91,5 +101,6 @@ if __name__=='__main__':
     neuron.v = EL + 10*mV
 
     nrn.run(10*ms)
+    """
 
 
