@@ -33,6 +33,9 @@ class PVcell:
 
         self.insert_mechanisms_and_properties(debug=debug)
 
+        self.map_SEGMENTS_to_NEURON()
+
+
     def load_morphology(self, ID):
         cell = h.Import3d_SWC_read()
         cell.input("morphologies/%s/%s.swc" % (ID,ID))
@@ -117,8 +120,8 @@ class PVcell:
 
         # AXON
         for sec in self.compartments['axon']:
-            if not debug:
-                sec.nseg = sec.n3d()
+            # if not debug:
+                # sec.nseg = sec.n3d()
             sec.cm=1.2
             sec.Ra=172
             #
@@ -201,6 +204,7 @@ class PVcell:
         for sec in self.all:
             sec.v = v_init
 
+        
         h.ko0_k_ion = 3.82 #  //mM
         h.ki0_k_ion = 140  #  //mM  
 
@@ -215,18 +219,18 @@ class PVcell:
         """
         cond = (self.SEGMENTS['comp_type']=='dend') | (self.SEGMENTS['comp_type']=='soma')
 
-        self.SEGMENTS['NEURON_section'] = np.empty(len(cell.SEGMENTS['x']),
+        self.SEGMENTS['NEURON_section'] = np.empty(len(self.SEGMENTS['x']),
                                                    dtype=object)
-        self.SEGMENTS['NEURON_segment'] = np.empty(len(cell.SEGMENTS['x']),
+        self.SEGMENTS['NEURON_segment'] = np.empty(len(self.SEGMENTS['x']),
                                                    dtype=object)
         iMins = []
         # for sec in self.all:
         for sec in self.compartments['proximal']+self.compartments['distal']+self.compartments['soma']:
             for iseg in range(sec.nseg):
                 try:
-                    D = (1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
-                        (1e6*self.SEGMENTS['y']-sec.y3d(iseg))**2+\
-                        (1e6*self.SEGMENTS['z']-sec.z3d(iseg))**2
+                    D = np.sqrt((1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
+                                (1e6*self.SEGMENTS['y']-sec.y3d(iseg))**2+\
+                                (1e6*self.SEGMENTS['z']-sec.z3d(iseg))**2)
                     # print(np.sqrt(np.min(D)))
                     iMin = np.argmin(D[cond])
                     iMin2 = np.arange(len(cond))[cond][iMin]
@@ -234,44 +238,80 @@ class PVcell:
                     self.SEGMENTS['NEURON_segment'][iMin2] = iseg
 
                 except BaseException as be:
-                    # print(be)
+                    print(be)
                     print('PB with: ', iseg, sec)
+
+        # insure that all segments that are on a branch have a matching location
+        # --> we take the previous one
 
         print(np.sum(self.SEGMENTS['NEURON_segment']!=None))
 
-    def check_that_all_dendritic_branches_are_well_covered(self):
+    def check_that_all_dendritic_branches_are_well_covered(self, 
+                                                           show=False):
 
-        cond = self.SEGMENTS['NEURON_section']!=None
-        cond = self.branches['branches'][0]
-        print(np.unique(self.SEGMENTS['comp_type'][cond]))
+        no_section_cond = self.SEGMENTS['NEURON_section']==None
 
-        import matplotlib.pylab as plt
-        plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],s=0.1)
-        plt.show()
-        # print(np.unique(self.SEGMENTS['comp_type'][self.branches['branches'][0]]))
-        # print(np.uni(self.SEGMENTS['NEURON_section'][branch]!=None), 
-        # loop over branches and check
         for ib, branch in enumerate(self.branches['branches']):
-            print('branch #%i :' % ib, 
+            print('branch #%i :' % (ib+1), 
                     np.sum(self.SEGMENTS['NEURON_section'][branch]!=None), 
                     '/', len(branch))
-            # if np.sum(self.SEGMENTS['NEURON_section'][branch]!=None)<len(branch):
-                # Is = np.flatnonzero(self.SEGMENTS['NEURON_section'][branch]==None)
-                # print(Is)
-                # for i in Is:
-                    # print(i, 'comp: ', cell.SEGMENTS['distance_from_soma'][i])
+        if show:
 
+            import matplotlib.pylab as plt
 
+            for bIndex, branch in enumerate(self.branches['branches']):
+
+                branch_cond = np.zeros(len(self.SEGMENTS['x']), dtype=bool)
+                branch_cond[branch] = True
+
+                cond = branch_cond 
+                plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],
+                            s=0.1, color=plt.cm.tab10(bIndex))
+                cond = branch_cond & no_section_cond
+                plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],
+                            color='r', s=4)
+
+            plt.title('before fix !')
+            plt.show()
+
+        for bIndex, branch in enumerate(self.branches['branches']):
+
+            branch_cond = np.zeros(len(self.SEGMENTS['x']), dtype=bool)
+            branch_cond[branch] = True
+
+            for i in np.arange(len(branch_cond))[branch_cond & no_section_cond]:
+                if (i<len(branch_cond)) and (self.SEGMENTS['NEURON_section'][i+1] is not None):
+                    self.SEGMENTS['NEURON_section'][i] = self.SEGMENTS['NEURON_section'][i+1]
+                    self.SEGMENTS['NEURON_segment'][i] = self.SEGMENTS['NEURON_segment'][i+1]
+
+        if show:
+
+            no_section_cond = self.SEGMENTS['NEURON_section']==None
+            for bIndex, branch in enumerate(self.branches['branches']):
+
+                branch_cond = np.zeros(len(self.SEGMENTS['x']), dtype=bool)
+                branch_cond[branch] = True
+
+                cond = branch_cond 
+                plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],
+                            s=0.1, color=plt.cm.tab10(bIndex))
+                cond = branch_cond & no_section_cond
+                plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],
+                            color='r', s=4)
+
+            plt.title('after fix !')
+            plt.show()
 
 
 
 if __name__=='__main__':
 
     cell = PVcell(debug=False)
-    cell.map_SEGMENTS_to_NEURON()
+    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
-    cell.check_that_all_dendritic_branches_are_well_covered()
-
+    ID = '864691135571546917_264824' # Martinotti
+    cell = PVcell(ID=ID, debug=False)
+    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
     """
     n = 0

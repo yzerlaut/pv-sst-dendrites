@@ -16,6 +16,61 @@
 # %% [markdown]
 # # Simulation of Morphologically-detailed models
 
+
+# %% [markdown]
+# # Basket Cell FI-curve
+"""
+ID = '864691135396580129_296758' # Basket Cell example
+cell = PVcell(ID=ID, debug=False)
+
+ic = h.IClamp(cell.soma[0](0.5))
+ic.amp = 0. 
+ic.dur =  1e9 * ms
+ic.delay = 0 * ms
+
+dt, tstop = 0.025, 500
+
+t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
+Vm = h.Vector()
+
+Vm.record(cell.soma[0](0.5)._ref_v)
+
+apc = h.APCount(cell.soma[0](0.5))
+
+h.finitialize()
+
+for i in range(int(50/dt)):
+    h.fadvance()
+
+duration = 100 # ms
+AMPS, RATES = np.array([-0.1]+list(0.1*np.arange(1, 10))), []
+for i, amp in enumerate(AMPS):
+
+    ic.amp = amp
+    apc.n = 0
+    for i in range(int(duration/dt)):
+        h.fadvance()
+    RATES.append(apc.n*1e3/duration) # rates in Hz
+    ic.amp = 0
+    for i in range(int(duration/dt)):
+        h.fadvance()
+
+fig, ax = plt.subplots(figsize=(9,3))
+ax.plot(np.arange(len(Vm))*dt, np.array(Vm), color='tab:grey')
+ax.axis('off')
+pt.draw_bar_scales(ax, loc='top-right',
+                   Xbar=100, Xbar_label='100ms',
+                   Ybar=10, Ybar_label='10mV')
+
+
+inset = pt.inset(ax, [0, 0.6, 0.2, 0.4])
+inset.plot(AMPS, RATES, 'ko-', lw=0.5)
+pt.set_plot(inset, xlabel='amp. (nA)', ylabel='firing rate (Hz)')
+
+fig.savefig('../figures/BC-FI-curve.svg')
+"""
+
+"""
 # %%
 import sys, os, json, pandas
 import numpy as np
