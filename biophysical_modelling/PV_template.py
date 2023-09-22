@@ -1,0 +1,312 @@
+from neuron import h
+from neuron.units import ms
+import numpy as np
+
+h.load_file("stdlib.hoc")
+h.load_file("import3d.hoc")
+
+soma_Nafin = 0.045
+soma_kdrin = 0.036
+soma_Kslowin = 0.000725 
+soma_hin = 0.00001 
+soma_kapin = 0.0032
+soma_can = 0.0003
+soma_cat = 0.002
+soma_kctin =0.0001 
+soma_kcain =0.020
+v_init = -70.
+
+class PVcell:
+
+    def __init__(self,
+                 proximal_limit=100,
+                 ID = '864691135396580129_296758', # Basket Cell example
+                 debug=False):
+
+        self.load_morphology(ID)
+        self.SEGMENTS = np.load("morphologies/%s/segments.npy" % ID,
+                                allow_pickle=True).item()
+        self.branches = np.load("morphologies/%s/dendritic_branches.npy" % ID,
+                                allow_pickle=True).item()
+
+        self.label_compartments(proximal_limit, verbose=True)
+
+        self.insert_mechanisms_and_properties(debug=debug)
+
+    def load_morphology(self, ID):
+        cell = h.Import3d_SWC_read()
+        cell.input("morphologies/%s/%s.swc" % (ID,ID))
+        i3d = h.Import3d_GUI(cell, False)
+        i3d.instantiate(self)
+
+        self.soma_position = [self.soma[0].x3d(1),
+                              self.soma[0].y3d(1),
+                              self.soma[0].z3d(1)]
+
+    def distance_to_soma(self, sec):
+        # icenter = int(sec.nseg/2)+1
+        # return np.sqrt(\
+                # (sec.x3d(icenter)-self.soma_position[0])**2+\
+                # (sec.y3d(icenter)-self.soma_position[1])**2+\
+                # (sec.z3d(icenter)-self.soma_position[2])**2)
+        # return h.distance(self.soma[0](0.5), int(sec.nseg/2)+1)
+        return h.distance(self.soma[0](0.5), sec(1))
+
+
+    def label_compartments(self, proximal_limit,
+                           verbose=False):
+
+        self.compartments = {'soma':[], 'proximal':[], 'distal':[], 'axon':[]}
+
+        for sec in self.all:
+            # loop over all compartments
+            if 'soma' in sec.name():
+                self.compartments['soma'].append(sec)
+            elif 'axon' in sec.name():
+                self.compartments['axon'].append(sec)
+            else:
+                # dendrites
+                distS = self.distance_to_soma(sec)
+                if distS<proximal_limit:
+                    self.compartments['proximal'].append(sec)
+                else:
+                    self.compartments['distal'].append(sec)
+
+        if verbose:
+            for comp in self.compartments:
+                print(comp, ' n=%i comp. ' % len(self.compartments[comp]))
+
+
+    def insert_mechanisms_and_properties(self,
+                                         debug=False):
+
+        # SOMA
+        for sec in self.compartments['soma']:
+            # cable
+            if not debug:
+                sec.nseg = sec.n3d()
+            sec.cm = 1.2
+            sec.Ra = 172
+            # passive props
+            sec.insert('pas')
+            sec.g_pas =1./7600.
+            sec.e_pas = v_init
+            # sodium channels
+            sec.insert('Nafx')
+            sec.gnafbar_Nafx= soma_Nafin*0.6*5
+            # potassium channels
+            sec.insert('kdrin')
+            sec.gkdrbar_kdrin= soma_kdrin
+            # 
+            sec.insert('IKsin')
+            sec.gKsbar_IKsin= soma_Kslowin
+            #
+            sec.insert('hin')
+            sec.gbar_hin=soma_hin
+            # 
+            sec.insert('kapin')
+            sec.gkabar_kapin=soma_kapin
+            #
+            sec.insert('kctin')
+            sec.gkcbar_kctin=soma_kctin
+            #
+            sec.insert('kcain')
+            sec.gbar_kcain=soma_kcain
+            #
+            sec.insert('cadynin')
+
+        # AXON
+        for sec in self.compartments['axon']:
+            if not debug:
+                sec.nseg = sec.n3d()
+            sec.cm=1.2
+            sec.Ra=172
+            #
+            sec.insert('pas')
+            sec.g_pas =1./281600.
+            sec.e_pas = v_init
+            #
+            sec.insert('Nafx')
+            sec.gnafbar_Nafx=soma_Nafin*0.6*25
+            # 				                                                                    
+            sec.insert('kdrin')
+            sec.gkdrbar_kdrin=soma_kdrin*3
+
+
+        # PROX DEND
+        for sec in self.compartments['proximal']:
+            # cable
+            if not debug:
+                sec.nseg = sec.n3d()
+            sec.cm=1.2
+            sec.Ra=142
+            # 
+            sec.insert('pas')
+            sec.g_pas =1./7600.
+            sec.e_pas = v_init                                            
+            # sodium channels
+            sec.insert('Nafx')
+            sec.gnafbar_Nafx= soma_Nafin*0.4
+            # potassium channels
+            sec.insert('kdrin')
+            sec.gkdrbar_kdrin=0.018*0.5
+            # 
+            sec.insert('kapin')
+            sec.gkabar_kapin=soma_kapin*0.2                                            
+            # 
+            sec.insert('can')
+            sec.gcabar_can = soma_can
+            #
+            sec.insert('cat')
+            sec.gcatbar_cat=soma_cat*0.1
+            #
+            sec.insert('cal')
+            sec.gcalbar_cal=0.00003
+            #
+            sec.insert('cadynin')
+
+
+        # DISTAL DEND
+        for sec in self.compartments['distal']:
+            # cable
+            if not debug:
+                sec.nseg = sec.n3d()
+            sec.cm=1.2
+            sec.Ra=142
+            # passive current
+            sec.insert('pas')
+            sec.g_pas =1./74300.
+            sec.e_pas = v_init                                            
+            # sodium channel
+            sec.insert('Nafx')
+            sec.gnafbar_Nafx=soma_Nafin*0.4*0.8
+            # potassium channel
+            sec.insert('kdrin')
+            sec.gkdrbar_kdrin=0.018*0.5
+            # 
+            sec.insert('kadin')
+            sec.gkabar_kadin=1.8*0.001
+            # 
+            sec.insert('can')
+            sec.gcabar_can = soma_can
+            #
+            sec.insert('cat')
+            sec.gcatbar_cat=soma_cat*0.1
+            #
+            sec.insert('cal')
+            sec.gcalbar_cal=0.00003
+            #
+            sec.insert('cadynin')
+
+        for sec in self.all:
+            sec.v = v_init
+
+        h.ko0_k_ion = 3.82 #  //mM
+        h.ki0_k_ion = 140  #  //mM  
+
+    def map_SEGMENTS_to_NEURON(self):
+        """
+        mapping based on position in 3d space
+
+        only on somatic and dendritic compartments
+        otherwise can be confused by some axons crossing the dendrites
+        (because the NEURON conversion of the swc to compartements/sections 
+            make it hard to recover the true xyz coordinates)
+        """
+        cond = (self.SEGMENTS['comp_type']=='dend') | (self.SEGMENTS['comp_type']=='soma')
+
+        self.SEGMENTS['NEURON_section'] = np.empty(len(cell.SEGMENTS['x']),
+                                                   dtype=object)
+        self.SEGMENTS['NEURON_segment'] = np.empty(len(cell.SEGMENTS['x']),
+                                                   dtype=object)
+        iMins = []
+        # for sec in self.all:
+        for sec in self.compartments['proximal']+self.compartments['distal']+self.compartments['soma']:
+            for iseg in range(sec.nseg):
+                try:
+                    D = (1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
+                        (1e6*self.SEGMENTS['y']-sec.y3d(iseg))**2+\
+                        (1e6*self.SEGMENTS['z']-sec.z3d(iseg))**2
+                    # print(np.sqrt(np.min(D)))
+                    iMin = np.argmin(D[cond])
+                    iMin2 = np.arange(len(cond))[cond][iMin]
+                    self.SEGMENTS['NEURON_section'][iMin2] = sec
+                    self.SEGMENTS['NEURON_segment'][iMin2] = iseg
+
+                except BaseException as be:
+                    # print(be)
+                    print('PB with: ', iseg, sec)
+
+        print(np.sum(self.SEGMENTS['NEURON_segment']!=None))
+
+    def check_that_all_dendritic_branches_are_well_covered(self):
+
+        cond = self.SEGMENTS['NEURON_section']!=None
+        cond = self.branches['branches'][0]
+        print(np.unique(self.SEGMENTS['comp_type'][cond]))
+
+        import matplotlib.pylab as plt
+        plt.scatter(1e6*self.SEGMENTS['x'][cond], 1e6*self.SEGMENTS['y'][cond],s=0.1)
+        plt.show()
+        # print(np.unique(self.SEGMENTS['comp_type'][self.branches['branches'][0]]))
+        # print(np.uni(self.SEGMENTS['NEURON_section'][branch]!=None), 
+        # loop over branches and check
+        for ib, branch in enumerate(self.branches['branches']):
+            print('branch #%i :' % ib, 
+                    np.sum(self.SEGMENTS['NEURON_section'][branch]!=None), 
+                    '/', len(branch))
+            # if np.sum(self.SEGMENTS['NEURON_section'][branch]!=None)<len(branch):
+                # Is = np.flatnonzero(self.SEGMENTS['NEURON_section'][branch]==None)
+                # print(Is)
+                # for i in Is:
+                    # print(i, 'comp: ', cell.SEGMENTS['distance_from_soma'][i])
+
+
+
+
+
+if __name__=='__main__':
+
+    cell = PVcell(debug=False)
+    cell.map_SEGMENTS_to_NEURON()
+
+    cell.check_that_all_dendritic_branches_are_well_covered()
+
+
+    """
+    n = 0
+    for sec in cell.all:
+        n += sec.nseg-2
+    print(n)
+    
+    ic = h.IClamp(cell.soma[0](0.5))
+    ic.amp = 0. 
+    ic.dur =  1e9 * ms
+    ic.delay = 0 * ms
+
+    dt, tstop = 0.025, 500
+
+    t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
+    Vm = h.Vector()
+
+    Vm.record(cell.soma[0](0.5)._ref_v)
+
+    h.finitialize()
+
+    for i in range(int(50/dt)):
+        h.fadvance()
+
+    for i in range(1, 11):
+
+        ic.amp = i/10.
+        for i in range(int(100/dt)):
+            h.fadvance()
+        ic.amp = 0
+        for i in range(int(100/dt)):
+            h.fadvance()
+
+    import matplotlib.pylab as plt
+    plt.figure(figsize=(9,3))
+    plt.plot(np.arange(len(Vm))*dt, np.array(Vm))
+    plt.show()
+    """

@@ -17,6 +17,8 @@
 # # Current Step Responses in the Morphologically-detailed models
 
 # %%
+exec(open('PV_template.py').read())
+
 import sys, os, json, pandas
 import numpy as np
 
@@ -39,101 +41,46 @@ Params = load_params('PV-parameters.json')
 # %% [markdown]
 # ## Load the detailed morphology
 
+"""
 # %%
 ID = '864691135396580129_296758' # Basket Cell example
 #ID = '864691135571546917_264824' # Martinotti Cell example
 
 cell = morphology.load(ID)
+print(len(cell.SEGMENTS['x']))
 
-# %%
-net = nrn.Network()
+cell = PVcell(ID=ID, debug=True)
 
-nrn.defaultclock.dt = 0.025*nrn.ms
+ic = h.IClamp(cell.soma[0](0.5))
+ic.amp = 0. 
+ic.dur =  1e9 * ms
+ic.delay = 0 * ms
 
-Equation_String= """
-Im = + 0*amp/meter**2 : amp/meter**2
-# vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, needed for mechanisms
-I_inj : amp (point current)
-"""
+dt, tstop = 0.025, 500
 
-# intrinsic currents
-Na_inactivation_speed_factor = 5.
-CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
-            nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
-                                                        'E_Na':55.,
-                                                        'Ra':Na_inactivation_speed_factor*0.182,
-                                                        'Rb':Na_inactivation_speed_factor*0.124}),
-            nrn.DelayedRectifierPotassiumChannelCurrent(name='K'),
-            nrn.ATypePotassiumCurrentProximal(name='KAprox'),
-            nrn.ATypePotassiumCurrentDistal(name='KAdist')]
-CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':Params['EL']}),
-            nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
-                                                        'E_Na':55.,
-                                                        'Ra':Na_inactivation_speed_factor*0.182,
-                                                        'Rb':Na_inactivation_speed_factor*0.124}),
-            nrn.PotassiumChannelCurrent(name='K')]
+t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
+Vm = h.Vector()
 
-for current in CURRENTS:
-    Equation_String = current.insert(Equation_String)
+Vm.record(cell.soma[0](0.5)._ref_v)
 
-eqs = nrn.Equations(Equation_String)
+h.finitialize()
 
-neuron = nrn.SpatialNeuron(morphology=cell.morpho,
-                           model=eqs, method='exponential_euler',
-                           Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
-                           Ri=Params['Ri'] * nrn.ohm * nrn.cm)
-net.add(neuron)
+for i in range(int(50/dt)):
+    h.fadvance()
 
-# initial conditions:
-neuron.v = Params['EL']*nrn.mV
+for i in range(1, 11):
 
-for current in CURRENTS:
-    current.init_sim(neuron)
+    ic.amp = i/10.
+    for i in range(int(100/dt)):
+        h.fadvance()
+    ic.amp = 0
+    for i in range(int(100/dt)):
+        h.fadvance()
 
-CONDS = {\
-    'soma': (cell.SEGMENTS['comp_type']=='soma'),
-    'prox': (cell.SEGMENTS['comp_type']=='dend') & (cell.SEGMENTS['distance_to_soma']<100e-6),
-    'dist': (cell.SEGMENTS['comp_type']=='dend') & (cell.SEGMENTS['distance_to_soma']>=100e-6),
-    'axon': (cell.SEGMENTS['comp_type']=='axon')}
-
-for c in CONDS:
-
-    ## --       PASSIVE CURRENT       -- ##
-    neuron.gbar_Pas[CONDS[c]] = Params['gPas_%s'%c]*nrn.siemens/nrn.cm**2
-    ## --       SODIUM CURRENT        -- ##
-    neuron.gbar_Na[CONDS[c]] = 0.7*Params['gNa_%s'%c]*nrn.siemens/nrn.cm**2
-    ## --     POTASSIUM CURRENT       -- ##
-    neuron.gbar_K[CONDS[c]] = Params['gK_%s'%c]*nrn.siemens/nrn.cm**2
-    ## -- PROX A-TYPE K CURRENT       -- ##
-    # neuron.gbar_KAprox[CONDS[c]] = Params['gKAprox_%s'%c]*nrn.siemens/nrn.cm**2
-    ## --  DIST A-TYPE K CURRENT      -- ##
-    # neuron.gbar_KAdist[CONDS[c]] = Params['gKAdist_%s'%c]*nrn.siemens/nrn.cm**2
-
-soma_loc, dend_loc = 0, 2
-mon = nrn.StateMonitor(neuron, ['v'], record=[soma_loc])
-net.add(mon)
-
-net.run(10*nrn.ms)
-neuron.I_inj[0] = 400*nrn.pA
-net.run(12*nrn.ms)
-neuron.I_inj[0] = 0*nrn.pA
-net.run(10*nrn.ms)
-
-# %%
-# # # ## Run the various variants of the model to reproduce Figure 12
 import matplotlib.pylab as plt
-fig, ax = plt.subplots(1, figsize=(8,2))
-
-ax.plot(mon.t / nrn.ms, mon[soma_loc].v/nrn.mV, color='blue', label='soma')
-ax.set_ylabel('Vm (mV)')
-ax.legend()
-
-net.remove(neuron)
-net.remove(mon)
-
-net, M, neuron = None, None, None
-
+plt.figure(figsize=(9,3))
+plt.plot(np.arange(len(Vm))*dt, np.array(Vm))
 plt.show()
 
-# %%
-# # # ##
+"""
+
