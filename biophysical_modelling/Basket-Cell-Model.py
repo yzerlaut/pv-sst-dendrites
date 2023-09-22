@@ -14,11 +14,20 @@
 # ---
 
 # %% [markdown]
-# # Simulation of Morphologically-detailed models
+# # Simulation of Morphologically-detailed models of Basket Cell
 
+# %%
+from PV_template import *
+
+import sys
+sys.path.append('..')
+import plot_tools as pt
+import matplotlib.pylab as plt
 
 # %% [markdown]
-# # Basket Cell FI-curve
+# ## FI-curve
+
+# %%
 """
 ID = '864691135396580129_296758' # Basket Cell example
 cell = PVcell(ID=ID, debug=False)
@@ -37,31 +46,38 @@ Vm.record(cell.soma[0](0.5)._ref_v)
 
 apc = h.APCount(cell.soma[0](0.5))
 
-h.finitialize()
+h.finitialize(cell.El)
 
 for i in range(int(50/dt)):
     h.fadvance()
 
-duration = 100 # ms
+duration = 200 # ms
 AMPS, RATES = np.array([-0.1]+list(0.1*np.arange(1, 10))), []
-for i, amp in enumerate(AMPS):
+for a, amp in enumerate(AMPS):
 
     ic.amp = amp
     apc.n = 0
     for i in range(int(duration/dt)):
         h.fadvance()
+    if a==0:
+        # calculate input res.
+        Rin = (cell.soma[0](0.5).v-cell.El)/amp # Mohm
     RATES.append(apc.n*1e3/duration) # rates in Hz
     ic.amp = 0
     for i in range(int(duration/dt)):
         h.fadvance()
+"""
 
+# %%
+"""
 fig, ax = plt.subplots(figsize=(9,3))
 ax.plot(np.arange(len(Vm))*dt, np.array(Vm), color='tab:grey')
 ax.axis('off')
 pt.draw_bar_scales(ax, loc='top-right',
                    Xbar=100, Xbar_label='100ms',
                    Ybar=10, Ybar_label='10mV')
-
+pt.annotate(ax, '%imV ' % cell.El, (0, cell.El), xycoords='data', va='center', ha='right')
+pt.annotate(ax, '      R$_{in}$=%.1fM$\Omega$ ' % Rin, (0, 0), va='top')
 
 inset = pt.inset(ax, [0, 0.6, 0.2, 0.4])
 inset.plot(AMPS, RATES, 'ko-', lw=0.5)
@@ -70,195 +86,62 @@ pt.set_plot(inset, xlabel='amp. (nA)', ylabel='firing rate (Hz)')
 fig.savefig('../figures/BC-FI-curve.svg')
 """
 
+# %% [markdown]
+# ## Resistance Profile
+
+# %%
 """
-# %%
-import sys, os, json, pandas
-import numpy as np
+ID = '864691135396580129_296758' # Basket Cell example
+cell = PVcell(ID=ID, debug=False)
+cell.check_that_all_dendritic_branches_are_well_covered(show=False)
 
-sys.path.append('../neural_network_dynamics/')
-import nrn
-from nrn.plot import nrnvyz
-from utils.params import load as load_params
+amp, duration, dt = -25e-3, 300, 0.1
 
-sys.path.append('..')
+DISTANCE, RIN, RT = [], [], []
+for iB, branch in enumerate(cell.branches['branches']):
 
-import plot_tools as pt
-import matplotlib.pylab as plt
+    Distance = []
+    Rin, Rt = [], [] # input and transfer resistance
+    for b in branch:
 
-sys.path.append('../src')
-import morphology
+        x = cell.SEGMENTS['NEURON_segment'][b]/cell.SEGMENTS['NEURON_section'][b].nseg
+        Distance.append(h.distance(cell.SEGMENTS['NEURON_section'][b](x),
+                                   cell.soma[0](0.5)))
 
-# %% [markdown]
-# ## Basket cell
+        ic = h.IClamp(cell.SEGMENTS['NEURON_section'][b](x))
+        ic.amp, ic.dur = 0. , 1e3
 
-# %%
-cell = load_morphology('864691135396580129_296758')
-#cell = morphology.load('864691137053906294_301107')
-Params = load_params('PV-parameters.json')
+        h.finitialize(cell.El)
+        ic.amp = amp
+        for i in range(int(duration/dt)):
+            h.fadvance()
 
-# %%
-fig, ax = plt.subplots(1, figsize=(10,10))
-vis = nrnvyz(cell.SEGMENTS)
-vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
-                  bar_scale_args={'Ybar':100, 'Xbar':1e-9,
-                                  'Ybar_label':'100$\mu$m ', 'fontsize':6}, ax=ax)
-# plot number of synapses in each segment !
-vis.add_dots(ax, range(len(cell.SEGMENTS['x'])), cell.SEGMENTS['Nsyn']/4)
+        Rin.append((cell.SEGMENTS['NEURON_section'][b](x).v-cell.El)/amp) # Mohm
+        Rt.append((cell.soma[0](0.5).v-cell.El)/amp) # Mohm
+    RIN.append(Rin)
+    RT.append(Rt)
+    DISTANCE.append(Distance)
 
-# %% [markdown]
-# ### Input Impedance Characterization
+np.save('../data/BC-Input-Resistance.npy',
+        {'distance':DISTANCE, 'Rin':RIN, 'Rt':RT})
+"""
 
 # %%
-net = nrn.Network()
+R = np.load('../data/BC-Input-Resistance.npy', allow_pickle=True).item()
 
-EL = Params['EL']*nrn.mV
-#gL = 2*nrn.psiemens/nrn.umeter**2
-eqs='''
-Im = gL * (EL - v) : amp/meter**2
-gL : siemens/meter**2
-I : amp (point current)
-'''
-neuron = nrn.SpatialNeuron(morphology=cell.morpho, model=eqs,
-                           Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
-                           Ri=Params['Ri'] * nrn.ohm * nrn.cm)
-neuron.v = Params['EL']*nrn.mV
-
-for comp in ['axon', 'dend', 'soma']:
-    neuron.gL[cell.SEGMENTS['comp_type']==comp] = Params['gL_%s' % comp]*nrn.psiemens/nrn.um**2
-
-net.add(neuron)
-
-# recording
-#M = nrn.StateMonitor(neuron, ('v'), record=[0]) # soma + dend loc
-#net.add(M)
-
-# relax
-net.run(30.*nrn.ms)
-
-results = {'distance_to_soma':[],
-           'input_res' : []}
-
-step = 50. # pA
-
-for comp in np.unique(cell.synapses_morpho_index):
-    
-    # current step
-    neuron.I[comp] = step*nrn.pA
-    net.run(50.*nrn.ms)
-    
-    for n in range(cell.SEGMENTS['Nsyn'][comp]):
-        # we just duplicate the value according to the number of synapses in this compartment
-        results['distance_to_soma'].append(cell.SEGMENTS['distance_to_soma'][comp])
-        results['input_res'].append(1e3*(neuron.v[0]/nrn.mV-Params['EL'])/step) # MOhm
-        
-    # relaxation
-    neuron.I[comp] = 0*nrn.pA
-    net.run(50.*nrn.ms)
-    
-for key in results.keys():
-    results[key] = np.array(results[key])
-    
-#t, v = M.t/nrn.second, M.v[0]/nrn.mV
-#net.remove(M)
-net.remove(neuron)
-net, M, neuron = None, None, None
-
-
-# %%
-bins = np.linspace(0, 200, 20)
-
-binned = np.digitize(1e6*np.array(results['distance_to_soma']), bins=bins)
-
-fig, ax = pt.plt.subplots(1, figsize=(2,1))
-
-for b in np.unique(binned)[:-1]:
-    cond = (binned==b)
-    ax.errorbar([bins[b]], [np.mean(np.array(results['input_res'])[cond])],
-                yerr=[np.std(np.array(results['input_res'])[cond])], fmt='ko-', ms=2, lw=1)
-pt.set_plot(ax, xlim=[0,210], xlabel='dist to soma ($\mu$m)', ylabel='M$\Omega$')
-
-# %% [markdown]
-# ## Responses to current steps
-
-# %%
-net = nrn.Network()
-
-nrn.defaultclock.dt = 0.025*nrn.ms
-
-# Starting from an empty equation string:
-Equation_String= '''
-Im = + 0*amp/meter**2 : amp/meter**2
-vc = clip(v/mV, -90, 50) : 1 # UNITLESS CLIPPED VOLTAGE, useful for mechanisms
-I_inj : amp (point current)
-'''
-
-# intrinsic currents
-Na_inactivation_speed_factor = 3.0
-CURRENTS = [nrn.PassiveCurrent(name='Pas', params={'El':-68}),
-            nrn.SodiumChannelCurrent(name='Na', params={'tha':-35,
-                                                    'E_Na':55.,
-                                                    'Ra':Na_inactivation_speed_factor*0.182,
-                                                    'Rb':Na_inactivation_speed_factor*0.124}),
-            nrn.DelayedRectifierPotassiumChannelCurrent(name='K')]
-
-
-for current in CURRENTS:
-    Equation_String = current.insert(Equation_String)
-
-eqs = nrn.Equations(Equation_String)
-
-neuron = nrn.SpatialNeuron(morphology=cell.morpho, model=eqs,
-                           Cm=Params['cm'] * nrn.uF / nrn.cm ** 2,
-                           Ri=Params['Ri'] * nrn.ohm * nrn.cm)
-net.add(neuron)
-
-# initial conditions:
-neuron.v = Params['EL']*nrn.mV
-
-for current in CURRENTS:
-    current.init_sim(neuron)
-
-## -- PASSIVE PROPS -- ##
-neuron.gbar_Pas = 1.3e-4*nrn.siemens/nrn.cm**2
-
-## -- SPIKE PROPS (Na & Kv) -- ##
-# soma
-neuron.gbar_Na = 1.3e-1*nrn.siemens/nrn.cm**2
-neuron.gbar_K =  3.6e-2*nrn.siemens/nrn.cm**2
-# dendrites
-neuron.dend.gbar_Na = 0*nrn.siemens/nrn.cm**2 #40*1e-12*siemens/um**2
-neuron.dend.gbar_K = 0*nrn.siemens/nrn.cm**2 #30*1e-12*siemens/um**2
-# neuron.dend.distal.gbar_Na = 40*1e-12*siemens/um**2
-# neuron.dend.distal.gbar_K = 30*1e-12*siemens/um**2
-
-soma_loc, dend_loc = 0, 2
-mon = nrn.StateMonitor(neuron, ['v', 'I_inj'], record=[soma_loc, dend_loc])
-net.add(mon)
-
-net.run(100*nrn.ms)
-neuron.main.I_inj = 200*nrn.pA
-net.run(200*nrn.ms)
-neuron.main.I_inj = 0*nrn.pA
-net.run(100*nrn.ms)
-neuron.dend.I_inj = 200*nrn.pA
-net.run(200*nrn.ms)
-neuron.dend.I_inj = 0*nrn.pA
-net.run(200*nrn.ms)
-
-# %%
-import matplotlib.pylab as plt
-fig, AX = plt.subplots(3,1, figsize=(12,4))
-
-AX[0].plot(mon.t / nrn.ms, mon[soma_loc].v/nrn.mV, color='blue', label='soma')
-AX[0].plot(mon.t / nrn.ms, mon[dend_loc].v/nrn.mV, color='red', label='dend')
-AX[0].set_ylabel('Vm (mV)')
-AX[0].legend()
-
-net.remove(neuron)
-net.remove(mon)
-
-net, M, neuron = None, None, None
+bins = np.linspace(0, 180, 20)
+fig, AX = plt.subplots(1, 2, figsize=(5,2))
+plt.subplots_adjust(wspace=0.8, bottom=0.3, right=0.8)
+for i, dist, rin, rt in zip(range(len(R['Rt'])), R['distance'], R['Rin'], R['Rt']):
+    AX[0].plot(dist, rin, 'o', ms=0.5, color=plt.cm.tab10(i))
+    AX[1].plot(dist, rt, 'o', ms=0.5, color=plt.cm.tab10(i))
+    pt.annotate(AX[1], i*'\n'+'branch #%i' % (i+1), (1,1), va='top', color=plt.cm.tab10(i))
+pt.set_plot(AX[0], xlabel='dist. to soma ($\mu$m)',
+            ylabel='Input Res. (M$\Omega$')
+pt.set_plot(AX[1], xlabel='dist. to soma ($\mu$m)',
+            ylabel='Transfer Res. (M$\Omega$)\n to soma ')
+fig.savefig('../figures/BC-Resistance-Profile.svg')
+plt.show()
 
 # %%
 
-# %%

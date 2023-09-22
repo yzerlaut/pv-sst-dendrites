@@ -5,6 +5,7 @@ import numpy as np
 h.load_file("stdlib.hoc")
 h.load_file("import3d.hoc")
 
+soma_pas = 2.7*1./7600. # raised match ~100MOhm input resistance
 soma_Nafin = 0.045
 soma_kdrin = 0.036
 soma_Kslowin = 0.000725 
@@ -24,6 +25,7 @@ class PVcell:
                  debug=False):
 
         self.load_morphology(ID)
+
         self.SEGMENTS = np.load("morphologies/%s/segments.npy" % ID,
                                 allow_pickle=True).item()
         self.branches = np.load("morphologies/%s/dendritic_branches.npy" % ID,
@@ -35,6 +37,7 @@ class PVcell:
 
         self.map_SEGMENTS_to_NEURON()
 
+        self.El = v_init
 
     def load_morphology(self, ID):
         cell = h.Import3d_SWC_read()
@@ -92,7 +95,7 @@ class PVcell:
             sec.Ra = 172
             # passive props
             sec.insert('pas')
-            sec.g_pas =1./7600.
+            sec.g_pas = soma_pas
             sec.e_pas = v_init
             # sodium channels
             sec.insert('Nafx')
@@ -126,7 +129,7 @@ class PVcell:
             sec.Ra=172
             #
             sec.insert('pas')
-            sec.g_pas =1./281600.
+            sec.g_pas = soma_pas*7600./281600.
             sec.e_pas = v_init
             #
             sec.insert('Nafx')
@@ -145,7 +148,7 @@ class PVcell:
             sec.Ra=142
             # 
             sec.insert('pas')
-            sec.g_pas =1./7600.
+            sec.g_pas = soma_pas
             sec.e_pas = v_init                                            
             # sodium channels
             sec.insert('Nafx')
@@ -178,7 +181,7 @@ class PVcell:
             sec.Ra=142
             # passive current
             sec.insert('pas')
-            sec.g_pas =1./74300.
+            sec.g_pas = soma_pas* 7600./74300.
             sec.e_pas = v_init                                            
             # sodium channel
             sec.insert('Nafx')
