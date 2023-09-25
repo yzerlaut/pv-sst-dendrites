@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -22,7 +22,7 @@
 from single_cell_integration import * # code to run the model: (see content below)
 
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -142,7 +142,7 @@ def plot_parameter_variation(key,
                              label='label',
                              yscale='log'):
 
-    data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
+    data = np.load('../../data/%s-impact.npy' % key, allow_pickle=True).item()
 
     fig, AX = plt.subplots(1, 2, figsize=(4, 1.3))
     plt.subplots_adjust(wspace=0.6, right=0.8, left=0.15)
@@ -189,7 +189,7 @@ run_params_scan('branch-number', [1,2,3,4])
 # %%
 # figure for paper
 key='branch-number'
-data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
+data = np.load('../../data/%s-impact.npy' % key, allow_pickle=True).item()
 
 fig, AX = pt.plt.subplots(2, figsize=(0.9, 1.6))
 pt.plt.subplots_adjust(hspace=0.15, right=0.8, left=0.15)
@@ -350,7 +350,7 @@ AXS[0][1].set_title('transfer resistance')
 
 for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
 
-    data = np.load('../data/%s-impact.npy' % key, allow_pickle=True).item()
+    data = np.load('../../data/%s-impact.npy' % key, allow_pickle=True).item()
 
     AX[0].annotate(title, (-0.9, 0.5), rotation=90, xycoords='axes fraction',
                    va='center', ha='center')
@@ -362,9 +362,10 @@ for key, title, label, AX in zip(KEYS, TITLES, LABELS, AXS):
         AX[1].plot(results['loc'], np.array(results['transfer_resistance_to_soma'])/results['transfer_resistance_to_soma'][0], color=color, lw=1.5)
 
     inset = pt.inset(AX[1], (1.4, 0.0, 0.1, 1.0))
-    pt.bar_legend(fig, X=range(len(data[key])+1),
-                  ticks = np.arange(len(data[key]))+0.5,
-                  ticks_labels = [str(k) for k in data[key]],
+    pt.bar_legend(fig, 
+                  #X=range(len(data[key])+1),
+                  #ticks = np.arange(len(data[key]))+0.5,
+                  #ticks_labels = [str(k) for k in data[key]],
                   colormap=plt.cm.viridis, ax_colorbar=inset,
                   label=label)
     AX[0].set_ylabel('M$\Omega$')
