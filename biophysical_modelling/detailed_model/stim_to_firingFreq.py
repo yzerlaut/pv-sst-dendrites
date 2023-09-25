@@ -86,12 +86,12 @@ if __name__=='__main__':
                    'freqs': np.logspace(-3.5, 0, 15),
                    'tstop':1000}
 
-        for synapses in ['synapses', 'synapses_shuffled'][:2]:
+        for synapses in ['synapses', 'synapses_shuffled']:
             print(' o %s ' % synapses)
-            for iBranch in RESULTS['branches'][:1]:
+            for iBranch in RESULTS['branches']:
                 print('     branch #%i ' % iBranch)
-                for freq in RESULTS['freqs'][:2]:
-                    print('         freq=%.1f ' % freq)
+                for freq in RESULTS['freqs']:
+                    print('         freq=%.1e Hz' % freq)
                     _, Vm = run_sim(cell, cell.branches[synapses][iBranch],
                                     dt=RESULTS['dt'],
                                     tstop=RESULTS['tstop'],
@@ -108,16 +108,17 @@ if __name__=='__main__':
                 allow_pickle=True).item()
 
         fig, ax = plt.subplots()
-        for synapses in ['synapses', 'synapses_shuffled'][:2]:
-            for iBranch in RESULTS['branches'][:1]:
-                for freq in RESULTS['freqs'][:2]:
+        for synapses in ['synapses', 'synapses_shuffled']
+            for iBranch in RESULTS['branches']:
+                for freq in RESULTS['freqs']:
                     Vm = RESULTS['Vm_%s_%i_%.3f' % (synapses, iBranch, freq)]
                     ax.plot(np.arange(len(Vm))*RESULTS['dt'], Vm)
 
-    # ax.axis('off')
-    # pt.draw_bar_scales(ax, loc='top-right',
-                       # Xbar=100, Xbar_label='100ms',
-                       # Ybar=10, Ybar_label='10mV')
-    plt.show()
+        # ax.axis('off')
+        # pt.draw_bar_scales(ax, loc='top-right',
+                           # Xbar=100, Xbar_label='100ms',
+                           # Ybar=10, Ybar_label='10mV')
+
+        plt.show()
 
 
