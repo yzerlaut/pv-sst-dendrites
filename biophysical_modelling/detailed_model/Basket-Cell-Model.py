@@ -137,7 +137,7 @@ for i, dist, rin, rt in zip(range(len(R['Rt'])), R['distance'], R['Rin'], R['Rt'
     AX[1].plot(dist, rt, 'o', ms=0.5, color=plt.cm.tab10(i))
     pt.annotate(AX[1], i*'\n'+'branch #%i' % (i+1), (1,1), va='top', color=plt.cm.tab10(i))
 pt.set_plot(AX[0], xlabel='dist. to soma ($\mu$m)',
-            ylabel='Input Res. (M$\Omega$')
+            ylabel='Input Res. (M$\Omega$', yscale='log')
 pt.set_plot(AX[1], xlabel='dist. to soma ($\mu$m)',
             ylabel='Transfer Res. (M$\Omega$)\n to soma ')
 fig.savefig('../figures/BC-Resistance-Profile.svg')
