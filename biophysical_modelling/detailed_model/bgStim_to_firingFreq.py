@@ -30,7 +30,12 @@ def run_sim(cell, synapses,
     for syn in synapses:
 
         np.random.seed(syn)
-        x = cell.SEGMENTS['NEURON_segment'][syn]/cell.SEGMENTS['NEURON_section'][syn].nseg
+
+        # need to avoid x=0 and x=1, to allow ion concentrations variations in NEURON
+        x = np.clip(cell.SEGMENTS['NEURON_segment'][syn], 
+                1, cell.SEGMENTS['NEURON_section'][syn].nseg-2)\
+                        /cell.SEGMENTS['NEURON_section'][syn].nseg
+
         AMPAS.append(\
                 h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
         NMDAS.append(\
@@ -70,9 +75,14 @@ if __name__=='__main__':
 
     if sys.argv[-1]=='run':
 
+        with_Vm = True
+
         ID = '864691135396580129_296758' # Basket Cell example
         cell = PVcell(ID=ID, debug=False)
         cell.check_that_all_dendritic_branches_are_well_covered()
+
+        # spike count
+        apc = h.APCount(cell.soma[0](0.5))
 
         # shuffle synapses
         cell.branches['synapses_shuffled'] = []
@@ -82,21 +92,26 @@ if __name__=='__main__':
                         len(cell.branches['synapses'][iBranch])))
 
         RESULTS = {'dt':0.025,
-                   'branches':range(len(cell.branches['synapses'])),
-                   'freqs': np.logspace(-3.5, 0, 15),
+                   'branches':range(len(cell.branches['synapses']))[:2],
+                   'freqs': np.logspace(-3.5, 0, 4),
                    'tstop':1000}
 
         for synapses in ['synapses', 'synapses_shuffled']:
             print(' o %s ' % synapses)
             for iBranch in RESULTS['branches']:
-                print('     branch #%i ' % iBranch)
+                print('     branch #%i ' % (1+iBranch))
                 for freq in RESULTS['freqs']:
                     print('         freq=%.1e Hz' % freq)
+                    apc.n = 0 # reset spike count
                     _, Vm = run_sim(cell, cell.branches[synapses][iBranch],
                                     dt=RESULTS['dt'],
                                     tstop=RESULTS['tstop'],
                                     stim_freq=freq)
-                    RESULTS['Vm_%s_%i_%.3f' % (synapses, iBranch, freq)] = Vm
+                    if with_Vm:
+                        RESULTS['Vm_%s_%i_%.1e' % (synapses, iBranch+1, freq)] = Vm
+
+                    RESULTS['Rate_%s_%i_%.1e' % (synapses, iBranch+1, freq)] = \
+                            apc.n*1e3/RESULTS['tstop'] # rates in Hz
 
         np.save('../../data/detailed_model/spikingFreq_vs_stim_PV_relationship.npy',
                 RESULTS)
@@ -108,10 +123,10 @@ if __name__=='__main__':
                 allow_pickle=True).item()
 
         fig, ax = plt.subplots()
-        for synapses in ['synapses', 'synapses_shuffled']
+        for synapses in ['synapses', 'synapses_shuffled']:
             for iBranch in RESULTS['branches']:
                 for freq in RESULTS['freqs']:
-                    Vm = RESULTS['Vm_%s_%i_%.3f' % (synapses, iBranch, freq)]
+                    Vm = RESULTS['Vm_%s_%i_%.1e' % (synapses, iBranch+1, freq)]
                     ax.plot(np.arange(len(Vm))*RESULTS['dt'], Vm)
 
         # ax.axis('off')
