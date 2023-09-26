@@ -1,3 +1,4 @@
+from parallel import Parallel
 from PV_template import *
 
 import sys
@@ -8,6 +9,9 @@ import matplotlib.pylab as plt
 
 def train(freq,
           tstop=1.):
+    """
+    Poisson spike train from a given frequency (homogeneous process)
+    """
 
     spikes = np.cumsum(\
             np.random.exponential(1./freq, int(2*tstop*freq)))
@@ -15,19 +19,61 @@ def train(freq,
     return spikes[spikes<tstop]
 
 
-def run_sim(cell, synapses,
-            dt= 0.025,
-            tstop = 1000,
-            ampa_weight=1e-3, # uS
+def run_sim(cellType='Basket', 
+            iBranch=0,
+            # bg Stim props
+            bgStimFreq = 1e-3, 
+            bgStimSeed = 10, 
+            # synapse shuffling
+            synShuffled=False,
+            synShuffleSeed=0,
+            # biophysical props
             NMDAtoAMPA_ratio=0,
-            stim_freq = 0.1):
+            ampa_weight=1e-3, # uS
+            # sim props
+            filename='single_sim.npy',
+            with_Vm=False,
+            dt= 0.025,
+            tstop = 1000):
 
+    ######################################################
+    ##   simulation preparation  #########################
+    ######################################################
 
+    # create cell
+    if cellType=='Basket':
+        ID = '864691135396580129_296758' # Basket Cell example
+        cell = PVcell(ID=ID, debug=False)
+        cell.check_that_all_dendritic_branches_are_well_covered(verbose=False)
+    elif cellType=='Martinotti':
+        pass
+    else:
+        raise Exception(' cell type not recognized  !')
+        cell = None
+
+    # shuffle synapses
+    if synShuffled:
+        np.random.seed(synShuffleSeed+bgStimSeed) # co-shuffling by default 
+        synapses = np.random.choice(cell.branches['branches'][iBranch],
+                                    len(cell.branches['synapses'][iBranch]))
+    else:
+        synapses = cell.branches['synapses'][iBranch]
+
+    # prepare presynaptic spike trains
+    np.random.seed(bgStimSeed)
+    TRAINS = []
+    for i, syn in enumerate(synapses):
+        TRAINS.append(train(bgStimFreq, tstop=tstop))
+        
+
+    ######################################################
+    ##   true simulation         #########################
+    ######################################################
     AMPAS, NMDAS = [], []
     ampaNETCONS, nmdaNETCONS = [], []
     STIMS, VECSTIMS = [], []
 
-    for syn in synapses:
+    for i, syn in enumerate(synapses):
 
         np.random.seed(syn)
 
@@ -38,26 +84,32 @@ def run_sim(cell, synapses,
 
         AMPAS.append(\
                 h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-        NMDAS.append(\
-                h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+
+        if NMDAtoAMPA_ratio>0:
+            NMDAS.append(\
+                    h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
         VECSTIMS.append(h.VecStim())
-        STIMS.append(h.Vector(train(stim_freq,
-                                    tstop=tstop)))
+        STIMS.append(h.Vector(TRAINS[i]))
 
         VECSTIMS[-1].play(STIMS[-1])
 
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
         ampaNETCONS[-1].weight[0] = ampa_weight
 
-        nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        nmdaNETCONS[-1].weight[0] = ampa_weight*NMDAtoAMPA_ratio
+        if NMDAtoAMPA_ratio>0:
+            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
+            nmdaNETCONS[-1].weight[0] = ampa_weight*NMDAtoAMPA_ratio
 
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
     Vm = h.Vector()
 
+    # Vm rec
     Vm.record(cell.soma[0](0.5)._ref_v)
+
+    # spike count
+    apc = h.APCount(cell.soma[0](0.5))
 
     # run
     h.finitialize(cell.El)
@@ -68,72 +120,49 @@ def run_sim(cell, synapses,
     ampaNETCONS, nmdaNETCONS = None, None
     STIMS, VECSTIMS = None, None
 
-    return np.arange(len(Vm))*dt, np.array(Vm)
+    # save the output
+    output = {'output_rate': float(apc.n*1e3/tstop),
+              'dt': dt, 'tstop':tstop}
+    if with_Vm:
+        output['Vm'] = np.array(Vm)
+    np.save(filename, output)
 
 
 if __name__=='__main__':
 
-    if sys.argv[-1]=='run':
+    import argparse
+    # First a nice documentation 
+    parser=argparse.ArgumentParser(description="script description",
+                                   formatter_class=argparse.RawTextHelpFormatter)
 
-        with_Vm = True
+    parser.add_argument('-c', "-- cellType",\
+                        help="""
+                        cell type, either:
+                        - Basket
+                        - Martinotti
+                        """, default='Basket')
+    
+    parser.add_argument("--branch", help="branch ID (-1 means all)", type=int, default=-1)
+    # synaptic shuffling
+    parser.add_argument("--synShuffled",
+                        help="shuffled synapses uniformly ? (False=real) ", action="store_true")
+    parser.add_argument("--synShuffleSeed",
+                        help="seed for synaptic shuffling", type=int, default=0)
+    # stimulation shuffling
+    parser.add_argument("--bgShuffleSeed",
+                        help="seed for background stim", type=int, default=1)
 
-        ID = '864691135396580129_296758' # Basket Cell example
-        cell = PVcell(ID=ID, debug=False)
-        cell.check_that_all_dendritic_branches_are_well_covered()
+    parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
 
-        # spike count
-        apc = h.APCount(cell.soma[0](0.5))
+    args = parser.parse_args()
 
-        # shuffle synapses
-        cell.branches['synapses_shuffled'] = []
-        for iBranch in range(len(cell.branches['branches'])):
-            cell.branches['synapses_shuffled'].append(\
-                    np.random.choice(cell.branches['branches'][iBranch],
-                        len(cell.branches['synapses'][iBranch])))
 
-        RESULTS = {'dt':0.025,
-                   'branches':range(len(cell.branches['synapses']))[:2],
-                   'freqs': np.logspace(-3.5, 0, 4),
-                   'tstop':1000}
-
-        for synapses in ['synapses', 'synapses_shuffled']:
-            print(' o %s ' % synapses)
-            for iBranch in RESULTS['branches']:
-                print('     branch #%i ' % (1+iBranch))
-                for freq in RESULTS['freqs']:
-                    print('         freq=%.1e Hz' % freq)
-                    apc.n = 0 # reset spike count
-                    _, Vm = run_sim(cell, cell.branches[synapses][iBranch],
-                                    dt=RESULTS['dt'],
-                                    tstop=RESULTS['tstop'],
-                                    stim_freq=freq)
-                    if with_Vm:
-                        RESULTS['Vm_%s_%i_%.1e' % (synapses, iBranch+1, freq)] = Vm
-
-                    RESULTS['Rate_%s_%i_%.1e' % (synapses, iBranch+1, freq)] = \
-                            apc.n*1e3/RESULTS['tstop'] # rates in Hz
-
-        np.save('../../data/detailed_model/spikingFreq_vs_stim_PV_relationship.npy',
-                RESULTS)
-
-    else:
-
-        RESULTS = np.load(\
-                '../../data/detailed_model/spikingFreq_vs_stim_PV_relationship.npy',
-                allow_pickle=True).item()
-
-        fig, ax = plt.subplots()
-        for synapses in ['synapses', 'synapses_shuffled']:
-            for iBranch in RESULTS['branches']:
-                for freq in RESULTS['freqs']:
-                    Vm = RESULTS['Vm_%s_%i_%.1e' % (synapses, iBranch+1, freq)]
-                    ax.plot(np.arange(len(Vm))*RESULTS['dt'], Vm)
-
-        # ax.axis('off')
-        # pt.draw_bar_scales(ax, loc='top-right',
-                           # Xbar=100, Xbar_label='100ms',
-                           # Ybar=10, Ybar_label='10mV')
-
-        plt.show()
-
+    """
+    sim.build({'iBranch':range(3),
+               'bgStimSeed': range(10, 13),
+               'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
+               'synShuffled':[True, False]})
+    sim.run(run_sim,
+            single_run_args={'cellType':'Basket', 'with_Vm':True}) 
+    """
 

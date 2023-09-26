@@ -31,7 +31,7 @@ class PVcell:
         self.branches = np.load("morphologies/%s/dendritic_branches.npy" % ID,
                                 allow_pickle=True).item()
 
-        self.label_compartments(proximal_limit, verbose=True)
+        self.label_compartments(proximal_limit, verbose=debug)
 
         self.insert_mechanisms_and_properties(debug=debug)
 
@@ -244,20 +244,18 @@ class PVcell:
                     print(be)
                     print('PB with: ', iseg, sec)
 
-        # insure that all segments that are on a branch have a matching location
-        # --> we take the previous one
-
-        print(np.sum(self.SEGMENTS['NEURON_segment']!=None))
 
     def check_that_all_dendritic_branches_are_well_covered(self, 
-                                                           show=False):
+                                                           show=False,
+                                                           verbose=True):
 
         no_section_cond = self.SEGMENTS['NEURON_section']==None
 
-        for ib, branch in enumerate(self.branches['branches']):
-            print('branch #%i :' % (ib+1), 
-                    np.sum(self.SEGMENTS['NEURON_section'][branch]!=None), 
-                    '/', len(branch))
+        if verbose:
+            for ib, branch in enumerate(self.branches['branches']):
+                print('branch #%i :' % (ib+1), 
+                        np.sum(self.SEGMENTS['NEURON_section'][branch]!=None), 
+                        '/', len(branch))
         if show:
 
             import matplotlib.pylab as plt
@@ -277,6 +275,8 @@ class PVcell:
             plt.title('before fix !')
             plt.show()
 
+        # insure that all segments that are on a branch have a matching location
+        # --> we take the next one
         for bIndex, branch in enumerate(self.branches['branches']):
 
             branch_cond = np.zeros(len(self.SEGMENTS['x']), dtype=bool)

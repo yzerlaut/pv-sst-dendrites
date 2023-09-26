@@ -144,4 +144,78 @@ fig.savefig('../figures/BC-Resistance-Profile.svg')
 plt.show()
 
 # %%
+import numpy as np
+import sys
+sys.path.append('../..')
+import plot_tools as pt
+import matplotlib.pylab as plt
+
+fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), len(np.unique(sim.bgStimFreq))),
+                    figsize=(1.5,0.4))
+plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+for iB, iBranch in enumerate(np.unique(sim.iBranch)):
+    c= plt.cm.tab10(iB)
+    AX[0][iB].set_title('   branch #%i' % (1+iBranch), fontsize=7, color=c)
+    for iF, freq in enumerate(np.unique(sim.bgStimFreq)):
+        if iB==0:
+            pt.annotate(AX[iF][0], '$\\nu$=%.1eHz ' % freq, (0, 0), ha='right', fontsize=7)
+        c= plt.cm.tab10(iB)
+        for iS, color, lw in zip([0, 1], [c, 'tab:grey'], [1, 0.5]):
+            Vm, dt = sim.Vm[iB, 2, iF, iS] , 0.025
+            AX[iF][iB].plot(np.arange(len(Vm))*dt, Vm, color=color, lw=lw)
+            AX[iF][iB].axis('off')
+pt.set_common_ylims(AX)
+pt.set_common_ylims(AX)
+pt.draw_bar_scales(AX[0][0], loc='top-right',
+                   Xbar=50, Xbar_label='50ms',
+                   Ybar=20, Ybar_label='20mV')
+
+
+# %%
+import numpy as np
+
+import sys
+sys.path.append('../..')
+import plot_tools as pt
+import matplotlib.pylab as plt
+
+from parallel import Parallel
+sim = Parallel(\
+        filename='../../data/detailed_model/Basket_bgStim_sim.zip')
+
+sim.load()
+sim.fetch_quantity_on_grid('Vm', dtype=object) 
+sim.fetch_quantity_on_grid('output_rate', dtype=float) 
+RESULTS = {}
+print(sim.keys)
+print(sim.output_rate)
+print(sim.VALUES)
+
+# %%
+
+# RESULTS = np.load(\
+        # '../../data/detailed_model/spikingFreq_vs_stim_PV_relationship.npy',
+        # allow_pickle=True).item()
+
+fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), 1),
+                    figsize=(0.9,1.0))
+plt.subplots_adjust(wspace=0.9)
+
+for iB, iBranch in enumerate(np.unique(sim.iBranch)):
+    c= plt.cm.tab10(iB)
+    AX[iB].set_title('   branch #%i' % (1+iBranch), fontsize=7, color=c)
+    for synShuffled, color, lw in zip([0, 1], [c, 'tab:grey'], [1, 0.5]):
+        print(sim.output_rate[iB,:,:,synShuffled])
+        # print(sim.output_rate[iB,:,:,synShuffled].mean(axis=0))
+        pt.plot(np.unique(sim.bgStimFreq), 
+                    sim.output_rate[iB,:,:,synShuffled].mean(axis=0),
+                    sy=sim.output_rate[iB,:,:,synShuffled].std(axis=0),
+                    ax=AX[iB], color=color, ms=1)
+    pt.set_plot(AX[iB], xlabel='freq. (Hz)', ylabel='rate (Hz)', xscale='log')
+# pt.set_common_ylims(AX)
+# pt.set_common_ylims(AX)
+
+# %%
+
 
