@@ -1,4 +1,4 @@
-)# ---
+# ---
 # jupyter:
 #   jupytext:
 #     formats: ipynb,py:percent
@@ -61,6 +61,7 @@ for a, amp in enumerate(AMPS):
         h.fadvance()
     if a==0:
         # calculate input res.
+
         Rin = (cell.soma[0](0.5).v-cell.El)/amp # Mohm
     RATES.append(apc.n*1e3/duration) # rates in Hz
     ic.amp = 0
@@ -154,6 +155,8 @@ fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), len(np.unique(sim.bgStimF
                     figsize=(1.5,0.4))
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
 
+trial = 2
+
 for iB, iBranch in enumerate(np.unique(sim.iBranch)):
     c= plt.cm.tab10(iB)
     AX[0][iB].set_title('   branch #%i' % (1+iBranch), fontsize=7, color=c)
@@ -162,7 +165,7 @@ for iB, iBranch in enumerate(np.unique(sim.iBranch)):
             pt.annotate(AX[iF][0], '$\\nu$=%.1eHz ' % freq, (0, 0), ha='right', fontsize=7)
         c= plt.cm.tab10(iB)
         for iS, color, lw in zip([0, 1], [c, 'tab:grey'], [1, 0.5]):
-            Vm, dt = sim.Vm[iB, 2, iF, iS] , 0.025
+            Vm, dt = sim.Vm[iB, trial, iF, iS] , 0.025
             AX[iF][iB].plot(np.arange(len(Vm))*dt, Vm, color=color, lw=lw)
             AX[iF][iB].axis('off')
 pt.set_common_ylims(AX)
@@ -193,11 +196,6 @@ print(sim.output_rate)
 print(sim.VALUES)
 
 # %%
-
-# RESULTS = np.load(\
-        # '../../data/detailed_model/spikingFreq_vs_stim_PV_relationship.npy',
-        # allow_pickle=True).item()
-
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), 1),
                     figsize=(0.9,1.0))
 plt.subplots_adjust(wspace=0.9)
@@ -215,6 +213,91 @@ for iB, iBranch in enumerate(np.unique(sim.iBranch)):
     pt.set_plot(AX[iB], xlabel='freq. (Hz)', ylabel='rate (Hz)', xscale='log')
 # pt.set_common_ylims(AX)
 # pt.set_common_ylims(AX)
+
+# %%
+props ={'synShuffleSeed':2,
+        'distance': 100,
+        'nCluster': 10,
+        'subsampling_fraction':10./100.}
+
+fig, AX = pt.figure(figsize=(1.5,2.2), axes=(6, 2), hspace=0, wspace=0.1)
+for iBranch in range(6):
+    c= plt.cm.tab10(iBranch)
+    AX[0][iBranch].set_title('branch #%i' % (1+iBranch), color=c)
+    find_clustered_input(cell, iBranch, **props,
+            with_plot=True, ax=AX[0][iBranch], syn_color=c)
+    find_clustered_input(cell, iBranch, synShuffled=True, **props,
+            with_plot=True, syn_color=c, ax=AX[1][iBranch])
+    pt.annotate(AX[0][iBranch], 'real', (-0.1,0.1), bold=True, color=c)
+    pt.annotate(AX[1][iBranch], 'shuffled', (-0.1,0.1), bold=True, color=c)
+
+# %%
+from clustered_input_stim import * 
+ID = '864691135396580129_296758' # Basket Cell example
+cell = PVcell(ID=ID, debug=False)
+index = 0
+find_clustered_input(cell, 0, with_plot=True)
+find_clustered_input(cell, 0,
+        synShuffled=True, with_plot=True)
+
+
+# %%
+import numpy as np
+results = np.load('single_sim.npy', allow_pickle=True).item()
+t0=200
+ISI=200
+nCluster=10
+delay=5
+dt=0.025
+Vm_soma = results['Vm_soma']
+Vm_dend = results['Vm_dend']
+
+# %%
+import matplotlib.pylab as plt
+
+def build_linear_pred(Vm, dt, t0, ISI, delay):
+    t = np.arange(len(Vm))*dt
+    # extract single EPSPs
+    sEPSPS = []
+    for i in range(nCluster):
+        tstart = t0+i*ISI
+        cond = (t>tstart) & (t<(tstart+ISI))
+        sEPSPS.append(Vm[cond]-Vm[cond][0])
+    # compute real responses
+    tstart = t0+nCluster*ISI
+    cond = (t>tstart) & (t<(tstart+ISI))
+    real = Vm[cond]
+    # then linear pred
+    linear = np.ones(np.sum(cond))*real[0]
+    t = np.arange(len(real))*dt
+    for i, epsp in enumerate(sEPSPS):
+        cond = (t>i*delay)
+        linear[cond] += epsp[:np.sum(cond)]
+
+    return real, linear
+
+real, linear = build_linear_pred(Vm_dend, dt, t0, ISI, delay)
+t = np.arange(len(real))*dt
+
+plt.plot(t, real)
+plt.plot(t, linear)
+    
+    
+
+# %%
+sEPSPS = []
+for i in range(nCluster):
+    tstart = t0+i*ISI
+    cond = (t>tstart) & (t<(tstart+ISI))
+    sEPSPS.append(Vm_soma[cond])
+
+import matplotlib.pylab as plt
+t = np.arange(len(results['Vm_soma']))*results['dt']
+tstart = t0+(1+nCluster)*ISI
+tstart = t0+nCluster*ISI
+cond = (t>(tstart-0*ISI/2.)) & (t<(tstart+ISI))
+plt.plot(t[cond], results['Vm_soma'][cond])
+
 
 # %%
 

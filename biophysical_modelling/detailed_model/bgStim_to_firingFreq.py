@@ -156,13 +156,13 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
+    sim = Parallel(\
+        filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
-    """
     sim.build({'iBranch':range(3),
                'bgStimSeed': range(10, 13),
                'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
                'synShuffled':[True, False]})
     sim.run(run_sim,
             single_run_args={'cellType':'Basket', 'with_Vm':True}) 
-    """
 
