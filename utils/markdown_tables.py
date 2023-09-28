@@ -18,6 +18,8 @@ def format_key(value):
     elif '[' in value:
         print('not implemented yet')
         return ()
+    elif value.replace(' ', '')=='':
+        return None
     else:
         return int(value)
 
@@ -33,7 +35,12 @@ def read_table(filename,
             if len(split)>1:
                 key = split[1].split('`')[0]
                 value = split[1].split('| ')[1].split(' |')[0]
-                table[key] = format_key(value)
+                try:
+                    table[key] = format_key(value)
+                except BaseException as be:
+                    print('')
+                    print(be)
+                    print('problem in reading table with key "%s" and value "%s" ' %(key, value))
 
     return table
 

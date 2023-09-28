@@ -1,3 +1,5 @@
+import sys, pathlib, os
+
 from neuron import h
 from neuron.units import ms
 import numpy as np
@@ -17,7 +19,15 @@ soma_kctin =0.0001
 soma_kcain =0.020
 v_init = -70.
 
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
+from utils.markdown_tables import read_table
+
 class PVcell:
+
+    params = read_table(\
+            os.path.join(\
+            pathlib.Path(__file__).resolve().parent,
+            'README.md'))
 
     def __init__(self,
                  proximal_limit=100,
@@ -91,33 +101,39 @@ class PVcell:
             # cable
             if not debug:
                 sec.nseg = sec.n3d()
-            sec.cm = 1.2
-            sec.Ra = 172
-            # passive props
+
+            # cable props
+            sec.cm = params['BC_soma_cm']
+            sec.Ra = params['BC_soma_Ra']
+            # passive current
             sec.insert('pas')
-            sec.g_pas = soma_pas
-            sec.e_pas = v_init
+            sec.g_pas = params['BC_soma_gPas']
+            sec.e_pas = params['BC_ePas']
             # sodium channels
             sec.insert('Nafx')
-            sec.gnafbar_Nafx= soma_Nafin*0.6*5
+            # sec.gnafbar_Nafx= soma_Nafin*0.6*5
+            sec.gnafbar_Nafx= params['BC_soma_gNa']
             # potassium channels
             sec.insert('kdrin')
-            sec.gkdrbar_kdrin= soma_kdrin
+            sec.gkdrbar_kdrin = params['BC_soma_gKdrin']
             # 
             sec.insert('IKsin')
-            sec.gKsbar_IKsin= soma_Kslowin
+            # sec.gKsbar_IKsin= soma_Kslowin
+            sec.gKsbar_IKsin = params['BC_soma_gKslowin']
             #
             sec.insert('hin')
-            sec.gbar_hin=soma_hin
+            # sec.gbar_hin=soma_hin
+            sec.gbar_hin = params['BC_soma_gHin']
             # 
             sec.insert('kapin')
-            sec.gkabar_kapin=soma_kapin
+            # sec.gkabar_kapin=soma_kapin
+            sec.gkabar_kapin = params['BC_soma_gKapin']
             #
             sec.insert('kctin')
-            sec.gkcbar_kctin=soma_kctin
+            sec.gkcbar_kctin = params['BC_soma_gKctin']
             #
             sec.insert('kcain')
-            sec.gbar_kcain=soma_kcain
+            sec.gbar_kcain = params['BC_soma_gKcain']
             #
             sec.insert('cadynin')
 
@@ -130,6 +146,7 @@ class PVcell:
             #
             sec.insert('pas')
             sec.g_pas = soma_pas*7600./281600.
+            print(sec.g_pas, self.params['BC_gSoma_pas'])
             sec.e_pas = v_init
             #
             sec.insert('Nafx')
@@ -144,30 +161,40 @@ class PVcell:
             # cable
             if not debug:
                 sec.nseg = sec.n3d()
-            sec.cm=1.2
-            sec.Ra=142
-            # 
+
+            # cable props
+            sec.cm = params['BC_prox_cm']
+            sec.Ra = params['BC_prox_Ra']
+            # passive current
             sec.insert('pas')
-            sec.g_pas = soma_pas
-            sec.e_pas = v_init                                            
+            sec.g_pas = params['BC_prox_gPas']
+            sec.e_pas = params['BC_ePas']
             # sodium channels
             sec.insert('Nafx')
-            sec.gnafbar_Nafx= 0*soma_Nafin*0.4
+            # sec.gnafbar_Nafx= soma_Nafin*0.4
+            sec.gnafbar_Nafx= params['BC_prox_gNa']
             # potassium channels
             sec.insert('kdrin')
-            sec.gkdrbar_kdrin=0*0.018*0.5
+            sec.gkdrbar_kdrin = params['BC_prox_gKdrin']
+            # 
+            sec.insert('IKsin')
+            # sec.gkdrbar_kdrin=0*0.018*0.5
+            sec.gKsbar_IKsin = params['BC_prox_gKslowin']
             # 
             sec.insert('kapin')
-            sec.gkabar_kapin=soma_kapin*0.2                                            
-            # 
+            # sec.gkabar_kapin=soma_kapin*0.2                                            
+            sec.gkabar_kapin = params['BC_prox_gKapin']
+            #
             sec.insert('can')
-            sec.gcabar_can = soma_can
+            sec.gcabar_can = params['BC_prox_gCan']
             #
             sec.insert('cat')
-            sec.gcatbar_cat=soma_cat*0.1
+            # sec.gcatbar_cat=soma_cat*0.1
+            sec.gcatbar_cat = params['BC_prox_gCat']
             #
             sec.insert('cal')
-            sec.gcalbar_cal=0.00003
+            # sec.gcalbar_cal=0.00003
+            sec.gcalbar_cat = params['BC_prox_gCal']
             #
             sec.insert('cadynin')
 
@@ -177,12 +204,12 @@ class PVcell:
             # cable
             if not debug:
                 sec.nseg = sec.n3d()
-            sec.cm=1.2
-            sec.Ra=142
+            sec.cm = params['BC_dist_cm']
+            sec.Ra = params['BC_dist_Ra']
             # passive current
             sec.insert('pas')
-            sec.g_pas = soma_pas* 7600./74300.
-            sec.e_pas = v_init                                            
+            sec.g_pas = params['BC_dist_gPas']
+            sec.e_pas = params['BC_ePas']
             # sodium channel
             sec.insert('Nafx')
             sec.gnafbar_Nafx=0*soma_Nafin*0.4*0.8
@@ -310,11 +337,12 @@ class PVcell:
 if __name__=='__main__':
 
     cell = PVcell(debug=False)
-    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
-    ID = '864691135571546917_264824' # Martinotti
-    cell = PVcell(ID=ID, debug=False)
-    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
+    # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
+
+    # ID = '864691135571546917_264824' # Martinotti
+    # cell = PVcell(ID=ID, debug=False)
+    # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
     """
     n = 0
