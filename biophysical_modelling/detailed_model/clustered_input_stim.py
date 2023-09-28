@@ -8,11 +8,14 @@ import plot_tools as pt
 # from parallel import Parallel
 from PV_template import *
 
+distance_intervals = [(0,70),
+                      (70,140),
+                      (140, 210)]
 def find_clustered_input(cell, 
                          iBranch,
                          subsampling_fraction=0.05,
                          synSubsamplingSeed=2,
-                         distance=200,
+                         iDistance=2,
                          nCluster=10,
                          synShuffled=False,
                          synShuffleSeed=10,
@@ -232,7 +235,6 @@ if __name__=='__main__':
 
     # run_sim()
 
-    """
     ID = '864691135396580129_296758' # Basket Cell example
     cell = PVcell(ID=ID, debug=False)
     index = 0
@@ -240,7 +242,6 @@ if __name__=='__main__':
     find_clustered_input(cell, 0,
             synShuffled=True, with_plot=True)
     plt.show()
-    """
 
     # import argparse
     # # First a nice documentation 
@@ -268,8 +269,8 @@ if __name__=='__main__':
 
     # args = parser.parse_args()
 
-    sim = Parallel(\
-        filename='../../data/detailed_model/Basket_clusteredStim_sim.zip')
+    # sim = Parallel(\
+        # filename='../../data/detailed_model/Basket_clusteredStim_sim.zip')
 
     # sim.build({'iBranch':range(3),
                # 'bgStimSeed': range(10, 13),
