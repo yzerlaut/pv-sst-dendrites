@@ -152,10 +152,10 @@ class PVcell:
             sec.e_pas = v_init                                            
             # sodium channels
             sec.insert('Nafx')
-            sec.gnafbar_Nafx= soma_Nafin*0.4
+            sec.gnafbar_Nafx= 0*soma_Nafin*0.4
             # potassium channels
             sec.insert('kdrin')
-            sec.gkdrbar_kdrin=0.018*0.5
+            sec.gkdrbar_kdrin=0*0.018*0.5
             # 
             sec.insert('kapin')
             sec.gkabar_kapin=soma_kapin*0.2                                            
@@ -185,10 +185,10 @@ class PVcell:
             sec.e_pas = v_init                                            
             # sodium channel
             sec.insert('Nafx')
-            sec.gnafbar_Nafx=soma_Nafin*0.4*0.8
+            sec.gnafbar_Nafx=0*soma_Nafin*0.4*0.8
             # potassium channel
             sec.insert('kdrin')
-            sec.gkdrbar_kdrin=0.018*0.5
+            sec.gkdrbar_kdrin=0*0.018*0.5
             # 
             sec.insert('kadin')
             sec.gkabar_kadin=1.8*0.001

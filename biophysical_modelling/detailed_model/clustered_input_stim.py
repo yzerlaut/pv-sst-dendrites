@@ -5,7 +5,7 @@ import matplotlib.pylab as plt
 sys.path.append('../..')
 import plot_tools as pt
 
-# from parallel import Parallel
+from parallel import Parallel
 from PV_template import *
 
 distance_intervals = [(0,70),
@@ -87,16 +87,19 @@ def build_linear_pred(Vm, dt, t0, ISI, delay, nCluster):
         tstart = t0+i*ISI
         cond = (t>tstart) & (t<(tstart+ISI))
         sEPSPS.append(Vm[cond]-Vm[cond][0])
-    # compute real responses
-    tstart = t0+nCluster*ISI
-    cond = (t>tstart) & (t<(tstart+ISI))
-    real = Vm[cond]
-    # then linear pred
-    linear = np.ones(np.sum(cond))*real[0]
-    t = np.arange(len(real))*dt
-    for i, epsp in enumerate(sEPSPS):
-        cond = (t>i*delay)
-        linear[cond] += epsp[:np.sum(cond)]
+    # compute real and linearresponses
+    real, linear = [], []
+    for e, n in enumerate(range(2, nCluster+1)):
+        # real
+        tstart = t0+(nCluster+e)*ISI
+        cond = (t>tstart) & (t<(tstart+ISI))
+        real.append(Vm[cond])
+        # then linear pred
+        te = np.arange(len(real[-1]))*dt
+        linear.append(np.ones(np.sum(cond))*real[-1][0])
+        for i, epsp in enumerate(sEPSPS[:n]):
+            condE = (te>i*delay)
+            linear[-1][condE] += epsp[:np.sum(condE)]
 
     return real, linear
 
@@ -108,11 +111,11 @@ def run_sim(cellType='Basket',
             iDistance=2,
             delay=5,
             # synapse subsampling
-            subsampling_fraction=0.05,
+            subsampling_fraction=0.03,
             synSubsamplingSeed=2,
             # synapse shuffling
             synShuffled=False,
-            synShuffleSeed=0,
+            synShuffleSeed=10,
             # biophysical props
             NMDAtoAMPA_ratio=0,
             ampa_weight=1e-3, # uS
@@ -151,10 +154,12 @@ def run_sim(cellType='Basket',
     for i, syn in enumerate(synapses):
         TRAINS.append([tstop])
         tstop += ISI
-    # 2) grouped event
-    for i, syn in enumerate(synapses):
-        TRAINS[i].append(tstop+i*delay)
-    tstop += 2*ISI
+    # 2) grouped events
+    for n in range(2, len(synapses)+1):
+        for i, syn in enumerate(synapses[:n]):
+            TRAINS[i].append(tstop+i*delay)
+        tstop += ISI
+    tstop += ISI
 
     ######################################################
     ##  single event simulation  #########################
@@ -191,7 +196,6 @@ def run_sim(cellType='Basket',
             nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
             nmdaNETCONS[-1].weight[0] = ampa_weight*NMDAtoAMPA_ratio
 
-
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
     # Vm rec
@@ -214,9 +218,9 @@ def run_sim(cellType='Basket',
     real_soma, linear_soma = build_linear_pred(np.array(Vm_soma),
                                                dt, t0, ISI, delay, len(synapses))
     real_dend, linear_dend = build_linear_pred(np.array(Vm_dend),
-                                               dt, t0, ISI, delay, len(synpases))
+                                               dt, t0, ISI, delay, len(synapses))
 
-    t = np.arange(len(real))*dt
+    t = np.arange(len(real_soma))*dt
 
     # save the output
     output = {'output_rate': float(apc.n*1e3/tstop),
@@ -225,7 +229,7 @@ def run_sim(cellType='Basket',
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
               'dt': dt, 't0':t0, 'ISI':ISI,
-              'nCluster':len(synapses), 'delay':delay,
+              'synapses':synapses, 'delay':delay,
               'tstop':tstop}
 
     np.save(filename, output)
@@ -233,8 +237,9 @@ def run_sim(cellType='Basket',
 
 if __name__=='__main__':
 
-    # run_sim()
+    run_sim()
 
+    """
     ID = '864691135396580129_296758' # Basket Cell example
     cell = PVcell(ID=ID, debug=False)
     index = 0
@@ -242,6 +247,7 @@ if __name__=='__main__':
     find_clustered_input(cell, 0,
             synShuffled=True, with_plot=True)
     plt.show()
+    """
 
     # import argparse
     # # First a nice documentation 
@@ -273,8 +279,8 @@ if __name__=='__main__':
         # filename='../../data/detailed_model/Basket_clusteredStim_sim.zip')
 
     # sim.build({'iBranch':range(3),
-               # 'bgStimSeed': range(10, 13),
-               # 'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
+               # 'synSubsamplingSeed': range(10, 14),
                # 'synShuffled':[True, False]})
+
     # sim.run(run_sim,
-            # single_run_args={'cellType':'Basket', 'with_Vm':True}) 
+            # single_run_args={'cellType':'Basket'}) 

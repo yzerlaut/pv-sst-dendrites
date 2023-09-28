@@ -20,7 +20,7 @@
 from PV_template import *
 
 import sys
-sys.path.append('..')
+sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -246,11 +246,23 @@ import numpy as np
 results = np.load('single_sim.npy', allow_pickle=True).item()
 t0=200
 ISI=200
-nCluster=10
 delay=5
 dt=0.025
 Vm_soma = results['Vm_soma']
 Vm_dend = results['Vm_dend']
+real, linear = results['real_dend'], results['linear_dend']
+
+# %%
+
+# real, linear = build_linear_pred(Vm_dend, dt, t0, ISI, delay, len(results['synapses']))
+fig, AX = pt.figure(axes=(len(real), 1))
+for real, linear, ax in zip(real, linear, AX):
+    ax.plot(np.arange(len(real))*dt, real, 'k-', lw=0.5)
+    ax.plot(np.arange(len(real))*dt, linear, 'r:')
+    ax.set_xlim([0,50])
+pt.set_common_ylims(AX)
+
+# %%
 
 # %%
 import matplotlib.pylab as plt

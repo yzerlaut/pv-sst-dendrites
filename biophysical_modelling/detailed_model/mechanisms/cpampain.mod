@@ -64,15 +64,11 @@ UNITS {
 }
 
 PARAMETER {
-        Cmax	= 1	(mM)		: max transmitter concentration
+    Cmax	= 1	    (mM)		: max transmitter concentration
 	Cdur	= 0.3	(ms)		: transmitter duration (rising phase)
-:	Cdur	= 1.1	(ms)		: transmitter duration (rising phase)
-:	Alpha	= 0.94	(/ms)	: forward (binding) rate
-	Alpha	= 10	(/ms)	: forward (binding) rate
-:	Beta	= 0.4	(/ms)		: backward (unbinding) rate
-	Beta	= 0.18	(/ms)		: backward (unbinding) rate (by Xenia)
-:	Beta	= 0.05	(/ms)		: backward (unbinding) rate (for cns 2009)
-        Erev	= 0	(mV)		:0 reversal potential
+	Alpha	= 10	(/ms)	    : forward (binding) rate
+	Beta	= 0.5	(/ms)		: backward (unbinding) rate (updated by Y. Zerlaut 2023, for mouse V1 interneurons
+    Erev	= 0	    (mV)		: reversal potential
 }
 
 
