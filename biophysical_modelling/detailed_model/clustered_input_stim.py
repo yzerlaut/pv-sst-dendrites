@@ -11,12 +11,12 @@ from PV_template import *
 distance_intervals = [(0,70),
                       (70,140),
                       (140, 210)]
+
 def find_clustered_input(cell, 
                          iBranch,
                          subsampling_fraction=0.05,
-                         synSubsamplingSeed=2,
+                         synSubsamplingSeed=3,
                          iDistance=2,
-                         nCluster=10,
                          synShuffled=False,
                          synShuffleSeed=10,
                          ax=None, syn_color='r',
@@ -28,25 +28,26 @@ def find_clustered_input(cell,
     # full synaptic distrib:
     if synShuffled:
         # spatially uniformly shuffled
-        synapses = np.random.choice(\
+        full_synapses = np.random.choice(\
             cell.branches['branches'][iBranch], 
             len(cell.branches['synapses'][iBranch]))
     else:
         # true distrib
-        synapses = cell.branches['synapses'][iBranch]
+        full_synapses = cell.branches['synapses'][iBranch]
     branch = cell.branches['branches'][iBranch]
 
     # subsampling
     np.random.seed(synSubsamplingSeed)
     Nsubsampling = int(len(cell.branches['synapses'][iBranch])*\
                         subsampling_fraction)
-    synapses = np.random.choice(synapses, Nsubsampling)
+    synapses = np.random.choice(full_synapses, Nsubsampling)
 
     # finding the closest to the distance point
     # using the distance to soma as a distance measure
-    iMins = np.argsort((distance-1e6*cell.SEGMENTS['distance_to_soma'][synapses])**2)
-
-    cluster_synapses = synapses[iMins[:nCluster]]
+    interval = distance_intervals[iDistance]
+    cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
+            (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
+    cluster_synapses = synapses[cluster_cond]
 
     if ax is None and with_plot:
         fig, ax = plt.subplots(1, figsize=(3,3))
@@ -63,7 +64,7 @@ def find_clustered_input(cell,
 
         inset = pt.inset(ax, [-0.1, 0.7, .35, .17])
 
-        # synapses = cell.branches['synapses'][iBranch]
+        # synapses = full_synapses
         hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses],
                                 bins=bins)
         inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor='tab:grey', color='w')
@@ -71,8 +72,9 @@ def find_clustered_input(cell,
                                 bins=bins)
         inset.bar(be[1:], hist, width=be[1]-be[0], color=syn_color)
         pt.set_plot(inset, xticks=[0,200], 
-                    title = '%i%% subset' % (100*subsampling_fraction),
-                    ylabel='syn.\ncount', xlabel='dist ($\mu$m)', fontsize=7)
+                    title = '%i%% subset' % (100*subsampling_fraction), yticks=[0,2],
+                    ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
+        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (0,0), fontsize=7, color=syn_color)
 
     return cluster_synapses
 
@@ -103,8 +105,7 @@ def build_linear_pred(Vm, dt, t0, ISI, delay, nCluster):
 def run_sim(cellType='Basket', 
             iBranch=0,
             # cluster props
-            nCluster=10,
-            distance=200,
+            iDistance=2,
             delay=5,
             # synapse subsampling
             subsampling_fraction=0.05,
@@ -140,8 +141,7 @@ def run_sim(cellType='Basket',
                                     iBranch,
                                     subsampling_fraction=subsampling_fraction,
                                     synSubsamplingSeed=synSubsamplingSeed,
-                                    distance=distance,
-                                    nCluster=nCluster,
+                                    iDistance=iDistance,
                                     synShuffled=synShuffled,
                                     synShuffleSeed=synShuffleSeed)
 
@@ -212,9 +212,9 @@ def run_sim(cellType='Basket',
 
     # compute the linear prediction
     real_soma, linear_soma = build_linear_pred(np.array(Vm_soma),
-                                               dt, t0, ISI, delay, nCluster)
+                                               dt, t0, ISI, delay, len(synapses))
     real_dend, linear_dend = build_linear_pred(np.array(Vm_dend),
-                                               dt, t0, ISI, delay, nCluster)
+                                               dt, t0, ISI, delay, len(synpases))
 
     t = np.arange(len(real))*dt
 
@@ -225,7 +225,7 @@ def run_sim(cellType='Basket',
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
               'dt': dt, 't0':t0, 'ISI':ISI,
-              'nCluster':nCluster, 'delay':delay,
+              'nCluster':len(synapses), 'delay':delay,
               'tstop':tstop}
 
     np.save(filename, output)
