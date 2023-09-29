@@ -7,22 +7,10 @@ import numpy as np
 h.load_file("stdlib.hoc")
 h.load_file("import3d.hoc")
 
-soma_pas = 2.7*1./7600. # raised match ~100MOhm input resistance
-soma_Nafin = 0.045
-soma_kdrin = 0.036
-soma_Kslowin = 0.000725 
-soma_hin = 0.00001 
-soma_kapin = 0.0032
-soma_can = 0.0003
-soma_cat = 0.002
-soma_kctin =0.0001 
-soma_kcain =0.020
-v_init = -70.
-
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 from utils.markdown_tables import read_table
 
-class PVcell:
+class Cell:
 
     params = read_table(\
             os.path.join(\
@@ -47,7 +35,10 @@ class PVcell:
 
         self.map_SEGMENTS_to_NEURON()
 
-        self.El = v_init
+        if not debug:
+            self.check_that_all_dendritic_branches_are_well_covered(verbose=False)
+
+        self.El = self.params['BC_ePas']
 
     def preprocess_branches(self, ID):
         """
@@ -67,6 +58,21 @@ class PVcell:
             iSorted = np.argsort(self.SEGMENTS['distance_to_soma'][synapses])
             self.set_of_synapses.append(np.array(synapses)[iSorted])
 
+        # redistribute synapses uniformly
+        self.set_of_synapses_spatially_uniform = []
+        for branch, synapses in zip(branches['branches'],
+                                    branches['synapses']):
+            # spatially uniform from histogram equalization
+            distBranch = self.SEGMENTS['distance_to_soma'][branch]
+            Rel = np.array((distBranch-distBranch.min())/\
+                                (distBranch.max()-distBranch.min())*len(synapses),
+                                dtype='int')
+            uSynapses, bIndex = [], 0
+            while len(uSynapses)<len(synapses):
+                if len(uSynapses)>Rel[bIndex] and (bIndex<(len(Rel)-1)):
+                    bIndex +=1 
+                uSynapses.append(branch[bIndex])
+            self.set_of_synapses_spatially_uniform.append(np.array(uSynapses))
 
     def load_morphology(self, ID):
         cell = h.Import3d_SWC_read()
@@ -245,7 +251,7 @@ class PVcell:
             sec.insert('cadynin')
 
         for sec in self.all:
-            sec.v = v_init
+            sec.v = self.params['BC_ePas']
         
         h.ko0_k_ion = 3.82 #  //mM
         h.ki0_k_ion = 140  #  //mM  
@@ -348,8 +354,7 @@ class PVcell:
 
 if __name__=='__main__':
 
-    cell = PVcell(debug=False)
-
+    # cell = Cell(debug=True)
     # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
     # ID = '864691135571546917_264824' # Martinotti

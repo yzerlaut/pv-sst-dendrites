@@ -8,9 +8,9 @@ import plot_tools as pt
 from parallel import Parallel
 from PV_template import *
 
-distance_intervals = [(0,60),
-                      (60,120),
-                      (120, 300)]
+distance_intervals = [(0,70),
+                      (70,140),
+                      (140, 300)]
 
 def find_clustered_input(cell, 
                          iBranch,
@@ -19,24 +19,14 @@ def find_clustered_input(cell,
                          iDistance=2,
                          from_uniform=False,
                          ax=None, syn_color='r',
-                         bins = np.linspace(0, 280, 15),
                          with_plot=False):
 
     branch = cell.set_of_branches[iBranch]
-    full_synapses = cell.set_of_synapses[iBranch]                      
     
     if from_uniform:
-        # spatially uniform - from histogram equalization
-        distBranch = cell.SEGMENTS['distance_to_soma'][branch]
-        Rel = np.array((distBranch-distBranch.min())/\
-                            (distBranch.max()-distBranch.min())*len(full_synapses),
-                            dtype='int')
-        synapses, bIndex = [], 0
-        while len(synapses)<len(full_synapses):
-            if len(synapses)>Rel[bIndex] and (bIndex<(len(Rel)-1)):
-                bIndex +=1 
-            synapses.append(branch[bIndex])
-        full_synapses = np.array(synapses)
+        full_synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+    else:
+        full_synapses = cell.set_of_synapses[iBranch]                      
 
     # subsampling
     if subsampling_fraction<1:
@@ -69,6 +59,8 @@ def find_clustered_input(cell,
         inset = pt.inset(ax, [-0.1, 0.7, .35, .17])
 
         # synapses = full_synapses
+        bins = np.linspace(0.9*np.min(1e6*cell.SEGMENTS['distance_to_soma'][synapses]),
+                           1.1*np.max(1e6*cell.SEGMENTS['distance_to_soma'][synapses]), 15)
         hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses],
                                 bins=bins)
         inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor='tab:grey', color='w')
@@ -246,13 +238,13 @@ if __name__=='__main__':
     # run_sim()
 
     props ={'iDistance':2, # 2 -> means "distal" range
-            'subsampling_fraction':4./100.,
+            'subsampling_fraction':100./100.,
             'with_plot':True}
 
 
     ID = '864691135396580129_296758' # Basket Cell example
     cell = PVcell(ID=ID, debug=False)
-    iBranch = 2
+    iBranch = 1
     find_clustered_input(cell, iBranch, **props)
     find_clustered_input(cell, iBranch, from_uniform=True, **props)
     plt.show()

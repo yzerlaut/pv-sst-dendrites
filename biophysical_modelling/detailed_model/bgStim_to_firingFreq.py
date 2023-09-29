@@ -1,5 +1,5 @@
+from cell_template import *
 from parallel import Parallel
-from PV_template import *
 
 import sys
 sys.path.append('../..')
@@ -27,6 +27,7 @@ def run_sim(cellType='Basket',
             # synapse shuffling
             synShuffled=False,
             synShuffleSeed=0,
+            from_uniform=False,
             # biophysical props
             NMDAtoAMPA_ratio=0,
             # sim props
@@ -42,17 +43,18 @@ def run_sim(cellType='Basket',
     # create cell
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
-        cell = PVcell(ID=ID, debug=False)
-        cell.check_that_all_dendritic_branches_are_well_covered(verbose=False)
     elif cellType=='Martinotti':
         pass
     else:
         raise Exception(' cell type not recognized  !')
         cell = None
+    cell = Cell(ID=ID)
 
     # shuffle synapses
-    if synShuffled:
-        np.random.seed(synShuffleSeed+bgStimSeed) # co-shuffling by default 
+    if from_uniform:
+        synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+    elif synShuffled:
+        np.random.seed(synShuffleSeed)
         synapses = np.random.choice(cell.set_of_branches[iBranch],
                                     len(cell.set_of_synapses[iBranch]))
     else:
@@ -63,7 +65,6 @@ def run_sim(cellType='Basket',
     TRAINS = []
     for i, syn in enumerate(synapses):
         TRAINS.append(train(bgStimFreq, tstop=tstop))
-        
 
     ######################################################
     ##   true simulation         #########################
@@ -152,15 +153,19 @@ if __name__=='__main__':
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
 
+    parser.add_argument("-t", "--test", help="test func", action="store_true")
     args = parser.parse_args()
 
-    sim = Parallel(\
-        filename='../../data/detailed_model/Basket_bgStim_sim.zip')
+    if args.test:
+        run_sim()
+    else:
+        sim = Parallel(\
+            filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
-    sim.build({'iBranch':range(3),
-               'bgStimSeed': range(10, 13),
-               'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
-               'synShuffled':[True, False]})
-    sim.run(run_sim,
-            single_run_args={'cellType':'Basket', 'with_Vm':True}) 
+        sim.build({'iBranch':range(3),
+                   'bgStimSeed': range(10, 13),
+                   'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
+                   'from_uniform':[True, False]})
+        sim.run(run_sim,
+                single_run_args={'cellType':'Basket', 'with_Vm':True}) 
 

@@ -136,7 +136,7 @@ pt.set_plot(AX[0], xlabel='dist. to soma ($\mu$m)',
             ylabel='Input Res. (M$\Omega$', yscale='log')
 pt.set_plot(AX[1], xlabel='dist. to soma ($\mu$m)',
             ylabel='Transfer Res. (M$\Omega$)\n to soma ')
-fig.savefig('../figures/BC-Resistance-Profile.svg')
+fig.savefig('../../figures/BC-Resistance-Profile.svg')
 plt.show()
 
 # %% [markdown]
