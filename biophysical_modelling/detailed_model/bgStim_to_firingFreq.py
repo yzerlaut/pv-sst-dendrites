@@ -29,7 +29,6 @@ def run_sim(cellType='Basket',
             synShuffleSeed=0,
             # biophysical props
             NMDAtoAMPA_ratio=0,
-            ampa_weight=1e-3, # uS
             # sim props
             filename='single_sim.npy',
             with_Vm=False,
@@ -54,10 +53,10 @@ def run_sim(cellType='Basket',
     # shuffle synapses
     if synShuffled:
         np.random.seed(synShuffleSeed+bgStimSeed) # co-shuffling by default 
-        synapses = np.random.choice(cell.branches['branches'][iBranch],
-                                    len(cell.branches['synapses'][iBranch]))
+        synapses = np.random.choice(cell.set_of_branches[iBranch],
+                                    len(cell.set_of_synapses[iBranch]))
     else:
-        synapses = cell.branches['synapses'][iBranch]
+        synapses = cell.set_of_synapses[iBranch]
 
     # prepare presynaptic spike trains
     np.random.seed(bgStimSeed)
@@ -95,12 +94,11 @@ def run_sim(cellType='Basket',
         VECSTIMS[-1].play(STIMS[-1])
 
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        ampaNETCONS[-1].weight[0] = ampa_weight
+        ampaNETCONS[-1].weight[0] = cell.params['qAMPA']
 
         if NMDAtoAMPA_ratio>0:
             nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            nmdaNETCONS[-1].weight[0] = ampa_weight*NMDAtoAMPA_ratio
-
+            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['qAMPA']
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
     Vm = h.Vector()

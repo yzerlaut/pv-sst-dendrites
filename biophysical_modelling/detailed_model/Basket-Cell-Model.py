@@ -28,7 +28,6 @@ import matplotlib.pylab as plt
 # ## FI-curve
 
 # %%
-"""
 ID = '864691135396580129_296758' # Basket Cell example
 cell = PVcell(ID=ID, debug=False)
 
@@ -67,10 +66,8 @@ for a, amp in enumerate(AMPS):
     ic.amp = 0
     for i in range(int(duration/dt)):
         h.fadvance()
-"""
 
 # %%
-"""
 fig, ax = plt.subplots(figsize=(9,3))
 ax.plot(np.arange(len(Vm))*dt, np.array(Vm), color='tab:grey')
 ax.axis('off')
@@ -85,13 +82,11 @@ inset.plot(AMPS, RATES, 'ko-', lw=0.5)
 pt.set_plot(inset, xlabel='amp. (nA)', ylabel='firing rate (Hz)')
 
 fig.savefig('../figures/BC-FI-curve.svg')
-"""
 
 # %% [markdown]
 # ## Resistance Profile
 
 # %%
-"""
 ID = '864691135396580129_296758' # Basket Cell example
 cell = PVcell(ID=ID, debug=False)
 cell.check_that_all_dendritic_branches_are_well_covered(show=False)
@@ -123,12 +118,12 @@ for iB, branch in enumerate(cell.branches['branches']):
     RT.append(Rt)
     DISTANCE.append(Distance)
 
-np.save('../data/BC-Input-Resistance.npy',
+np.save('../../data/detailed_model/BC-Input-Resistance.npy',
         {'distance':DISTANCE, 'Rin':RIN, 'Rt':RT})
-"""
 
 # %%
-R = np.load('../data/BC-Input-Resistance.npy', allow_pickle=True).item()
+R = np.load('../../data/detailed_model/BC-Input-Resistance.npy',
+            allow_pickle=True).item()
 
 bins = np.linspace(0, 180, 20)
 fig, AX = plt.subplots(1, 2, figsize=(5,2))
@@ -143,6 +138,29 @@ pt.set_plot(AX[1], xlabel='dist. to soma ($\mu$m)',
             ylabel='Transfer Res. (M$\Omega$)\n to soma ')
 fig.savefig('../figures/BC-Resistance-Profile.svg')
 plt.show()
+
+# %% [markdown]
+# ## Firing Response to Synaptic Stimulation
+
+# %%
+import numpy as np
+
+import sys
+sys.path.append('../..')
+import plot_tools as pt
+import matplotlib.pylab as plt
+
+from parallel import Parallel
+sim = Parallel(\
+        filename='../../data/detailed_model/Basket_bgStim_sim.zip')
+
+sim.load()
+sim.fetch_quantity_on_grid('Vm', dtype=object) 
+sim.fetch_quantity_on_grid('output_rate', dtype=float) 
+RESULTS = {}
+print(sim.keys)
+print(sim.output_rate)
+print(sim.VALUES)
 
 # %%
 import numpy as np
@@ -173,27 +191,6 @@ pt.set_common_ylims(AX)
 pt.draw_bar_scales(AX[0][0], loc='top-right',
                    Xbar=50, Xbar_label='50ms',
                    Ybar=20, Ybar_label='20mV')
-
-
-# %%
-import numpy as np
-
-import sys
-sys.path.append('../..')
-import plot_tools as pt
-import matplotlib.pylab as plt
-
-from parallel import Parallel
-sim = Parallel(\
-        filename='../../data/detailed_model/Basket_bgStim_sim.zip')
-
-sim.load()
-sim.fetch_quantity_on_grid('Vm', dtype=object) 
-sim.fetch_quantity_on_grid('output_rate', dtype=float) 
-RESULTS = {}
-print(sim.keys)
-print(sim.output_rate)
-print(sim.VALUES)
 
 # %%
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), 1),
@@ -312,5 +309,4 @@ plt.plot(t[cond], results['Vm_soma'][cond])
 
 
 # %%
-
 

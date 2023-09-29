@@ -8,39 +8,43 @@ import plot_tools as pt
 from parallel import Parallel
 from PV_template import *
 
-distance_intervals = [(0,70),
-                      (70,140),
-                      (140, 210)]
+distance_intervals = [(0,60),
+                      (60,120),
+                      (120, 300)]
 
 def find_clustered_input(cell, 
                          iBranch,
                          subsampling_fraction=0.05,
                          synSubsamplingSeed=3,
                          iDistance=2,
-                         synShuffled=False,
-                         synShuffleSeed=10,
+                         from_uniform=False,
                          ax=None, syn_color='r',
-                         bins = np.linspace(0, 280, 30),
+                         bins = np.linspace(0, 280, 15),
                          with_plot=False):
 
-                        
-    np.random.seed(synShuffleSeed)
-    # full synaptic distrib:
-    if synShuffled:
-        # spatially uniformly shuffled
-        full_synapses = np.random.choice(\
-            cell.branches['branches'][iBranch], 
-            len(cell.branches['synapses'][iBranch]))
-    else:
-        # true distrib
-        full_synapses = cell.branches['synapses'][iBranch]
-    branch = cell.branches['branches'][iBranch]
+    branch = cell.set_of_branches[iBranch]
+    full_synapses = cell.set_of_synapses[iBranch]                      
+    
+    if from_uniform:
+        # spatially uniform - from histogram equalization
+        distBranch = cell.SEGMENTS['distance_to_soma'][branch]
+        Rel = np.array((distBranch-distBranch.min())/\
+                            (distBranch.max()-distBranch.min())*len(full_synapses),
+                            dtype='int')
+        synapses, bIndex = [], 0
+        while len(synapses)<len(full_synapses):
+            if len(synapses)>Rel[bIndex] and (bIndex<(len(Rel)-1)):
+                bIndex +=1 
+            synapses.append(branch[bIndex])
+        full_synapses = np.array(synapses)
 
     # subsampling
-    np.random.seed(synSubsamplingSeed)
-    Nsubsampling = int(len(cell.branches['synapses'][iBranch])*\
-                        subsampling_fraction)
-    synapses = np.random.choice(full_synapses, Nsubsampling)
+    if subsampling_fraction<1:
+        np.random.seed(synSubsamplingSeed)
+        Nsubsampling = int(len(full_synapses)*subsampling_fraction)
+        synapses = np.random.choice(full_synapses, Nsubsampling)
+    else:
+        synapses = full_synapses
 
     # finding the closest to the distance point
     # using the distance to soma as a distance measure
@@ -72,11 +76,14 @@ def find_clustered_input(cell,
                                 bins=bins)
         inset.bar(be[1:], hist, width=be[1]-be[0], color=syn_color)
         pt.set_plot(inset, xticks=[0,200], 
-                    title = '%i%% subset' % (100*subsampling_fraction), yticks=[0,2],
+                    title = '%i%% subset' % (100*subsampling_fraction), #yticks=[0,2],
                     ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
-        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (0,0), fontsize=7, color=syn_color)
+        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), fontsize=7, color=syn_color)
 
-    return cluster_synapses
+        return ax, inset
+
+    else:
+        return cluster_synapses
 
 
 def build_linear_pred(Vm, dt, t0, ISI, delay, nCluster):
@@ -236,17 +243,19 @@ def run_sim(cellType='Basket',
 
 if __name__=='__main__':
 
-    run_sim()
+    # run_sim()
 
-    """
+    props ={'iDistance':2, # 2 -> means "distal" range
+            'subsampling_fraction':4./100.,
+            'with_plot':True}
+
+
     ID = '864691135396580129_296758' # Basket Cell example
     cell = PVcell(ID=ID, debug=False)
-    index = 0
-    find_clustered_input(cell, 0, with_plot=True)
-    find_clustered_input(cell, 0,
-            synShuffled=True, with_plot=True)
+    iBranch = 2
+    find_clustered_input(cell, iBranch, **props)
+    find_clustered_input(cell, iBranch, from_uniform=True, **props)
     plt.show()
-    """
 
     # import argparse
     # # First a nice documentation 

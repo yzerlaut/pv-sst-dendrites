@@ -54,7 +54,7 @@
 |     | **Channel Type**  |  **Name**  |  **Density** (S/cm<sup>2</sup>) |           _comment_           |
 | --- | --- | --- | --- | --- | 
 | **soma** |     |     |     |          |
-|          | Fast Sodium current                           | `BC_soma_gNa`      | 1.35 10<sup>-1</sup> |        |
+|          | Fast Sodium current                           | `BC_soma_gNafx`    | 1.35 10<sup>-1</sup> |        |
 |          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 3.60 10<sup>-2</sup> |        |
 |          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 7.25 10<sup>-4</sup> |
 |          | H-type cation current                         | `BC_soma_gHin`     | 1.00 10<sup>-5</sup> |
@@ -64,7 +64,7 @@
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **axon** |     |     |     |
 |          | Passive current                               | `BC_axon_gpas`     | 9.59 10<sup>-6</sup> |
-|          | Fast Sodium current ("with fast attenuation") | `BC_axon_gNafx`    | 6.75 10<sup>-1</sup> |
+|          | Fast Sodium current                           | `BC_axon_gNafx`    | 6.75 10<sup>-1</sup> |
 |          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 3.60 10<sup>-2</sup>  |
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
 |          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
