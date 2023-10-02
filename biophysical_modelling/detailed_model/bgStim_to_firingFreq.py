@@ -48,10 +48,12 @@ def run_sim(cellType='Basket',
         cell = None
     cell = Cell(ID=ID)
 
-    # shuffle synapses
+    # synaptic distribution
     if from_uniform:
+        # uniform
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
     else:
+        # real 
         synapses = cell.set_of_synapses[iBranch]
 
     # prepare presynaptic spike trains
@@ -101,9 +103,8 @@ def run_sim(cellType='Basket',
     # Vm rec @ soma
     Vm.record(cell.soma[0](0.5)._ref_v)
     # Vm rec @ dend
-    syn = 
-    Vm_dend.record(cell.SEGMENTS['NEURON_section'][syn](\
-                       cell.SEGMENTS['NEURON_segment'][syn])._ref_v)
+    syn = cell.set_of_branches[iBranch][-5] # 
+    Vm_dend.record(cell.SEGMENTS['NEURON_section'][syn](0.5)._ref_v)
 
 
     # spike count
@@ -123,6 +124,8 @@ def run_sim(cellType='Basket',
               'dt': dt, 'tstop':tstop}
     if with_Vm:
         output['Vm'] = np.array(Vm)
+        output['Vm_dend'] = np.array(Vm_dend)
+
     np.save(filename, output)
 
 
@@ -161,9 +164,10 @@ if __name__=='__main__':
         sim = Parallel(\
             filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
-        sim.build({'iBranch':range(3),
-                   'bgStimSeed': range(1, 4),
-                   'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
+        sim.build({'iBranch':range(2),
+                   'bgStimSeed': range(1, 3),
+                   # 'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
+                   'bgStimFreq': np.array([5e-4, 5e-3]),
                    'from_uniform':[True, False]})
         sim.run(run_sim,
                 single_run_args={'cellType':'Basket', 'with_Vm':True}) 

@@ -50,7 +50,11 @@ sim = Parallel(\
 
 sim.load()
 sim.fetch_quantity_on_grid('Vm', dtype=object) 
+sim.fetch_quantity_on_grid('Vm_dend', dtype=object) 
 sim.fetch_quantity_on_grid('output_rate', dtype=float) 
+
+# %%
+sim.keys
 
 # %%
 import numpy as np
@@ -60,10 +64,10 @@ import plot_tools as pt
 import matplotlib.pylab as plt
 
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), len(np.unique(sim.bgStimFreq))),
-                    figsize=3*np.array((1.5,0.4)))
+                    figsize=1*np.array((1.5,0.4)))
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
 
-trial = 2
+trial = 0
 
 for iB, iBranch in enumerate(np.unique(sim.iBranch)):
     c= plt.cm.tab10(iB)
@@ -72,8 +76,8 @@ for iB, iBranch in enumerate(np.unique(sim.iBranch)):
         if iB==0:
             pt.annotate(AX[iF][0], '$\\nu$=%.1eHz ' % freq, (0, 0), ha='right', fontsize=7)
         c= plt.cm.tab10(iB)
-        for iS, color, lw in zip([0, 1], [c, 'tab:grey'], [1, 0.5]):
-            Vm, dt = sim.Vm[iB, trial, iF, iS] , 0.025
+        for isU, color, lw in zip([0, 1], [c, 'tab:grey'], [1, 0.5]):
+            Vm, dt = sim.Vm[iB, trial, iF, isU] , 0.025
             AX[iF][iB].plot(np.arange(len(Vm))*dt, Vm, color=color, lw=lw)
             AX[iF][iB].axis('off')
 pt.set_common_ylims(AX)
@@ -82,10 +86,25 @@ pt.draw_bar_scales(AX[0][0], loc='top-right',
                    Xbar=50, Xbar_label='50ms',
                    Ybar=20, Ybar_label='20mV')
 
-fig.savefig('/tmp/1.svg')
+#fig.savefig('/tmp/1.svg')
 
 # %%
-sim.keys
+fig, ax = pt.figure(figsize=2*np.array((1.3,0.5)))
+
+trial = 0
+iB = 0
+iF = 0
+isU = 0
+
+Vm, dt = sim.Vm[iB, trial, iF, isU] , 0.025
+ax.plot(np.arange(len(Vm))*dt, Vm, color=color, lw=1)
+Vm_dend = sim.Vm_dend[iB, trial, iF, isU]
+ax.plot(np.arange(len(Vm))*dt, Vm_dend, color=color, lw=2, alpha=.5)
+ax.axis('off')
+
+pt.draw_bar_scales(ax, loc='top-right',
+                   Xbar=50, Xbar_label='50ms',
+                   Ybar=20, Ybar_label='20mV')
 
 # %%
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), 1),

@@ -122,7 +122,7 @@ class Parallel:
                     for p in PROCESSES[Nmax_simultaneous_processes*i:Nmax_simultaneous_processes*(i+1)]:
                         p.join()
                     print('multiprocessing loop: %i/%i' % (i, len(PROCESSES)//Nmax_simultaneous_processes))
-                    print('   n=%i/%i' % (i*len(PROCESSES), len(PROCESSES)))
+                    # print('   n=%i/%i' % (i*len(PROCESSES), len(PROCESSES)))
                     
             # write all single sim files in the zip file
             for FN in self.PARAMS_SCAN['filenames']:
