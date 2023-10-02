@@ -3,9 +3,11 @@ def format_key(value):
         return float(value.replace(' 10<sup>', 'e').replace('</sup>', ''))
     elif '.' in value:
         return float(value)
+    elif len(value.replace(' ', ''))==0:
+        return None
     elif '[' in value:
         print('not implemented yet')
-        return ()
+        return None
     else:
         return int(value)
 

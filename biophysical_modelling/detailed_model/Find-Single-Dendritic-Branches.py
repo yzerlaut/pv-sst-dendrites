@@ -102,6 +102,26 @@ ID = '864691135396580129_296758' # Basket Cell example
 cell = Cell(ID=ID, debug=False)
 fig = create_branches_fig(cell)
 
+# %%
+fig, ax = pt.figure(figsize=(3,3))
+
+iBranch = 0
+branch = cell.set_of_branches[iBranch]
+synapses = cell.set_of_synapses[iBranch]
+synapses_uniform = cell.set_of_synapses_spatially_uniform[iBranch]
+
+vis = pt.nrnvyz(cell.SEGMENTS)
+        
+vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
+                  bar_scale_args={'Ybar':1e-9, 'Xbar':1e-9},
+                  ax=ax)
+
+syn = synapses[-10:]
+#syn = synapses_uniform[-10:]
+ax.scatter(1e6*cell.SEGMENTS['x'][syn], 1e6*cell.SEGMENTS['y'][syn],
+           s=10, color='r', alpha=1)
+
+
 # %% [markdown]
 # ### Martinotti Cell
 

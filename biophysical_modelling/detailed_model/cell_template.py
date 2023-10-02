@@ -58,7 +58,9 @@ class Cell:
             iSorted = np.argsort(self.SEGMENTS['distance_to_soma'][synapses])
             self.set_of_synapses.append(np.array(synapses)[iSorted])
 
-        # redistribute synapses uniformly
+        # --------------------------------------------- #
+        #       redistribute synapses uniformly         #
+        # --------------------------------------------- #
         self.set_of_synapses_spatially_uniform = []
         for branch, synapses in zip(branches['branches'],
                                     branches['synapses']):
@@ -69,7 +71,7 @@ class Cell:
                                 dtype='int')
             uSynapses, bIndex = [], 0
             while len(uSynapses)<len(synapses):
-                if len(uSynapses)>Rel[bIndex] and (bIndex<(len(Rel)-1)):
+                if (len(uSynapses)>Rel[bIndex]) and (bIndex<(len(Rel)-1)):
                     bIndex +=1 
                 uSynapses.append(branch[bIndex])
             self.set_of_synapses_spatially_uniform.append(np.array(uSynapses))

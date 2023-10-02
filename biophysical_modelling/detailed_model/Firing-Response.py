@@ -64,7 +64,7 @@ import plot_tools as pt
 import matplotlib.pylab as plt
 
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), len(np.unique(sim.bgStimFreq))),
-                    figsize=1*np.array((1.5,0.4)))
+                    figsize=2*np.array((1.,0.7)))
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
 
 trial = 0
@@ -89,22 +89,24 @@ pt.draw_bar_scales(AX[0][0], loc='top-right',
 #fig.savefig('/tmp/1.svg')
 
 # %%
-fig, ax = pt.figure(figsize=2*np.array((1.3,0.5)))
+fig, ax = pt.figure(figsize=(3,3))
 
-trial = 0
-iB = 0
-iF = 0
-isU = 0
+trial = 1
+iB = 1
+iF = 1
 
-Vm, dt = sim.Vm[iB, trial, iF, isU] , 0.025
-ax.plot(np.arange(len(Vm))*dt, Vm, color=color, lw=1)
-Vm_dend = sim.Vm_dend[iB, trial, iF, isU]
-ax.plot(np.arange(len(Vm))*dt, Vm_dend, color=color, lw=2, alpha=.5)
+for isU, color, label in zip([0,1], ['tab:red', 'tab:blue'], ['real', 'uniform']):
+    Vm, dt = sim.Vm[iB, trial, iF, isU] , 0.025
+    ax.plot(np.arange(len(Vm))*dt, Vm, color=color, lw=1)
+    Vm_dend = sim.Vm_dend[iB, trial, iF, isU]
+    ax.plot(np.arange(len(Vm))*dt, Vm_dend, color=color, lw=1, label=label)
+ax.legend(frameon=False, loc=(0,1))
 ax.axis('off')
 
 pt.draw_bar_scales(ax, loc='top-right',
                    Xbar=50, Xbar_label='50ms',
                    Ybar=20, Ybar_label='20mV')
+#fig.savefig('/tmp/1.svg')
 
 # %%
 fig, AX = pt.figure(axes=(len(np.unique(sim.iBranch)), 1),

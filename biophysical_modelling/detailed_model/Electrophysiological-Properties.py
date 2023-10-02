@@ -136,7 +136,7 @@ pt.set_plot(AX[0], xlabel='dist. to soma ($\mu$m)',
 pt.set_plot(AX[1], xlabel='dist. to soma ($\mu$m)',
             ylabel='Transfer Res. (M$\Omega$)\n to soma ')
 fig.savefig('../../figures/BC-Resistance-Profile.svg')
-plt.show()
+#plt.show()
 
 # %% [markdown]
 # ## Firing Response to Synaptic Stimulation
