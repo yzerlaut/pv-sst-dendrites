@@ -206,8 +206,6 @@ class Parallel:
 
         for iKs in product(*[range(len(X)) for X in self.VALUES]):
 
-            print(self.filenames[iKs])
-
             getattr(self, key)[iKs] = np.load(\
                                 os.path.join(self.temp_folder, self.filenames[iKs]),
                                 allow_pickle=True).item()[key]

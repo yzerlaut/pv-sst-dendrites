@@ -20,7 +20,7 @@
 import sys, os, json, pandas
 import numpy as np
 
-sys.path.append('../neural_network_dynamics/')
+sys.path.append('../../neural_network_dynamics/')
 import nrn
 from nrn.plot import nrnvyz
 
@@ -30,6 +30,89 @@ sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
+# %% [markdown]
+# ## Loading and plotting from pre-computed path (see computation below)
+
+# %%
+import numpy as np
+import matplotlib.pylab as plt
+
+from cell_template import Cell
+
+import sys
+sys.path.append('../..')
+import plot_tools as pt
+
+def create_branches_fig(cell, nBins=12):
+    
+    fig, AX = plt.subplots(int(len(cell.set_of_branches)/3), 3, figsize=(8,5))
+    plt.subplots_adjust(hspace=0, bottom=0,top=1)
+
+    INSETS = []
+    for a, branch,\
+        synapses, synapses_uniform\
+                in zip(range(len(cell.set_of_branches)), cell.set_of_branches,
+                             cell.set_of_synapses,
+                             cell.set_of_synapses_spatially_uniform):
+
+        color = plt.cm.tab10(a)
+
+        vis = pt.nrnvyz(cell.SEGMENTS)
+        
+        vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
+                          bar_scale_args={'Ybar':1e-9, 'Xbar':1e-9},
+                          ax=AX[int(a/3), a%3])
+
+        AX[int(a/3), a%3].scatter(1e6*cell.SEGMENTS['x'][branch],
+                                  1e6*cell.SEGMENTS['y'][branch],
+                                  s=10, color=color, alpha=1)
+
+        inset = pt.inset(AX[int(a/3), a%3], [-0.1, 0.7, .35, .17])
+
+        bins = np.linspace(cell.SEGMENTS['distance_to_soma'][branch].min(),
+                           cell.SEGMENTS['distance_to_soma'][branch].max(), nBins)*1e6
+        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses],
+                                bins=bins)
+        inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor=color, color='w')
+
+        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses_uniform], bins=bins)
+        inset.bar(be[1:], hist, width=be[1]-be[0], alpha=.5, color='tab:grey')
+
+        pt.set_plot(inset, xticks=[0,200],
+                    ylabel='syn. count ', xlabel='dist ($\mu$m)', fontsize=7)
+        pt.annotate(AX[int(a/3), a%3],
+                    'branch #%i\n%i syn.' % (a+1, len(synapses)), (-0.1,0.1), 
+                    color=color, va='top')
+        pt.annotate(inset, 'real\n', (0,1), color=color, fontsize=6)
+        pt.annotate(inset, 'uniform', (0,1), color='tab:grey', fontsize=6)
+        INSETS.append(inset)
+        
+    pt.set_common_xlims(INSETS)
+    for ax in pt.flatten(AX):
+        ax.axis('off')
+        
+    return fig
+
+
+# %% [markdown]
+# ### Basket Cell
+
+# %%
+ID = '864691135396580129_296758' # Basket Cell example
+cell = Cell(ID=ID, debug=False)
+fig = create_branches_fig(cell)
+
+# %% [markdown]
+# ### Martinotti Cell
+
+# %%
+ID = '864691135571546917_264824' # Basket Cell example
+cell = Cell(ID=ID, debug=False)
+fig = create_branches_fig(cell)
+
+
+# %% [markdown]
+# ## Computations to find the branches
 
 # %%
 def load(ID):

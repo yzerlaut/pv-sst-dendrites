@@ -17,7 +17,7 @@
 # # Simulation of Clustered-Input on Dendritic Segments 
 
 # %%
-from PV_template import *
+from cell_template import *
 
 from clustered_input_stim import * 
 
@@ -29,7 +29,7 @@ import matplotlib.pylab as plt
 # %%
 # load cell
 ID = '864691135396580129_296758' # Basket Cell example
-cell = PVcell(ID=ID, debug=False)
+cell = Cell(ID=ID, debug=False)
 cell.check_that_all_dendritic_branches_are_well_covered(verbose=False)
 
 # %% [markdown]

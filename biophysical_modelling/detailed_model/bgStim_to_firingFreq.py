@@ -24,9 +24,7 @@ def run_sim(cellType='Basket',
             # bg Stim props
             bgStimFreq = 1e-3, 
             bgStimSeed = 10, 
-            # synapse shuffling
-            synShuffled=False,
-            synShuffleSeed=0,
+            # spread synapses uniformly:
             from_uniform=False,
             # biophysical props
             NMDAtoAMPA_ratio=0,
@@ -53,10 +51,6 @@ def run_sim(cellType='Basket',
     # shuffle synapses
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
-    elif synShuffled:
-        np.random.seed(synShuffleSeed)
-        synapses = np.random.choice(cell.set_of_branches[iBranch],
-                                    len(cell.set_of_synapses[iBranch]))
     else:
         synapses = cell.set_of_synapses[iBranch]
 
@@ -102,10 +96,15 @@ def run_sim(cellType='Basket',
             nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['qAMPA']
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
-    Vm = h.Vector()
+    Vm, Vm_dend = h.Vector(), h.Vector()
 
-    # Vm rec
+    # Vm rec @ soma
     Vm.record(cell.soma[0](0.5)._ref_v)
+    # Vm rec @ dend
+    syn = 
+    Vm_dend.record(cell.SEGMENTS['NEURON_section'][syn](\
+                       cell.SEGMENTS['NEURON_segment'][syn])._ref_v)
+
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
@@ -163,7 +162,7 @@ if __name__=='__main__':
             filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
         sim.build({'iBranch':range(3),
-                   'bgStimSeed': range(10, 13),
+                   'bgStimSeed': range(1, 4),
                    'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
                    'from_uniform':[True, False]})
         sim.run(run_sim,

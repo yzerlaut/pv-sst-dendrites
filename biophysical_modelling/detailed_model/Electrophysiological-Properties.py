@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -17,7 +17,7 @@
 # # Simulation of Morphologically-detailed models of Basket Cell
 
 # %%
-from PV_template import *
+from cell_template import *
 
 import sys
 sys.path.append('../..')
@@ -29,7 +29,7 @@ import matplotlib.pylab as plt
 
 # %%
 ID = '864691135396580129_296758' # Basket Cell example
-cell = PVcell(ID=ID, debug=False)
+cell = Cell(ID=ID, debug=False)
 
 ic = h.IClamp(cell.soma[0](0.5))
 ic.amp = 0. 
@@ -81,15 +81,14 @@ inset = pt.inset(ax, [0, 0.6, 0.2, 0.4])
 inset.plot(AMPS, RATES, 'ko-', lw=0.5)
 pt.set_plot(inset, xlabel='amp. (nA)', ylabel='firing rate (Hz)')
 
-fig.savefig('../figures/BC-FI-curve.svg')
+fig.savefig('../../figures/BC-FI-curve.svg')
 
 # %% [markdown]
 # ## Resistance Profile
 
 # %%
 ID = '864691135396580129_296758' # Basket Cell example
-cell = PVcell(ID=ID, debug=False)
-cell.check_that_all_dendritic_branches_are_well_covered(show=False)
+cell = Cell(ID=ID, debug=False)
 
 amp, duration, dt = -25e-3, 300, 0.1
 
