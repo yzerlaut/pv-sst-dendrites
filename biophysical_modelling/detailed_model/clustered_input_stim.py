@@ -6,18 +6,22 @@ sys.path.append('../..')
 import plot_tools as pt
 
 from parallel import Parallel
-from PV_template import *
+from cell_template import Cell
 
-distance_intervals = [(0,70),
-                      (70,140),
-                      (140, 300)]
+# distance_intervals = [(0,70),
+                      # (70,140),
+                      # (140, 300)]
 
 def find_clustered_input(cell, 
                          iBranch,
+                         # cluster props
+                         # iDistance=2,
+                         distance=100,
+                         nCluster=5,
+                         from_uniform=False,
+                         # synapse sparsening
                          subsampling_fraction=0.05,
                          synSubsamplingSeed=3,
-                         iDistance=2,
-                         from_uniform=False,
                          ax=None, syn_color='r',
                          with_plot=False):
 
@@ -36,12 +40,19 @@ def find_clustered_input(cell,
     else:
         synapses = full_synapses
 
-    # finding the closest to the distance point
-    # using the distance to soma as a distance measure
-    interval = distance_intervals[iDistance]
-    cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
-            (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
-    cluster_synapses = synapses[cluster_cond]
+    # ==== cluster from interval ===
+    # ------------------------------
+    # interval = distance_intervals[iDistance]
+    # cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
+            # (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
+    # cluster_synapses = synapses[cluster_cond]
+
+
+    # ==== cluster from distance ===
+    # ------------------------------
+    # -- finding the closest to the distance point (using the distance to soma metrics)
+    iSorted = np.argsort((1e6*cell.SEGMENTS['distance_to_soma'][synapses]-distance)**2)
+    cluster_synapses = synapses[iSorted[:nCluster]]
 
     if ax is None and with_plot:
         fig, ax = plt.subplots(1, figsize=(3,3))
@@ -70,7 +81,8 @@ def find_clustered_input(cell,
         pt.set_plot(inset, xticks=[0,200], 
                     title = '%i%% subset' % (100*subsampling_fraction), #yticks=[0,2],
                     ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
-        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), fontsize=7, color=syn_color)
+        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), 
+                    fontsize=7, color=syn_color)
 
         return ax, inset
 
@@ -107,7 +119,8 @@ def build_linear_pred(Vm, dt, t0, ISI, delay, nCluster):
 def run_sim(cellType='Basket', 
             iBranch=0,
             # cluster props
-            iDistance=2,
+            # iDistance=2,
+            distance=200,
             delay=5,
             # synapse subsampling
             subsampling_fraction=0.03,
@@ -142,7 +155,8 @@ def run_sim(cellType='Basket',
                                     iBranch,
                                     subsampling_fraction=subsampling_fraction,
                                     synSubsamplingSeed=synSubsamplingSeed,
-                                    iDistance=iDistance,
+                                    # iDistance=iDistance,
+                                    distance=distance,
                                     synShuffled=synShuffled,
                                     synShuffleSeed=synShuffleSeed)
 
@@ -237,7 +251,8 @@ if __name__=='__main__':
 
     # run_sim()
 
-    props ={'iDistance':2, # 2 -> means "distal" range
+    # props ={'iDistance':2, # 2 -> means "distal" range
+    props ={'distance':200, # 2 -> means "distal" range
             'subsampling_fraction':100./100.,
             'with_plot':True}
 

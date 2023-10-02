@@ -29,6 +29,7 @@ class Parallel:
         np.random.seed(scan_seed)
         self.temp_folder=temp_folder
         self.PARAMS_SCAN = None
+        self.has_grid = False
 
         self.filename = filename
         self.basename = os.path.basename(filename).replace('.zip', '')
@@ -190,6 +191,8 @@ class Parallel:
                                           indexing='ij')):
             setattr(self, key, array)
 
+        self.has_grid = True
+
         # now filenames array from list of simulations
         self.filenames = np.empty(getattr(self, self.keys[0]).shape, dtype=object)
         for i, fn in enumerate(self.PARAMS_SCAN['filenames']):
@@ -210,8 +213,23 @@ class Parallel:
                                 os.path.join(self.temp_folder, self.filenames[iKs]),
                                 allow_pickle=True).item()[key]
             
+    def get(self, key,
+            params={}):
+        
+        if self.has_grid:
 
+            cond = np.ones(getattr(self,key).shape, dtype=bool)
 
+            for k, val in params.items():
+
+                cond = cond & (getattr(self, k)==val)
+
+            return getattr(self, key)[cond]
+
+        else:
+
+            print(' need to call "build_grid" before ! ')
+            return None
         
     
 if __name__=='__main__':
@@ -240,7 +258,9 @@ if __name__=='__main__':
 
         sim.load(unzip=True, with_data=True)
         sim.fetch_quantity_on_grid('scalar_output')
-        print(sim.scalar_output[0,:,0])
+
+        print(sim.get('scalar_output', {'SEED':1,  'a':6, 'b':False}))
+        # print(sim.scalar_output[0,:,0])
 
     else:
         # means run !

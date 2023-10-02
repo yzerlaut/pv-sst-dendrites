@@ -116,11 +116,11 @@ vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
                   bar_scale_args={'Ybar':1e-9, 'Xbar':1e-9},
                   ax=ax)
 
-syn = synapses[-10:]
-#syn = synapses_uniform[-10:]
+syn = synapses
+syn = synapses_uniform
 ax.scatter(1e6*cell.SEGMENTS['x'][syn], 1e6*cell.SEGMENTS['y'][syn],
            s=10, color='r', alpha=1)
-
+print(len(synapses), len(synapses_uniform))
 
 # %% [markdown]
 # ### Martinotti Cell

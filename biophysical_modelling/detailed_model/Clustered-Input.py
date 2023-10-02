@@ -17,8 +17,7 @@
 # # Simulation of Clustered-Input on Dendritic Segments 
 
 # %%
-from cell_template import *
-
+from cell_template import Cell
 from clustered_input_stim import * 
 
 import sys
@@ -29,11 +28,34 @@ import matplotlib.pylab as plt
 # %%
 # load cell
 ID = '864691135396580129_296758' # Basket Cell example
-cell = Cell(ID=ID, debug=False)
-cell.check_that_all_dendritic_branches_are_well_covered(verbose=False)
+cell = Cell(ID=ID)
 
 # %% [markdown]
 # ## Distal Clusters
+
+# %%
+for seed in [2, 4]:
+
+    props ={'distance':200, # 2 -> means "distal" range
+            'subsampling_fraction':4./100.}
+
+    fig, AX = pt.figure(figsize=(1.5,2.2), axes=(6, 2), hspace=0, wspace=0.1)
+    
+    for iBranch in range(6):
+        c, INSETS = plt.cm.tab10(iBranch), []
+        AX[0][iBranch].set_title('branch #%i' % (1+iBranch), color=c)
+        _, inset = find_clustered_input(cell, iBranch, **props,
+                            with_plot=True, ax=AX[0][iBranch], syn_color=c)
+        INSETS.append(inset)
+        _, inset = find_clustered_input(cell, iBranch, from_uniform=True, **props,
+                            with_plot=True, syn_color=c, ax=AX[1][iBranch])
+        INSETS.append(inset)
+        pt.annotate(AX[0][iBranch], 'real', (-0.3,0.3), bold=True, color=c)
+        pt.annotate(AX[1][iBranch], 'uniform', (-0.3,0.3), bold=True, color=c)
+
+        pt.set_common_ylims(INSETS)
+    fig.suptitle('sparsening seed #%i' % seed)
+fig.savefig('/tmp/1.svg')
 
 # %%
 for seed in [2, 4]:

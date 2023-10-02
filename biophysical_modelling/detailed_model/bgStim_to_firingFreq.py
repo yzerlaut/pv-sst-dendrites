@@ -164,11 +164,15 @@ if __name__=='__main__':
         sim = Parallel(\
             filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
-        sim.build({'iBranch':range(2),
-                   'bgStimSeed': range(1, 3),
-                   # 'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
-                   'bgStimFreq': np.array([5e-4, 5e-3]),
-                   'from_uniform':[True, False]})
+        sim.build({'iBranch':range(4),
+                   'bgStimSeed': range(3),
+                   'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
+                   'from_uniform':[False, True]})
+
+        # sim.build({'iBranch':range(1),
+                   # 'bgStimSeed': range(1),
+                   # 'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
+                   # 'from_uniform':[False, True]})
         sim.run(run_sim,
                 single_run_args={'cellType':'Basket', 'with_Vm':True}) 
 
