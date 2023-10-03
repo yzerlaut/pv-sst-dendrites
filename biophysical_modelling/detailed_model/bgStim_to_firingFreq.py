@@ -164,9 +164,10 @@ if __name__=='__main__':
         sim = Parallel(\
             filename='../../data/detailed_model/Basket_bgStim_sim.zip')
 
-        sim.build({'iBranch':range(4),
-                   'bgStimSeed': range(3),
-                   'bgStimFreq': np.array([1e-4, 5e-4, 1e-3, 5e-3, 1e-2]),
+        
+        sim.build({'iBranch':range(6),
+                   'bgStimSeed': range(2),
+                   'bgStimFreq': np.logspace(np.log10(2e-4), -2, 4),
                    'from_uniform':[False, True]})
 
         # sim.build({'iBranch':range(1),
