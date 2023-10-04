@@ -42,7 +42,7 @@ def run_sim(cellType='Basket',
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
     elif cellType=='Martinotti':
-        pass
+        ID = '864691135571546917_264824' # Martinotti Cell example
     else:
         raise Exception(' cell type not recognized  !')
         cell = None
@@ -57,7 +57,7 @@ def run_sim(cellType='Basket',
         synapses = cell.set_of_synapses[iBranch]
 
     # prepare presynaptic spike trains
-    np.random.seed(bgStimSeed)
+    np.random.seed(10+8**bgStimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
         TRAINS.append(train(bgStimFreq, tstop=tstop))
@@ -136,22 +136,26 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description="script description",
                                    formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-c', "-- cellType",\
+    parser.add_argument('-c', "--cellType",\
                         help="""
                         cell type, either:
                         - Basket
                         - Martinotti
                         """, default='Basket')
     
-    parser.add_argument("--branch", help="branch ID (-1 means all)", type=int, default=-1)
-    # synaptic shuffling
-    parser.add_argument("--synShuffled",
-                        help="shuffled synapses uniformly ? (False=real) ", action="store_true")
-    parser.add_argument("--synShuffleSeed",
-                        help="seed for synaptic shuffling", type=int, default=0)
-    # stimulation shuffling
-    parser.add_argument("--bgShuffleSeed",
-                        help="seed for background stim", type=int, default=1)
+    # Input Range
+    parser.add_argument("--Fmin", help="min input", type=float, default=4e-4)
+    parser.add_argument("--Fmax", help="max input", type=float, default=2e-2)
+    parser.add_argument("--nF", help="N input", type=int, default=3)
+    parser.add_argument("--logF", help="test func", action="store_true")
+    # Input Seed Variations
+    parser.add_argument("--nSeed", type=int, default=1)
+    # Branch number
+    parser.add_argument("--nBranch", type=int, default=6)
+    # Testing Conditions
+    parser.add_argument("--test_uniform", action="store_true")
+    parser.add_argument("--test_NMDA", action="store_true")
+    parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
 
@@ -162,18 +166,26 @@ if __name__=='__main__':
         run_sim()
     else:
         sim = Parallel(\
-            filename='../../data/detailed_model/Basket_bgStim_sim.zip')
+            filename='../../data/detailed_model/%s_bgStim_sim.zip' % args.cellType)
 
         
-        sim.build({'iBranch':range(6),
-                   'bgStimSeed': range(2),
-                   'bgStimFreq': np.logspace(np.log10(2e-4), -2, 4),
-                   'from_uniform':[False, True]})
+        if args.logF:
+            F = np.logspace(np.log10(args.Fmin), np.log10(args.Fmax), args.nF)
+        else:
+            F = np.linspace(args.Fmin, args.Fmax, args.nF)
+           
+        params = dict(bgStimFreq=F,
+                      iBranch=np.arange(args.nBranch),
+                       bgStimSeed=1+np.arange(args.nSeed)*5)
 
-        # sim.build({'iBranch':range(1),
-                   # 'bgStimSeed': range(1),
-                   # 'bgStimFreq': np.array([5e-4, 1e-3, 5e-3]),
-                   # 'from_uniform':[False, True]})
+        if args.test_uniform:
+            params = dict(from_uniform=[False, True], **params))
+        if args.test_NMDA:
+            params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
+
+        sim.build(params)
+
         sim.run(run_sim,
-                single_run_args={'cellType':'Basket', 'with_Vm':True}) 
+                single_run_args={'cellType':args.cellType,
+                                 'with_Vm':True}) 
 

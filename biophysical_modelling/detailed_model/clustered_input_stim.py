@@ -8,16 +8,16 @@ import plot_tools as pt
 from parallel import Parallel
 from cell_template import Cell
 
-# distance_intervals = [(0,70),
-                      # (70,140),
-                      # (140, 300)]
+distance_intervals = [(0,70),
+                      (70,140),
+                      (140, 300)]
 
 def find_clustered_input(cell, 
                          iBranch,
                          # cluster props
                          # iDistance=2,
-                         distance=100,
-                         nCluster=5,
+                         # distance=100,
+                         # nCluster=5,
                          from_uniform=False,
                          # synapse sparsening
                          subsampling_fraction=0.05,
@@ -42,10 +42,10 @@ def find_clustered_input(cell,
 
     # ==== cluster from interval ===
     # ------------------------------
-    # interval = distance_intervals[iDistance]
-    # cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
-            # (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
-    # cluster_synapses = synapses[cluster_cond]
+    interval = distance_intervals[iDistance]
+    cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
+            (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
+    cluster_synapses = synapses[cluster_cond]
 
 
     # ==== cluster from distance ===
