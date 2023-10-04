@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -42,7 +42,7 @@ sessions = cache.get_session_table()
 # # 1) Loading the Optotagging results
 
 # %%
-Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
 
 # %% [markdown]
@@ -52,46 +52,62 @@ Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
 analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('brain_observatory_1.1')
 
 # %%
+for k in analysis_metrics.keys():
+    print(k)
+
+# %%
 from scipy.stats import mannwhitneyu
 
-fig, ax = plt.subplots(1)
-inset = pt.inset(ax, [1.4, -0.05, 0.3, 0.6])
-
-# choose attribute and set label
-attr, label = 'g_osi_sg', 'OSI'
-
-RESP = {'Others':[]}
-for i, Key in enumerate(['PV', 'SST']):
-    RESP[Key] = []
-    positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-    for unit in positive_IDs:
-        if len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0:
-            value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
-            if np.isfinite(value):
-                RESP[Key].append(value)
-    for unit in analysis_metrics[\
-                    analysis_metrics.ecephys_structure_acronym.isin(['VISp'])].index.values:
-        if (unit not in positive_IDs) and (len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0):
-            value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
-            if np.isfinite(value):
-                RESP['Others'].append(value)
-                
-
-COLORS=['lightgrey', 'tab:red', 'tab:orange']
-for i, Key in enumerate(['Others', 'PV', 'SST']):
-    pt.annotate(ax, i*'\n'+'n=%i units' % len(RESP[Key]), (1,1), color=COLORS[i], ha='right', va='top')
-    ax.hist(RESP[Key], bins=np.linspace(0, 1, 30), color=COLORS[i],
-             label=Key.replace('_sessions', '+ units'), alpha=1 if i==0 else 0.6, density=True)
-    pt.violin(RESP[Key], X=[i], COLORS=[COLORS[i]], ax=inset)
+def show_average_quantity(analysis_metrics,
+                          attr = 'g_osi_sg',
+                          label = 'OSI'):
     
-inset.set_xticks([])
-inset.set_yticks([0, 0.5, 1])
-inset.set_ylabel(label)
-inset.set_title('PV vs SST, p=%.1e' % mannwhitneyu(RESP['PV'], RESP['SST']).pvalue)
-ax.set_xlabel(label)
-ax.set_yticks([])
-ax.set_ylabel('density')
-ax.legend(loc=(1.1, 0.8))
+
+    fig, ax = plt.subplots(1)
+    inset = pt.inset(ax, [1.4, -0.05, 0.3, 0.6])
+
+    # choose attribute and set label
+
+
+    RESP = {'Others':[]}
+    for i, Key in enumerate(['PV', 'SST']):
+        RESP[Key] = []
+        positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
+        for unit in positive_IDs:
+            if len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0:
+                value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
+                if np.isfinite(value):
+                    RESP[Key].append(value)
+        for unit in analysis_metrics[\
+                        analysis_metrics.ecephys_structure_acronym.isin(['VISp'])].index.values:
+            if (unit not in positive_IDs) and (len(getattr(analysis_metrics[analysis_metrics.index==unit], attr).values)>0):
+                value = getattr(analysis_metrics[analysis_metrics.index==unit], attr).values[0]
+                if np.isfinite(value):
+                    RESP['Others'].append(value)
+
+
+    COLORS=['lightgrey', 'tab:red', 'tab:orange']
+    for i, Key in enumerate(['Others', 'PV', 'SST']):
+        pt.annotate(ax, i*'\n'+'n=%i units' % len(RESP[Key]), (1,1), color=COLORS[i], ha='right', va='top')
+        ax.hist(RESP[Key], bins=np.linspace(0, 1, 30), color=COLORS[i],
+                 label=Key.replace('_sessions', '+ units'), alpha=1 if i==0 else 0.6, density=True)
+        pt.violin(RESP[Key], X=[i], COLORS=[COLORS[i]], ax=inset)
+
+    inset.set_xticks([])
+    inset.set_yticks([0, 0.5, 1])
+    inset.set_ylabel(label)
+    inset.set_title('PV vs SST, p=%.1e' % mannwhitneyu(RESP['PV'], RESP['SST']).pvalue)
+    ax.set_xlabel(label)
+    ax.set_yticks([])
+    ax.set_ylabel('density')
+    ax.legend(loc=(1.1, 0.8))
+    
+    return RESP
+
+OSI = show_average_quantity(analysis_metrics, attr = 'g_osi_sg', label = 'OSI')
+
+# %%
+DSI = show_average_quantity(analysis_metrics, attr = 'g_dsi_dg', label = 'DSI')
 
 # %% [markdown]
 # # 3) Recover the Original Orientation-Dependent PSTH
@@ -155,7 +171,7 @@ def compute_orientation_spike_resp(unit, analysis_metrics,
 
 Key = 'PV'
 positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-i = np.argmax(OSI[Key])
+i = np.argmax(RESP[Key])
 spikes_matrix, orientations = \
         compute_orientation_spike_resp(positive_IDs[i], analysis_metrics)
 
@@ -203,7 +219,7 @@ def show_single_unit_response(spikes_matrix, orientations,
     return fig
 
 fig = show_single_unit_response(spikes_matrix, orientations, ms=0.5, color='tab:red')
-fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], OSI[Key][i]), color='k')
+fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], RESP[Key][i]), color='k')
 fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.png'))
 
 # %%

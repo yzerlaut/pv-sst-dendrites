@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -46,7 +46,7 @@ sessions = cache.get_session_table()
 
 # %%
 ## Fetch the Optotagging Results
-Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
 
 # %%
@@ -156,7 +156,7 @@ for stim in []:#['all', 'natural-movies', 'spontaneous']:
 # # 2) Load summary data
 
 # %%
-DATA = np.load('../data/visual-coding-spikes-data-spontaneous.npy', allow_pickle=True).item()
+DATA = np.load('../data/visual_coding/visual-coding-spikes-data-spontaneous.npy', allow_pickle=True).item()
 
 # %% [markdown]
 # # Wavelet-Based analysis: cross-correl with wavelet
@@ -568,7 +568,7 @@ for key in ['PV', 'SST']:
                 #
                 RESULTS['%s_%s_per_unit_session_id' % (key, units)] += list(index*np.ones(\
                                 len(DATA[key][index]['%s-spikeTrig-envelope'% units])))
-                    
+
 
 # %%
 np.save('../data/spike-triggered-spectrogram-average.npy', RESULTS)

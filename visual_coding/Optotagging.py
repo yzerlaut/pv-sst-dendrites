@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -271,8 +271,9 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
 np.save(os.path.join('..', 'data', 'Optotagging-Results.npy'), Optotagging)
 
 # %%
-Optotagging = np.load(os.path.join('..', 'data', 'Optotagging-Results.npy'),
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
+
 for Key in ['PV_sessions', 'SST_sessions']:
 
     Ntot = np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]])
