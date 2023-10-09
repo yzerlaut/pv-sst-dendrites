@@ -6,14 +6,12 @@ sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
-distance_intervals = [(20,60),
-                      (90,130),
-                      (160, 200)]
 
 def find_clustered_input(cell, 
                          iBranch,
                          # cluster props
                          # -- if from distance intervals
+                         distance_intervals=[],
                          iDistance=-1,
                          # -- if from distance points
                          nCluster=None,
@@ -149,6 +147,7 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # cluster props
             # -- if from distance intervals
+            distance_intervals=[],
             iDistance=-1,
             # -- if from distance points
             nCluster=None,
@@ -185,6 +184,7 @@ def run_sim(cellType='Basket',
                                     from_uniform=from_uniform,
                                     synSubsamplingFraction=synSubsamplingFraction,
                                     synSubsamplingSeed=synSubsamplingSeed,
+                                    distance_intervals=distance_intervals,
                                     iDistance=iDistance,
                                     distance=distance,
                                     nCluster=nCluster)
@@ -243,7 +243,7 @@ def run_sim(cellType='Basket',
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
-    Vm_dend.record(cell.SEGMENTS['NEURON_section'][syn](x)._ref_v) # last one in the loop
+    Vm_dend.record(cell.SEGMENTS['NEURON_section'][len(synapses)-1](0.5)._ref_v) # last one in the loop
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
@@ -298,7 +298,11 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # cluster props
+    parser.add_argument("--Proximal", type=float, nargs=2, default=(20,60))
+    parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
+    parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
     parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
+
     # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
     # parser.add_argument("--NsynSubsamplingSeed", type=int, default=1)
     parser.add_argument("--iDistance", help="min input", type=int, default=1)
@@ -311,23 +315,27 @@ if __name__=='__main__':
     parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
+    parser.add_argument("--suffix", help="suffix for saving", default='')
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     args = parser.parse_args()
+
+    distance_intervals = [args.Proximal, args.Medial, args.Distal]
 
     if args.test:
 
         params = dict(cellType=args.cellType,
                       iBranch=args.iBranch,
                       iDistance=args.iDistance,
-                      synSubsamplingSeed=args.synSubsamplingSeed,
-                      synSubsamplingFraction=args.synSubsamplingFraction)
+                      synSubsamplingFraction=args.synSubsamplingFraction,
+                      distance_intervals=distance_intervals)
         run_sim(**params)
 
     else:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_clusterStim_sim.zip' % args.cellType)
+            filename='../../data/detailed_model/%s_clusterStim_sim%s.zip' % (args.cellType,
+                                                                             args.suffix))
 
         params = dict(iBranch=np.arange(args.nBranch),
                       iDistance=range(3))
@@ -340,5 +348,6 @@ if __name__=='__main__':
         sim.build(params)
 
         sim.run(run_sim,
-                single_run_args={'cellType':args.cellType,
-                                 'synSubsamplingFraction':args.synSubsamplingFraction})
+                single_run_args=dict(cellType=args.cellType,
+                                     synSubsamplingFraction=args.synSubsamplingFraction,
+                                     distance_intervals=distance_intervals))

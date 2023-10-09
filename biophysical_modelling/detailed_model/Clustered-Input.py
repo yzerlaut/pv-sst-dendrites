@@ -41,7 +41,7 @@ for f, fU in enumerate([False, True]):
         params = {'iDistance':iDistance, 'from_uniform':fU}
         #pt.scatter([iDistance+0.4*f], [sim.get('peak_efficacy_soma', params).mean()],
         #            sy=[sim.get('peak_efficacy_soma', params).std()], color=COLORS[f], ax=ax, ms=2, lw=2)
-        ax.bar([iDistance+0.4*f], [sim.get('peak_efficacy_soma', params).mean()],
+        ax.bar([iDistance+0.4*f], [100-sim.get('peak_efficacy_soma', params).mean()],
                yerr=[sim.get('peak_efficacy_soma', params).std()], color=COLORS[f], width=0.35)
     pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
 pt.set_plot(ax, ylabel='efficacy (%)',
@@ -141,62 +141,43 @@ for iDistance in np.unique(sim.iDistance):
                         (-1.3,0.3), color='k')
             
 
-# %%
+# %% [markdown]
+# # Visualizing the Distant-Dependent Clusters
 
 # %%
 # load cell
 ID = '864691135396580129_296758' # Basket Cell example
 cell = Cell(ID=ID, params_key='BC')
 
-# %% [markdown]
-# ## Distant-Dependent Clusters
-
-# %%
-for label, iDistance in zip(['proximal','interm.','distal'], range(3)):
-
+def show_cluster(iDistance, label):
+    
     props ={'iDistance':iDistance, # 2 -> means "distal" range
             'synSubsamplingFraction':5/100.}
 
-    fig, AX = pt.figure(figsize=(1.5,2.2), axes=(3, 2), hspace=0, wspace=0.1)
+    fig, AX = pt.figure(figsize=(1.7,2.5), axes=(2, 6), hspace=0.2, wspace=0., left=0.3)
     
-    for iBranch in range(3):
-        c, INSETS = plt.cm.tab10(iBranch), []
-        AX[0][iBranch].set_title('branch #%i' % (1+iBranch), color=c)
+    for iBranch in range(6):
+        c, INSETS = plt.cm.Set3(2*iBranch), []
+        pt.annotate(AX[iBranch][0], 'branch #%i' % (1+iBranch), (-1, 0.5), color=c)
         _, inset = find_clustered_input(cell, iBranch, **props,
-                            with_plot=True, ax=AX[0][iBranch], syn_color=c)
+                            with_plot=True, ax=AX[iBranch][0], syn_color=c)
         INSETS.append(inset)
         _, inset = find_clustered_input(cell, iBranch, from_uniform=True, **props,
-                            with_plot=True, syn_color=c, ax=AX[1][iBranch])
+                            with_plot=True, syn_color=c, ax=AX[iBranch][1])
         INSETS.append(inset)
-        pt.annotate(AX[0][iBranch], 'real', (-0.3,0.3), bold=True, color=c)
-        pt.annotate(AX[1][iBranch], 'uniform', (-0.3,0.3), bold=True, color=c)
+        pt.annotate(AX[iBranch][0], 'real', (-0.3,0.3), bold=True, color=c)
+        pt.annotate(AX[iBranch][1], 'uniform', (-0.3,0.3), bold=True, color=c)
 
         pt.set_common_ylims(INSETS)
-    fig.suptitle('%s cluster,  interval: %s um' % (label, str(distance_intervals[iDistance])))
-    
-#fig.savefig('/tmp/1.svg')
+    fig.suptitle('**%s cluster**,  interval: %s um' % (label, str(distance_intervals[iDistance])))
+    return fig
+
 
 # %%
-for seed in [2, 4]:
+fig = show_cluster(0, 'proximal')
 
-    props ={'iDistance':2, # 2 -> means "distal" range
-            'subsampling_fraction':4./100.}
-
-    fig, AX = pt.figure(figsize=(1.5,2.2), axes=(6, 2), hspace=0, wspace=0.1)
-    for iBranch in range(6):
-        c, INSETS = plt.cm.tab10(iBranch), []
-        AX[0][iBranch].set_title('branch #%i' % (1+iBranch), color=c)
-        _, inset = find_clustered_input(cell, iBranch, **props,
-                            with_plot=True, ax=AX[0][iBranch], syn_color=c)
-        INSETS.append(inset)
-        _, inset = find_clustered_input(cell, iBranch, from_uniform=True, **props,
-                            with_plot=True, syn_color=c, ax=AX[1][iBranch])
-        INSETS.append(inset)
-        pt.annotate(AX[0][iBranch], 'real', (-0.3,0.3), bold=True, color=c)
-        pt.annotate(AX[1][iBranch], 'uniform', (-0.3,0.3), bold=True, color=c)
-
-        pt.set_common_ylims(INSETS)
-    fig.suptitle('sparsening seed #%i' % seed)
+# %%
+fig = show_cluster(1, 'distal')
 
 # %% [markdown]
 # ## Proximal Clusters
