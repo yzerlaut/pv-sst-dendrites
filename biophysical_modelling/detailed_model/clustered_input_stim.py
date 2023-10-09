@@ -243,7 +243,11 @@ def run_sim(cellType='Basket',
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
-    Vm_dend.record(cell.SEGMENTS['NEURON_section'][len(synapses)-1](0.5)._ref_v) # last one in the loop
+    if len(synapses)>0:
+        Vm_dend.record(cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v) # last one in the loop
+    else:
+        Vm_dend.record(cell.dend[0](0.5)._ref_v) # root dend
+
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
