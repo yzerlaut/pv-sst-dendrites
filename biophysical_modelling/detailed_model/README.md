@@ -164,8 +164,8 @@
 <!--|          | Fast Sodium current                           | `MC_axon_gNafx`    | 0.00 10<sup>-1</sup> |-->
 <!--|          | Delayed rectifier Potassium current           | `MC_axon_gKdrin`   | 0.00 10<sup>-2</sup>  |-->
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
-|          | Fast Sodium current                           | `MC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
-|          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |
+<!--|          | Fast Sodium current                           | `MC_prox_gNafx`    | 1.80 10<sup>-2</sup> |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |-->
 |          | A-type Potassium current (proximal)           | `MC_prox_gKapin`   | 1.00 10<sup>-3</sup> |
 <!--|          | T-type Ca2+ current (high threshold)          | `MC_prox_gCat`     | 2.00 10<sup>-4</sup> | -->
 <!--|          | N-type Ca2+ current                           | `MC_prox_gCan`     | 3.00 10<sup>-5</sup> |-->
@@ -173,14 +173,14 @@
 <!--################################################################################################################-->
 <!--|          | Fast Sodium current                           | `MC_prox_gNafx`    | 0.00 10<sup>-2</sup> |-->
 <!--|          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 0.00 10<sup>-4</sup> |-->
-<!--|          | A-type Potassium current (proximal)           | `MC_prox_gKapin`   | 0.00 10<sup>-3</sup> |-->
+|          | A-type Potassium current (proximal)           | `MC_prox_gKapin`   | 0.00 10<sup>-3</sup> |
 |          | T-type Ca2+ current (high threshold)          | `MC_prox_gCat`     | 0.00 10<sup>-4</sup> | 
 |          | N-type Ca2+ current                           | `MC_prox_gCan`     | 0.00 10<sup>-5</sup> |
 |          | L-type Ca2+ current (high threshold)          | `MC_prox_gCal`     | 0.00 10<sup>-5</sup> |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **distal dendrites** | ($\leq$ 100 um from soma) |    |     |     |
-|          | Fast Sodium current                           | `MC_dist_gNafx`    | 1.40 10<sup>-2</sup> |
-|          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |
+<!--|          | Fast Sodium current                           | `MC_dist_gNafx`    | 1.40 10<sup>-2</sup> |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |-->
 |          | A-type Potassium current (proximal)           | `MC_dist_gKapin`   | 9.00 10<sup>-4</sup> |
 |          | A-type Potassium current (distal)             | `MC_dist_gKadin`   | 2.16 10<sup>-3</sup> |
 <!--|          | T-type Ca2+ current (high threshold)          | `MC_dist_gCat`     | 2.00 10<sup>-4</sup> | -->
@@ -189,8 +189,8 @@
 <!--################################################################################################################-->
 <!--|          | Fast Sodium current                           | `MC_dist_gNafx`    | 0.00 10<sup>-2</sup> |-->
 <!--|          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 0.00 10<sup>-3</sup> |-->
-<!--|          | A-type Potassium current (proximal)           | `MC_dist_gKapin`   | 0.00 10<sup>-4</sup> |-->
-<!--|          | A-type Potassium current (distal)             | `MC_dist_gKadin`   | 0.00 10<sup>-3</sup> |-->
+|          | A-type Potassium current (proximal)           | `MC_dist_gKapin`   | 0.00 10<sup>-4</sup> |
+|          | A-type Potassium current (distal)             | `MC_dist_gKadin`   | 0.00 10<sup>-3</sup> |
 |          | T-type Ca2+ current (high threshold)          | `MC_dist_gCat`     | 0.00 10<sup>-4</sup> | 
 |          | N-type Ca2+ current                           | `MC_dist_gCan`     | 0.00 10<sup>-5</sup> |
 |          | L-type Ca2+ current (high threshold)          | `MC_dist_gCal`     | 0.00 10<sup>-5</sup> |

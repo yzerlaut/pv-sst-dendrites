@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -34,16 +34,114 @@ sim = Parallel(\
 sim.load()
 sim.fetch_quantity_on_grid('peak_efficacy_soma', dtype=float)
 
-COLORS = ['tab:red', 'tab:grey']
+COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
 fig, ax = pt.figure(figsize=(1.2, 1.))
 for f, fU in enumerate([False, True]):
     for iDistance in np.unique(sim.iDistance):
-        print(sim.get('peak_efficacy_soma', params).std())
         params = {'iDistance':iDistance, 'from_uniform':fU}
+        #pt.scatter([iDistance+0.4*f], [sim.get('peak_efficacy_soma', params).mean()],
+        #            sy=[sim.get('peak_efficacy_soma', params).std()], color=COLORS[f], ax=ax, ms=2, lw=2)
         ax.bar([iDistance+0.4*f], [sim.get('peak_efficacy_soma', params).mean()],
                yerr=[sim.get('peak_efficacy_soma', params).std()], color=COLORS[f], width=0.35)
+    pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
 pt.set_plot(ax, ylabel='efficacy (%)',
             xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
+
+# %%
+loc, based_on = 'soma', 'peak'
+
+sim.fetch_quantity_on_grid('linear_%s' % loc, dtype=list)
+sim.fetch_quantity_on_grid('real_%s' % loc, dtype=list)
+sim.fetch_quantity_on_grid('%s_efficacy_%s' % (based_on, loc), dtype=float)
+sim.fetch_quantity_on_grid('synapses', dtype=list)
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+
+fig, AX = pt.figure(axes=(len(np.unique(sim.iDistance)), len(np.unique(sim.iBranch))))
+
+CONDS = ['proximal', 'interm.', 'distal']
+COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', '\nuniform']
+for label, color in zip(LABELS, COLORS):                
+    pt.annotate(AX[0][-1], label, (1.5,0), va='top', color=color)
+    
+for iDistance in np.unique(sim.iDistance):
+    for iBranch in np.unique(sim.iBranch):
+        params = {'iDistance':iDistance, 'iBranch':iBranch}
+        for f, fU in enumerate([False, True]):
+            real = sim.get('real_%s' % loc, dict(from_uniform=fU, **params))[0]
+            linear = sim.get('linear_%s' % loc, dict(from_uniform=fU, **params))[0]
+            t = np.arange(len(real))*dt
+            AX[iBranch][iDistance].plot(t, real, '-', color=COLORS[f])
+            AX[iBranch][iDistance].plot(t, linear, ':', color=COLORS[f], lw=0.5)
+            n = len(sim.get('synapses', dict(from_uniform=fU, **params))[0])
+            pt.annotate(AX[iBranch][iDistance], ('\n' if f==1 else'')+\
+                        '$\epsilon$=%.1f%% (n=%i)' % (sim.get('%s_efficacy_%s' % (based_on, loc),
+                                                      dict(from_uniform=fU, **params))[0], n),
+                        (1.2,1), va='top', ha='right', color=COLORS[f], fontsize=6)
+            
+        if iDistance==0:
+            pt.annotate(AX[iBranch][iDistance], 'branch #%i' % (iBranch+1),
+                        (-1.3,0.3), color='k')
+    
+        pt.set_plot(AX[iBranch][iDistance], [], xlim=[0,80])
+        pt.draw_bar_scales(AX[iBranch][iDistance], Xbar=10, Ybar=2, Xbar_label='10ms', Ybar_label='2mV')
+    AX[0][iDistance].set_title(CONDS[iDistance]+'\n')
+            
+
+# %%
+from parallel import Parallel
+
+sim = Parallel(\
+        filename='../../data/detailed_model/Martinotti_clusterStim_sim.zip')
+based_on = 'integral'
+sim.load()
+sim.fetch_quantity_on_grid('%s_efficacy_soma' % based_on, dtype=float)
+
+COLORS, LABELS = ['tab:orange', 'tab:grey'], ['with-NMDA', 'without']
+fig, ax = pt.figure(figsize=(1.2, 1.))
+for f, NAr in enumerate([0, np.unique(sim.NMDAtoAMPA_ratio)[1]]):
+    for iDistance in np.unique(sim.iDistance):
+        params = {'iDistance':iDistance, 'NMDAtoAMPA_ratio':NAr}
+        print(NAr, sim.get('%s_efficacy_soma' % based_on, params))
+        ax.bar([iDistance+0.4*f], [sim.get('%s_efficacy_soma' % based_on, params).mean()], bottom=50,
+               yerr=[sim.get('%s_efficacy_soma' % based_on, params).std()], color=COLORS[f], width=0.35)
+    pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
+pt.set_plot(ax, ylabel='efficacy (%)',
+            xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
+
+# %%
+loc, based_on = 'soma', 'peak'
+
+sim.fetch_quantity_on_grid('linear_%s' % loc, dtype=list)
+sim.fetch_quantity_on_grid('real_%s' % loc, dtype=list)
+sim.fetch_quantity_on_grid('%s_efficacy_%s' % (based_on, loc), dtype=float)
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+
+fig, AX = pt.figure(axes=(len(np.unique(sim.iDistance)), len(np.unique(sim.iBranch))))
+
+COLORS, LABELS = ['tab:orange', 'tab:grey'], ['with-NMDA', '\nwithout']
+for label, color in zip(LABELS, COLORS):                
+    pt.annotate(AX[0][-1], label, (1.5,0), va='top', color=color)
+    
+for iDistance in np.unique(sim.iDistance):
+    for iBranch in np.unique(sim.iBranch):
+        params = {'iDistance':iDistance, 'iBranch':iBranch}
+        for NAr, color in zip([np.unique(sim.NMDAtoAMPA_ratio)[1], 0], COLORS):
+            real = sim.get('real_%s' % loc, dict(NMDAtoAMPA_ratio=NAr, **params))[0]
+            linear = sim.get('linear_%s' % loc, dict(NMDAtoAMPA_ratio=NAr, **params))[0]
+            t = np.arange(len(real))*dt
+            AX[iBranch][iDistance].plot(t, real, '-', color=color)
+            AX[iBranch][iDistance].plot(t, linear, ':', color=color, lw=0.5)
+            pt.annotate(AX[iBranch][iDistance], ('\n' if NAr==0 else'')+\
+                        '$\epsilon$=%.1f%%' % sim.get('%s_efficacy_%s' % (based_on, loc),
+                                                      dict(NMDAtoAMPA_ratio=NAr, **params))[0],
+                        (1,1), va='top', ha='right', color=COLORS[0 if NAr>0 else 1])
+            
+        if iDistance==0:
+            pt.annotate(AX[iBranch][iDistance], 'branch #%i' % (iBranch+1),
+                        (-1.3,0.3), color='k')
+            
+
+# %%
 
 # %%
 # load cell
