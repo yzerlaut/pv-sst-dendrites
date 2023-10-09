@@ -41,12 +41,13 @@ def run_sim(cellType='Basket',
     # create cell
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
+        params_key='BC'
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
+        params_key='MC'
     else:
         raise Exception(' cell type not recognized  !')
-        cell = None
-    cell = Cell(ID=ID)
+    cell = Cell(ID=ID, params_key=params_key)
 
     # synaptic distribution
     if from_uniform:
@@ -91,11 +92,11 @@ def run_sim(cellType='Basket',
         VECSTIMS[-1].play(STIMS[-1])
 
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        ampaNETCONS[-1].weight[0] = cell.params['qAMPA']
+        ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
 
         if NMDAtoAMPA_ratio>0:
             nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['qAMPA']
+            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
     Vm, Vm_dend = h.Vector(), h.Vector()
@@ -121,7 +122,9 @@ def run_sim(cellType='Basket',
 
     # save the output
     output = {'output_rate': float(apc.n*1e3/tstop),
-              'dt': dt, 'tstop':tstop}
+              'dt': dt,
+              'tstop':tstop}
+
     if with_Vm:
         output['Vm'] = np.array(Vm)
         output['Vm_dend'] = np.array(Vm_dend)
@@ -168,7 +171,6 @@ if __name__=='__main__':
         sim = Parallel(\
             filename='../../data/detailed_model/%s_bgStim_sim.zip' % args.cellType)
 
-        
         if args.logF:
             F = np.logspace(np.log10(args.Fmin), np.log10(args.Fmax), args.nF)
         else:
@@ -176,10 +178,10 @@ if __name__=='__main__':
            
         params = dict(bgStimFreq=F,
                       iBranch=np.arange(args.nBranch),
-                       bgStimSeed=1+np.arange(args.nSeed)*5)
+                      bgStimSeed=1+np.arange(args.nSeed)*5)
 
         if args.test_uniform:
-            params = dict(from_uniform=[False, True], **params))
+            params = dict(from_uniform=[False, True], **params)
         if args.test_NMDA:
             params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
 

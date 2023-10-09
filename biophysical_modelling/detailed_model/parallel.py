@@ -202,7 +202,8 @@ class Parallel:
             self.filenames[cond] = fn
 
     def fetch_quantity_on_grid(self, key,
-                               dtype=float):
+                               dtype=float,
+                               return_last=False):
 
         setattr(self, key, np.empty(self.filenames.shape,
                                     dtype=dtype))
@@ -212,6 +213,8 @@ class Parallel:
             getattr(self, key)[iKs] = np.load(\
                                 os.path.join(self.temp_folder, self.filenames[iKs]),
                                 allow_pickle=True).item()[key]
+        if return_last:
+            return getattr(self, key)[iKs]
             
     def get(self, key,
             params={}):

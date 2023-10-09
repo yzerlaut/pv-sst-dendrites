@@ -1,6 +1,6 @@
 # Biophysical Modelling
 
-> starting from the modelling work of [Tzilivaki et al., *Nat. Comm.* (2019)](https://www.nature.com/articles/s41467-019-11537-7)
+> starting from the modelling work of [Tzilivaki et al., *Nat. Comm.* (2019)](https://www.nature.com/articles/s41467-019-11537-7) for Basket cells.
 
 ## Passive Properties
 
@@ -30,23 +30,23 @@
 
 | **Parameter description**  | **location**      |  **Name**       |     **Value**        | **Unit**               |                                                         | 
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
-| **leak conductance**       |                   |                 |                      |                        | N.B. x2.7 to match ~80-100MOhm input resistance         |
-|                            | soma              | `BC_soma_gPas`  | 3.55 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | axon              | `BC_axon_gPas`  | 9.59 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | proximal dendrite | `BC_prox_gPas`  | 3.55 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | proximal dendrite | `BC_dist_gPas`  | 3.63 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
+| **leak conductance**       |                   |                 |                      |                        | N.B. /2 w.r.t. Basket for -200MOhm input resistance         |
+|                            | soma              | `MC_soma_gPas`  | 1.77 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | axon              | `MC_axon_gPas`  | 4.80 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | proximal dendrite | `MC_prox_gPas`  | 1.77 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | proximal dendrite | `MC_dist_gPas`  | 1.82 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
-|                            | *all*             | `BC_ePas`       | -70.0                | mV                     |                                                         |
+|                            | *all*             | `MC_ePas`       | -70.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
-|                            | soma              | `BC_soma_Ra`    | 172                  | ohm.cm                 |                                                         |
-|                            | axon              | `BC_axon_Ra`    | 172                  | ohm.cm                 |                                                         |
-|                            | proximal dendrite | `BC_prox_Ra`    | 142                  | ohm.cm                 |                                                         |
-|                            | proximal dendrite | `BC_dist_Ra`    | 142                  | ohm.cm                 |                                                         |
+|                            | soma              | `MC_soma_Ra`    | 172                  | ohm.cm                 |                                                         |
+|                            | axon              | `MC_axon_Ra`    | 172                  | ohm.cm                 |                                                         |
+|                            | proximal dendrite | `MC_prox_Ra`    | 142                  | ohm.cm                 |                                                         |
+|                            | proximal dendrite | `MC_dist_Ra`    | 142                  | ohm.cm                 |                                                         |
 | **membrane capacitance**   |                   |                 |                      |                        |                                                         |
-|                            | soma              | `BC_soma_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
-|                            | axon              | `BC_axon_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
-|                            | proximal dendrite | `BC_prox_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
-|                            | proximal dendrite | `BC_dist_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
+|                            | soma              | `MC_soma_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
+|                            | axon              | `MC_axon_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
+|                            | proximal dendrite | `MC_prox_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
+|                            | proximal dendrite | `MC_dist_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 
 
 ## Active Mechanisms
@@ -101,7 +101,8 @@
 <!--|          | Fast Sodium current                           | `BC_axon_gNafx`    | 0.00 10<sup>-1</sup> |-->
 <!--|          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 0.00 10<sup>-2</sup>  |-->
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
-|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
+<!--|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-2</sup> |-->
+|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-3</sup> |
 |          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |
 |          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 1.00 10<sup>-3</sup> |
 <!--|          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 2.00 10<sup>-4</sup> | -->
@@ -116,7 +117,7 @@
 |          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 0.00 10<sup>-5</sup> |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **distal dendrites** | ($\leq$ 100 um from soma) |    |     |     |
-|          | Fast Sodium current                           | `BC_dist_gNafx`    | 1.40 10<sup>-2</sup> |
+<!--|          | Fast Sodium current                           | `BC_dist_gNafx`    | 1.40 10<sup>-2</sup> |-->
 |          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |
 |          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 9.00 10<sup>-4</sup> |
 |          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 2.16 10<sup>-3</sup> |
@@ -124,7 +125,7 @@
 <!--|          | N-type Ca2+ current                           | `BC_dist_gCan`     | 3.00 10<sup>-5</sup> |-->
 <!--|          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 3.00 10<sup>-5</sup> |-->
 <!--################################################################################################################-->
-<!--|          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> |-->
+|          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> |
 <!--|          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup>-3</sup> |-->
 <!--|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 0.00 10<sup>-4</sup> |-->
 <!--|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 0.00 10<sup>-3</sup> |-->
@@ -134,82 +135,81 @@
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | --- | --- | --- | --- |
 
-### SST+ cells
 
-#### Matrinotti Cell (based on PFC model[^T19])
+#### Martinotti Cell
 
 |     | **Channel Type**  |  **Name**  |  **Density** (S/cm<sup>2</sup>) |           _comment_           |
 | --- | --- | --- | --- | --- | 
 | **soma** |     |     |     |          |
-|          | Fast Sodium current                           | `BC_soma_gNafx`    | 1.35 10<sup>-1</sup> |        |
-|          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 3.60 10<sup>-2</sup> |        |
-<!--|          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 7.25 10<sup>-4</sup> |-->
-<!--|          | H-type cation current                         | `BC_soma_gHin`     | 1.00 10<sup>-5</sup> |-->
-|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 3.20 10<sup>-3</sup> |
-<!--|          | fast Ca2+ dependent Potassium current         | `BC_soma_gKctin`   | 1.00 10<sup>-4</sup> |-->
-<!--|          | slow Ca2+ dependent Potassium current         | `BC_soma_gKcain`   | 2.00 10<sup>-2</sup> |-->
+|          | Fast Sodium current                           | `MC_soma_gNafx`    | 1.35 10<sup>-1</sup> |        |
+|          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 3.60 10<sup>-2</sup> |        |
+<!--|          | Slowly inactivating Potassium current         | `MC_soma_gKslowin` | 7.25 10<sup>-4</sup> |-->
+<!--|          | H-type cation current                         | `MC_soma_gHin`     | 1.00 10<sup>-5</sup> |-->
+|          | A-type Potassium current (proximal)           | `MC_soma_gKapin`   | 3.20 10<sup>-3</sup> |
+<!--|          | fast Ca2+ dependent Potassium current         | `MC_soma_gKctin`   | 1.00 10<sup>-4</sup> |-->
+<!--|          | slow Ca2+ dependent Potassium current         | `MC_soma_gKcain`   | 2.00 10<sup>-2</sup> |-->
 <!--################################################################################################################-->
-<!--|          | Fast Sodium current                           | `BC_soma_gNafx`    | 0.00 10<sup>-1</sup> |        |-->
-<!--|          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 0.00 10<sup>-2</sup> |        |-->
-|          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 0.00 10<sup>-4</sup> |
-|          | H-type cation current                         | `BC_soma_gHin`     | 0.00 10<sup>-5</sup> |
-<!--|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 0.00 10<sup>-3</sup> |-->
-|          | fast Ca2+ dependent Potassium current         | `BC_soma_gKctin`   | 0.00 10<sup>-4</sup> |
-|          | slow Ca2+ dependent Potassium current         | `BC_soma_gKcain`   | 0.00 10<sup>-2</sup> |
+<!--|          | Fast Sodium current                           | `MC_soma_gNafx`    | 0.00 10<sup>-1</sup> |        |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 0.00 10<sup>-2</sup> |        |-->
+|          | Slowly inactivating Potassium current         | `MC_soma_gKslowin` | 0.00 10<sup>-4</sup> |
+|          | H-type cation current                         | `MC_soma_gHin`     | 0.00 10<sup>-5</sup> |
+<!--|          | A-type Potassium current (proximal)           | `MC_soma_gKapin`   | 0.00 10<sup>-3</sup> |-->
+|          | fast Ca2+ dependent Potassium current         | `MC_soma_gKctin`   | 0.00 10<sup>-4</sup> |
+|          | slow Ca2+ dependent Potassium current         | `MC_soma_gKcain`   | 0.00 10<sup>-2</sup> |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **axon** |     |     |     |
-|          | Fast Sodium current                           | `BC_axon_gNafx`    | 6.75 10<sup>-1</sup> |
-|          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 3.60 10<sup>-2</sup>  |
+|          | Fast Sodium current                           | `MC_axon_gNafx`    | 6.75 10<sup>-1</sup> |
+|          | Delayed rectifier Potassium current           | `MC_axon_gKdrin`   | 3.60 10<sup>-2</sup>  |
 <!--################################################################################################################-->
-<!--|          | Fast Sodium current                           | `BC_axon_gNafx`    | 0.00 10<sup>-1</sup> |-->
-<!--|          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 0.00 10<sup>-2</sup>  |-->
+<!--|          | Fast Sodium current                           | `MC_axon_gNafx`    | 0.00 10<sup>-1</sup> |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_axon_gKdrin`   | 0.00 10<sup>-2</sup>  |-->
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
-|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
-|          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |
-|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 1.00 10<sup>-3</sup> |
-<!--|          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 2.00 10<sup>-4</sup> | -->
-<!--|          | N-type Ca2+ current                           | `BC_prox_gCan`     | 3.00 10<sup>-5</sup> |-->
-<!--|          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 3.00 10<sup>-5</sup> |-->
+|          | Fast Sodium current                           | `MC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
+|          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |
+|          | A-type Potassium current (proximal)           | `MC_prox_gKapin`   | 1.00 10<sup>-3</sup> |
+<!--|          | T-type Ca2+ current (high threshold)          | `MC_prox_gCat`     | 2.00 10<sup>-4</sup> | -->
+<!--|          | N-type Ca2+ current                           | `MC_prox_gCan`     | 3.00 10<sup>-5</sup> |-->
+<!--|          | L-type Ca2+ current (high threshold)          | `MC_prox_gCal`     | 3.00 10<sup>-5</sup> |-->
 <!--################################################################################################################-->
-<!--|          | Fast Sodium current                           | `BC_prox_gNafx`    | 0.00 10<sup>-2</sup> |-->
-<!--|          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 0.00 10<sup>-4</sup> |-->
-<!--|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 0.00 10<sup>-3</sup> |-->
-|          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 0.00 10<sup>-4</sup> | 
-|          | N-type Ca2+ current                           | `BC_prox_gCan`     | 0.00 10<sup>-5</sup> |
-|          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 0.00 10<sup>-5</sup> |
+<!--|          | Fast Sodium current                           | `MC_prox_gNafx`    | 0.00 10<sup>-2</sup> |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 0.00 10<sup>-4</sup> |-->
+<!--|          | A-type Potassium current (proximal)           | `MC_prox_gKapin`   | 0.00 10<sup>-3</sup> |-->
+|          | T-type Ca2+ current (high threshold)          | `MC_prox_gCat`     | 0.00 10<sup>-4</sup> | 
+|          | N-type Ca2+ current                           | `MC_prox_gCan`     | 0.00 10<sup>-5</sup> |
+|          | L-type Ca2+ current (high threshold)          | `MC_prox_gCal`     | 0.00 10<sup>-5</sup> |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **distal dendrites** | ($\leq$ 100 um from soma) |    |     |     |
-|          | Fast Sodium current                           | `BC_dist_gNafx`    | 1.40 10<sup>-2</sup> |
-|          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |
-|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 9.00 10<sup>-4</sup> |
-|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 2.16 10<sup>-3</sup> |
-<!--|          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 2.00 10<sup>-4</sup> | -->
-<!--|          | N-type Ca2+ current                           | `BC_dist_gCan`     | 3.00 10<sup>-5</sup> |-->
-<!--|          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 3.00 10<sup>-5</sup> |-->
+|          | Fast Sodium current                           | `MC_dist_gNafx`    | 1.40 10<sup>-2</sup> |
+|          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |
+|          | A-type Potassium current (proximal)           | `MC_dist_gKapin`   | 9.00 10<sup>-4</sup> |
+|          | A-type Potassium current (distal)             | `MC_dist_gKadin`   | 2.16 10<sup>-3</sup> |
+<!--|          | T-type Ca2+ current (high threshold)          | `MC_dist_gCat`     | 2.00 10<sup>-4</sup> | -->
+<!--|          | N-type Ca2+ current                           | `MC_dist_gCan`     | 3.00 10<sup>-5</sup> |-->
+<!--|          | L-type Ca2+ current (high threshold)          | `MC_dist_gCal`     | 3.00 10<sup>-5</sup> |-->
 <!--################################################################################################################-->
-<!--|          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> |-->
-<!--|          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup>-3</sup> |-->
-<!--|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 0.00 10<sup>-4</sup> |-->
-<!--|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 0.00 10<sup>-3</sup> |-->
-|          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 0.00 10<sup>-4</sup> | 
-|          | N-type Ca2+ current                           | `BC_dist_gCan`     | 0.00 10<sup>-5</sup> |
-|          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 0.00 10<sup>-5</sup> |
+<!--|          | Fast Sodium current                           | `MC_dist_gNafx`    | 0.00 10<sup>-2</sup> |-->
+<!--|          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 0.00 10<sup>-3</sup> |-->
+<!--|          | A-type Potassium current (proximal)           | `MC_dist_gKapin`   | 0.00 10<sup>-4</sup> |-->
+<!--|          | A-type Potassium current (distal)             | `MC_dist_gKadin`   | 0.00 10<sup>-3</sup> |-->
+|          | T-type Ca2+ current (high threshold)          | `MC_dist_gCat`     | 0.00 10<sup>-4</sup> | 
+|          | N-type Ca2+ current                           | `MC_dist_gCan`     | 0.00 10<sup>-5</sup> |
+|          | L-type Ca2+ current (high threshold)          | `MC_dist_gCal`     | 0.00 10<sup>-5</sup> |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | --- | --- | --- | --- |
-
-### References
-
-[^T19]: https://www.nature.com/articles/s41467-019-11537-7
-[^K95]: https://journals.physiology.org/doi/abs/10.1152/jn.1995.74.5.1982
-[^S99]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2269638/
 
 ## Synaptic properties
 
 |                   | **Parameter description**  |  **Name**  |     **Value**      | **Unit**  |                                                         |
 |-------------------|----------------------------|------------|--------------------|-----------|                                                         |
 | **AMPA receptor** |                            |            |                    |           |                                                         |
-|                   | conductance quantal        | `qAMPA`    | 1.0 10<sup>-3</sup>| uS        |                                                         |
+|                   | conductance quantal        | `BC_qAMPA`    | 1.0 10<sup>-3</sup>| uS        |                                                         |
+|                   | conductance quantal        | `MC_qAMPA`    | 0.5 10<sup>-3</sup>| uS        |                                                         |
 |                   | decay time constant        |            | 2.0                | ms        |  changed directly in the [`ampain.mod`](./mechanisms/ampain.mod) file |
 | **NMDA receptor** |                            |            |                    |           |                                                         |
 
+## References
+
+[^T19]: https://www.nature.com/articles/s41467-019-11537-7
+[^K95]: https://journals.physiology.org/doi/abs/10.1152/jn.1995.74.5.1982
+[^S99]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2269638/
 

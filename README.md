@@ -36,7 +36,7 @@
 
 - ...
 
-## C) Biophysical Modelling
+## C) Biophysical Modelling of Morphologically-Detailed Reconstructions
 
 ### 1) ...
 

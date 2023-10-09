@@ -32,7 +32,8 @@ class Cell:
 
         self.label_compartments(proximal_limit, verbose=debug)
 
-        self.insert_mechanisms_and_properties(debug=debug)
+        self.insert_mechanisms_and_properties(params_key,
+                                              debug=debug)
 
         self.map_SEGMENTS_to_NEURON()
 
@@ -122,6 +123,7 @@ class Cell:
 
 
     def insert_mechanisms_and_properties(self,
+                                         params_key,
                                          debug=False):
 
         # SOMA

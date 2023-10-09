@@ -1,26 +1,26 @@
-import sys
-import numpy as np
-import matplotlib.pylab as plt
+from cell_template import *
+from parallel import Parallel
 
+import sys
 sys.path.append('../..')
 import plot_tools as pt
+import matplotlib.pylab as plt
 
-from parallel import Parallel
-from cell_template import Cell
-
-distance_intervals = [(0,70),
-                      (70,140),
-                      (140, 300)]
+distance_intervals = [(20,60),
+                      (90,130),
+                      (160, 200)]
 
 def find_clustered_input(cell, 
                          iBranch,
                          # cluster props
-                         # iDistance=2,
-                         # distance=100,
-                         # nCluster=5,
+                         # -- if from distance intervals
+                         iDistance=-1,
+                         # -- if from distance points
+                         nCluster=None,
+                         distance=100,
                          from_uniform=False,
                          # synapse sparsening
-                         subsampling_fraction=0.05,
+                         synSubsamplingFraction=0.05,
                          synSubsamplingSeed=3,
                          ax=None, syn_color='r',
                          with_plot=False):
@@ -33,26 +33,30 @@ def find_clustered_input(cell,
         full_synapses = cell.set_of_synapses[iBranch]                      
 
     # subsampling
-    if subsampling_fraction<1:
+    if synSubsamplingFraction<1:
         np.random.seed(synSubsamplingSeed)
-        Nsubsampling = int(len(full_synapses)*subsampling_fraction)
-        synapses = np.random.choice(full_synapses, Nsubsampling)
+        Nsubsampling = int(len(full_synapses)*synSubsamplingFraction)
+        N = int(len(full_synapses)/Nsubsampling)
+        # synapses = np.random.choice(full_synapses, Nsubsampling)
+        synapses = np.concatenate([full_synapses[::N], [full_synapses[-1]]])
+        # synapses = full_synapses[::N]
     else:
         synapses = full_synapses
 
     # ==== cluster from interval ===
     # ------------------------------
-    interval = distance_intervals[iDistance]
-    cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
-            (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
-    cluster_synapses = synapses[cluster_cond]
-
+    if iDistance>-1:
+        interval = distance_intervals[iDistance]
+        cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
+                (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
+        cluster_synapses = synapses[cluster_cond]
 
     # ==== cluster from distance ===
     # ------------------------------
     # -- finding the closest to the distance point (using the distance to soma metrics)
-    iSorted = np.argsort((1e6*cell.SEGMENTS['distance_to_soma'][synapses]-distance)**2)
-    cluster_synapses = synapses[iSorted[:nCluster]]
+    if nCluster is not None:
+        iSorted = np.argsort((1e6*cell.SEGMENTS['distance_to_soma'][synapses]-distance)**2)
+        cluster_synapses = synapses[iSorted[:nCluster]]
 
     if ax is None and with_plot:
         fig, ax = plt.subplots(1, figsize=(3,3))
@@ -69,18 +73,28 @@ def find_clustered_input(cell,
 
         inset = pt.inset(ax, [-0.1, 0.7, .35, .17])
 
-        # synapses = full_synapses
+        bins = np.linspace(\
+                0.9*np.min(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses]),
+                1.1*np.max(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses]), 20)
+
+        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses],
+                                bins=bins)
+        inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor='tab:grey', color='w')
+
         bins = np.linspace(0.9*np.min(1e6*cell.SEGMENTS['distance_to_soma'][synapses]),
                            1.1*np.max(1e6*cell.SEGMENTS['distance_to_soma'][synapses]), 15)
         hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses],
                                 bins=bins)
-        inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor='tab:grey', color='w')
+        inset.bar(be[1:], hist, width=be[1]-be[0], color='tab:grey')
+
         hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][cluster_synapses],
                                 bins=bins)
         inset.bar(be[1:], hist, width=be[1]-be[0], color=syn_color)
         pt.set_plot(inset, xticks=[0,200], 
-                    title = '%i%% subset' % (100*subsampling_fraction), #yticks=[0,2],
+                    yscale='log', yticks=[1,10], yticks_labels=['1', '10'],
                     ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
+        inset.set_title('%i%% subset' % (100*synSubsamplingFraction), 
+                        color='tab:grey', fontsize=6)
         pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), 
                     fontsize=7, color=syn_color)
 
@@ -98,39 +112,54 @@ def build_linear_pred(Vm, dt, t0, ISI, delay, nCluster):
         tstart = t0+i*ISI
         cond = (t>tstart) & (t<(tstart+ISI))
         sEPSPS.append(Vm[cond]-Vm[cond][0])
-    # compute real and linearresponses
-    real, linear = [], []
-    for e, n in enumerate(range(2, nCluster+1)):
-        # real
-        tstart = t0+(nCluster+e)*ISI
-        cond = (t>tstart) & (t<(tstart+ISI))
-        real.append(Vm[cond])
-        # then linear pred
-        te = np.arange(len(real[-1]))*dt
-        linear.append(np.ones(np.sum(cond))*real[-1][0])
-        for i, epsp in enumerate(sEPSPS[:n]):
-            condE = (te>i*delay)
-            linear[-1][condE] += epsp[:np.sum(condE)]
-
+    # --- # compute real and linearresponses
+    # real, linear = [], []
+    # for e, n in enumerate(range(2, nCluster+1)):
+        # # real
+        # tstart = t0+(nCluster+e)*ISI
+        # cond = (t>tstart) & (t<(tstart+ISI))
+        # real.append(Vm[cond])
+        # # then linear pred
+        # te = np.arange(len(real[-1]))*dt
+        # linear.append(np.ones(np.sum(cond))*real[-1][0])
+        # for i, epsp in enumerate(sEPSPS[:n]):
+            # condE = (te>i*delay)
+            # linear[-1][condE] += epsp[:np.sum(condE)]
+    # compute real and linear responses
+    tstart = t0+nCluster*ISI
+    cond = (t>tstart) & (t<(tstart+ISI))
+    real = Vm[cond]
+    # then linear pred
+    te = np.arange(len(real))*dt
+    linear = np.ones(np.sum(cond))*real[0]
+    for i, epsp in enumerate(sEPSPS):
+        condE = (te>i*delay)
+        linear[condE] += epsp[:np.sum(condE)]
     return real, linear
 
-
+def efficacy(real, linear,
+                based_on='integral'):
+    if based_on=='peak':
+        return 100.*np.max(real-real[0])/np.max(linear-linear[0])
+    elif based_on=='integral':
+        return 100.*np.sum(real-real[0])/np.sum(linear-linear[0])
 
 def run_sim(cellType='Basket', 
             iBranch=0,
+            from_uniform=False,
             # cluster props
-            # iDistance=2,
-            distance=200,
-            delay=5,
+            # -- if from distance intervals
+            iDistance=-1,
+            # -- if from distance points
+            nCluster=None,
+            distance=100,
             # synapse subsampling
-            subsampling_fraction=0.03,
+            synSubsamplingFraction=0.03,
             synSubsamplingSeed=2,
-            # synapse shuffling
-            synShuffled=False,
-            synShuffleSeed=10,
             # biophysical props
             NMDAtoAMPA_ratio=0,
             # sim props
+            delay=2,
             t0=200,
             ISI=200,
             filename='single_sim.npy',
@@ -143,22 +172,22 @@ def run_sim(cellType='Basket',
     # create cell
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
-        cell = PVcell(ID=ID, debug=False)
-        cell.check_that_all_dendritic_branches_are_well_covered(verbose=False)
+        params_key='BC'
     elif cellType=='Martinotti':
-        pass
+        ID = '864691135571546917_264824' # Martinotti Cell example
+        params_key='MC'
     else:
         raise Exception(' cell type not recognized  !')
-        cell = None
+    cell = Cell(ID=ID, params_key=params_key)
 
     synapses = find_clustered_input(cell, 
                                     iBranch,
-                                    subsampling_fraction=subsampling_fraction,
+                                    from_uniform=from_uniform,
+                                    synSubsamplingFraction=synSubsamplingFraction,
                                     synSubsamplingSeed=synSubsamplingSeed,
-                                    # iDistance=iDistance,
+                                    iDistance=iDistance,
                                     distance=distance,
-                                    synShuffled=synShuffled,
-                                    synShuffleSeed=synShuffleSeed)
+                                    nCluster=nCluster)
 
     # prepare presynaptic spike trains
     # 1) single events
@@ -167,10 +196,12 @@ def run_sim(cellType='Basket',
         TRAINS.append([tstop])
         tstop += ISI
     # 2) grouped events
-    for n in range(2, len(synapses)+1):
-        for i, syn in enumerate(synapses[:n]):
-            TRAINS[i].append(tstop+i*delay)
-        tstop += ISI
+    # for n in range(2, len(synapses)+1):
+        # for i, syn in enumerate(synapses[:n]):
+            # TRAINS[i].append(tstop+i*delay)
+        # tstop += ISI
+    for i, syn in enumerate(synapses):
+        TRAINS[i].append(tstop+i*delay)
     tstop += ISI
 
     ######################################################
@@ -202,11 +233,11 @@ def run_sim(cellType='Basket',
         VECSTIMS[-1].play(STIMS[-1])
 
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        ampaNETCONS[-1].weight[0] = cell.params['qAMPA']
+        ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
 
         if NMDAtoAMPA_ratio>0:
             nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['qAMPA']
+            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
 
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
@@ -237,11 +268,16 @@ def run_sim(cellType='Basket',
     # save the output
     output = {'output_rate': float(apc.n*1e3/tstop),
               'real_soma':real_soma, 'real_dend':real_dend,
-              'linear_soma':linear_soma, 'linear_dend':linear_dend,
+              'peak_efficacy_soma':efficacy(real_soma, linear_soma,
+                                            based_on='peak'),
+              'integral_efficacy_soma':efficacy(real_soma, linear_soma,
+                                                based_on='integral'),
+              'linear_soma':linear_soma,
+              'linear_dend':linear_dend,
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'dt': dt, 't0':t0, 'ISI':ISI,
-              'synapses':synapses, 'delay':delay,
+              'dt': dt, 't0':t0, 'ISI':ISI,'delay':delay,
+              'synapses':synapses,
               'tstop':tstop}
 
     np.save(filename, output)
@@ -249,53 +285,60 @@ def run_sim(cellType='Basket',
 
 if __name__=='__main__':
 
-    # run_sim()
+    import argparse
+    # First a nice documentation 
+    parser=argparse.ArgumentParser(description="script description",
+                                   formatter_class=argparse.RawTextHelpFormatter)
 
-    # props ={'iDistance':2, # 2 -> means "distal" range
-    props ={'distance':200, # 2 -> means "distal" range
-            'subsampling_fraction':100./100.,
-            'with_plot':True}
-
-
-    ID = '864691135396580129_296758' # Basket Cell example
-    cell = PVcell(ID=ID, debug=False)
-    iBranch = 1
-    find_clustered_input(cell, iBranch, **props)
-    find_clustered_input(cell, iBranch, from_uniform=True, **props)
-    plt.show()
-
-    # import argparse
-    # # First a nice documentation 
-    # parser=argparse.ArgumentParser(description="script description",
-                                   # formatter_class=argparse.RawTextHelpFormatter)
-
-    # parser.add_argument('-c', "-- cellType",\
-                        # help="""
-                        # cell type, either:
-                        # - Basket
-                        # - Martinotti
-                        # """, default='Basket')
+    parser.add_argument('-c', "--cellType",\
+                        help="""
+                        cell type, either:
+                        - Basket
+                        - Martinotti
+                        """, default='Basket')
     
-    # parser.add_argument("--branch", help="branch ID (-1 means all)", type=int, default=-1)
-    # # synaptic shuffling
-    # parser.add_argument("--synShuffled",
-                        # help="shuffled synapses uniformly ? (False=real) ", action="store_true")
-    # parser.add_argument("--synShuffleSeed",
-                        # help="seed for synaptic shuffling", type=int, default=0)
-    # # stimulation shuffling
-    # parser.add_argument("--bgShuffleSeed",
-                        # help="seed for background stim", type=int, default=1)
+    # cluster props
+    parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
+    # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
+    # parser.add_argument("--NsynSubsamplingSeed", type=int, default=1)
+    parser.add_argument("--iDistance", help="min input", type=int, default=1)
+    # Branch number
+    parser.add_argument("--iBranch", type=int, default=0)
+    parser.add_argument("--nBranch", type=int, default=6)
+    # Testing Conditions
+    parser.add_argument("--test_uniform", action="store_true")
+    parser.add_argument("--test_NMDA", action="store_true")
+    parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
-    # parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
+    parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
 
-    # args = parser.parse_args()
+    parser.add_argument("-t", "--test", help="test func", action="store_true")
+    args = parser.parse_args()
 
-    # sim = Parallel(\
-        # filename='../../data/detailed_model/Basket_clusteredStim_sim.zip')
+    if args.test:
 
-    # sim.build({'iBranch':range(3),
-               # 'synSubsamplingSeed': range(10, 14),
-               # 'synShuffled':[True, False]})
+        params = dict(cellType=args.cellType,
+                      iBranch=args.iBranch,
+                      iDistance=args.iDistance,
+                      synSubsamplingSeed=args.synSubsamplingSeed,
+                      synSubsamplingFraction=args.synSubsamplingFraction)
+        run_sim(**params)
 
-    # sim.run(run_sim,
-            # single_run_args={'cellType':'Basket'}) 
+    else:
+
+        sim = Parallel(\
+            filename='../../data/detailed_model/%s_clusterStim_sim.zip' % args.cellType)
+
+        params = dict(iBranch=np.arange(args.nBranch),
+                      iDistance=range(3))
+
+        if args.test_uniform:
+            params = dict(from_uniform=[False, True], **params)
+        if args.test_NMDA:
+            params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
+
+        sim.build(params)
+
+        sim.run(run_sim,
+                single_run_args={'cellType':args.cellType,
+                                 'synSubsamplingFraction':args.synSubsamplingFraction})
