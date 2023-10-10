@@ -6,129 +6,6 @@ sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
-
-def find_clustered_input(cell, 
-                         iBranch,
-                         # cluster props
-                         # -- if from distance intervals
-                         distance_intervals=[],
-                         iDistance=-1,
-                         # -- if from distance points
-                         nCluster=None,
-                         distance=100,
-                         from_uniform=False,
-                         # synapse sparsening
-                         synSubsamplingFraction=0.05,
-                         synSubsamplingSeed=3,
-                         ax=None, syn_color='r',
-                         with_plot=False):
-
-    branch = cell.set_of_branches[iBranch]
-    
-    if from_uniform:
-        full_synapses = cell.set_of_synapses_spatially_uniform[iBranch]
-    else:
-        full_synapses = cell.set_of_synapses[iBranch]                      
-
-    # subsampling
-    if synSubsamplingFraction<1:
-        np.random.seed(synSubsamplingSeed)
-        Nsubsampling = int(len(full_synapses)*synSubsamplingFraction)
-        N = int(len(full_synapses)/Nsubsampling)
-        # synapses = np.random.choice(full_synapses, Nsubsampling)
-        synapses = np.concatenate([full_synapses[::N], [full_synapses[-1]]])
-        # synapses = full_synapses[::N]
-    else:
-        synapses = full_synapses
-
-    # ==== cluster from interval ===
-    # ------------------------------
-    if iDistance>-1:
-        interval = distance_intervals[iDistance]
-        cluster_cond = (1e6*cell.SEGMENTS['distance_to_soma'][synapses]>=interval[0]) & \
-                (1e6*cell.SEGMENTS['distance_to_soma'][synapses]<interval[1])
-        cluster_synapses = synapses[cluster_cond]
-
-    # ==== cluster from distance ===
-    # ------------------------------
-    # -- finding the closest to the distance point (using the distance to soma metrics)
-    if nCluster is not None:
-        iSorted = np.argsort((1e6*cell.SEGMENTS['distance_to_soma'][synapses]-distance)**2)
-        cluster_synapses = synapses[iSorted[:nCluster]]
-
-    if ax is None and with_plot:
-        fig, ax = plt.subplots(1, figsize=(3,3))
-
-    if with_plot:
-        vis = pt.nrnvyz(cell.SEGMENTS)
-
-        vis.plot_segments(cond=(cell.SEGMENTS['comp_type']!='axon'),
-                      bar_scale_args={'Ybar':1e-9, 'Xbar':1e-9},
-                      ax=ax)
-        ax.scatter(1e6*cell.SEGMENTS['x'][cluster_synapses],
-                   1e6*cell.SEGMENTS['y'][cluster_synapses],
-                   s=5, color=syn_color)
-
-        inset = pt.inset(ax, [-0.1, 0.7, .35, .17])
-
-        bins = np.linspace(\
-                0.9*np.min(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses]),
-                1.1*np.max(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses]), 20)
-
-        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][full_synapses],
-                                bins=bins)
-        inset.bar(be[1:], hist, width=be[1]-be[0], edgecolor='tab:grey', color='w')
-
-        bins = np.linspace(0.9*np.min(1e6*cell.SEGMENTS['distance_to_soma'][synapses]),
-                           1.1*np.max(1e6*cell.SEGMENTS['distance_to_soma'][synapses]), 15)
-        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][synapses],
-                                bins=bins)
-        inset.bar(be[1:], hist, width=be[1]-be[0], color='tab:grey')
-
-        hist, be = np.histogram(1e6*cell.SEGMENTS['distance_to_soma'][cluster_synapses],
-                                bins=bins)
-        inset.bar(be[1:], hist, width=be[1]-be[0], color=syn_color)
-        pt.set_plot(inset, xticks=[0,200], 
-                    yscale='log', yticks=[1,10], yticks_labels=['1', '10'],
-                    ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
-        inset.set_title('%i%% subset' % (100*synSubsamplingFraction), 
-                        color='tab:grey', fontsize=6)
-        pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), 
-                    fontsize=7, color=syn_color)
-
-        return ax, inset
-
-    else:
-        return cluster_synapses
-
-
-def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
-    t = np.arange(len(Vm))*dt
-    # extract single EPSPs
-    sEPSPS = []
-    for i in range(nCluster):
-        tstart = t0+i*ISI
-        cond = (t>tstart) & (t<(tstart+ISI))
-        sEPSPS.append(Vm[cond]-Vm[cond][0])
-    # --- # compute real and linear responses
-    tstart = t0+nCluster*ISI
-    cond = (t>tstart) & (t<(tstart+ISI))
-    real = Vm[cond]
-    # then linear pred
-    te = np.arange(len(real))*dt
-    linear = np.ones(np.sum(cond))*real[0]
-    for i, epsp in enumerate(sEPSPS):
-        condE = (te>i*interspike)
-        linear[condE] += epsp[:np.sum(condE)]
-    return real, linear
-
-def efficacy(real, linear,
-                based_on='integral'):
-    if based_on=='peak':
-        return 100.*np.max(real-real[0])/np.max(linear-linear[0])
-    elif based_on=='integral':
-        return 100.*np.sum(real-real[0])/np.sum(linear-linear[0])
-
 def run_sim(cellType='Basket', 
             iBranch=0,
             from_uniform=False,
@@ -166,15 +43,10 @@ def run_sim(cellType='Basket',
         raise Exception(' cell type not recognized  !')
     cell = Cell(ID=ID, params_key=params_key)
 
-    synapses = find_clustered_input(cell, 
-                                    iBranch,
-                                    from_uniform=from_uniform,
-                                    synSubsamplingFraction=synSubsamplingFraction,
-                                    synSubsamplingSeed=synSubsamplingSeed,
-                                    distance_intervals=distance_intervals,
-                                    iDistance=iDistance,
-                                    distance=distance,
-                                    nCluster=nCluster)
+    if from_uniform:
+        full_synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+    else:
+        full_synapses = cell.set_of_synapses[iBranch]                      
 
     # prepare presynaptic spike trains
     # 1) single events
@@ -291,10 +163,9 @@ if __name__=='__main__':
     
     # cluster props
     parser.add_argument("--Proximal", type=float, nargs=2, default=(20,60))
-    # parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
+    parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
     parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
     parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
-    parser.add_argument("--sparsening", type=float, default=[], nargs='*')
     parser.add_argument("--interspike", type=float, default=1.0)
 
     # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
@@ -332,19 +203,9 @@ if __name__=='__main__':
             filename='../../data/detailed_model/%s_clusterStim_sim%s.zip' % (args.cellType,
                                                                              args.suffix))
 
-        single_run_args=dict(cellType=args.cellType,
-                             interspike=args.interspike,
-                             distance_intervals=distance_intervals))
-
         params = dict(iBranch=np.arange(args.nBranch),
                       iDistance=range(2))
 
-        if len(args.sparsening)>0:
-            params = dict(synSubsamplingFraction=[s/100. for s in args.sparsening],
-                          **params)
-        else:
-            single_run_args = dict(synSubsamplingFraction=args.synSubsamplingFraction,
-                                   **single_run_args)
         if args.test_uniform:
             params = dict(from_uniform=[False, True], **params)
         if args.test_NMDA:
@@ -353,4 +214,7 @@ if __name__=='__main__':
         sim.build(params)
 
         sim.run(run_sim,
-                single_run_args=single_run_args)
+                single_run_args=dict(cellType=args.cellType,
+                                     synSubsamplingFraction=args.synSubsamplingFraction,
+                                     interspike=args.interspike,
+                                     distance_intervals=distance_intervals))

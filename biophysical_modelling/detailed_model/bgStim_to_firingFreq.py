@@ -110,6 +110,7 @@ def run_sim(cellType='Basket',
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
+    apc.thresh = -35
 
     # run
     h.finitialize(cell.El)
@@ -147,9 +148,9 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # Input Range
-    parser.add_argument("--Fmin", help="min input", type=float, default=4e-4)
-    parser.add_argument("--Fmax", help="max input", type=float, default=2e-2)
-    parser.add_argument("--nF", help="N input", type=int, default=3)
+    parser.add_argument("--Fmin", help="min input", type=float, default=2e-3)
+    parser.add_argument("--Fmax", help="max input", type=float, default=1.1e-2)
+    parser.add_argument("--nF", help="N input", type=int, default=4)
     parser.add_argument("--logF", help="test func", action="store_true")
     # Input Seed Variations
     parser.add_argument("--nSeed", type=int, default=1)
@@ -159,6 +160,7 @@ if __name__=='__main__':
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
+    parser.add_argument("--tstop", type=float, default=1000.)
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
 
@@ -189,5 +191,6 @@ if __name__=='__main__':
 
         sim.run(run_sim,
                 single_run_args={'cellType':args.cellType,
+                                 'tstop':args.tstop,
                                  'with_Vm':True}) 
 
