@@ -294,7 +294,7 @@ if __name__=='__main__':
     # parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
     parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
     parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
-    parser.add_argument("--sparsening", type=float, default=[], nargs='*')
+    parser.add_argument("--sparsening", help="in percent", type=float, default=[5], nargs='*')
     parser.add_argument("--interspike", type=float, default=1.0)
 
     # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
@@ -321,7 +321,7 @@ if __name__=='__main__':
         params = dict(cellType=args.cellType,
                       iBranch=args.iBranch,
                       iDistance=args.iDistance,
-                      synSubsamplingFraction=args.synSubsamplingFraction,
+                      synSubsamplingFraction=args.sparsening[0]/100.,
                       interspike=args.interspike,
                       distance_intervals=distance_intervals)
         run_sim(**params)
@@ -334,17 +334,12 @@ if __name__=='__main__':
 
         single_run_args=dict(cellType=args.cellType,
                              interspike=args.interspike,
-                             distance_intervals=distance_intervals))
+                             distance_intervals=distance_intervals)
 
         params = dict(iBranch=np.arange(args.nBranch),
+                      synSubsamplingFraction=[s/100. for s in args.sparsening],
                       iDistance=range(2))
 
-        if len(args.sparsening)>0:
-            params = dict(synSubsamplingFraction=[s/100. for s in args.sparsening],
-                          **params)
-        else:
-            single_run_args = dict(synSubsamplingFraction=args.synSubsamplingFraction,
-                                   **single_run_args)
         if args.test_uniform:
             params = dict(from_uniform=[False, True], **params)
         if args.test_NMDA:

@@ -148,9 +148,9 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # Input Range
-    parser.add_argument("--Fmin", help="min input", type=float, default=2e-3)
+    parser.add_argument("--Fmin", help="min input", type=float, default=2e-4)
     parser.add_argument("--Fmax", help="max input", type=float, default=1.1e-2)
-    parser.add_argument("--nF", help="N input", type=int, default=4)
+    parser.add_argument("--nF", help="N input", type=int, default=10)
     parser.add_argument("--logF", help="test func", action="store_true")
     # Input Seed Variations
     parser.add_argument("--nSeed", type=int, default=1)

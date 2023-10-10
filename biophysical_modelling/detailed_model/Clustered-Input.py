@@ -19,6 +19,7 @@
 # %%
 from cell_template import Cell
 from clustered_input_stim import * 
+from parallel import Parallel
 
 import sys
 sys.path.append('../..')
@@ -26,104 +27,31 @@ import plot_tools as pt
 import matplotlib.pylab as plt
 
 # %%
-from parallel import Parallel
-
 sim = Parallel(\
-        filename='../../data/detailed_model/Basket_clusterStim_sims5S6.zip')
+        filename='../../data/detailed_model/Basket_clusterStim_sim.zip')
 
-based_on = 'peak_efficacy_soma'
+based_on = 'peak_efficacy_soma' # summary quantity to plot
+
 sim.load()
 sim.fetch_quantity_on_grid(based_on, dtype=float)
 
 COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
-fig, ax = pt.figure(figsize=(1., 1.))
-for f, fU in enumerate([False, True]):
-    for iDistance in np.unique(sim.iDistance):
-        params = {'iDistance':iDistance, 'from_uniform':fU}
-        ax.bar([iDistance+0.4*f], [100-np.nanmean(sim.get(based_on, params))],
-               yerr=[np.nanstd(sim.get(based_on, params))], color=COLORS[f], width=0.35)
-    pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
-pt.set_plot(ax, ylabel='suppr. (%)',# ylabel='efficacy (%)',
-            #xticks=0.2+np.arange(3), xticks_labels=['prox.', 'med.', 'dist.'],
-            xticks=0.2+np.arange(2), xticks_labels=['prox.', 'dist.'],
-            xticks_rotation=30)
 
-# %%
-based_on = 'integral_efficacy_soma'
-for i in np.arange(2,7):
-    sim = Parallel(\
-            filename='../../data/detailed_model/Basket_clusterStim_sims%i.zip' % i)
-    sim.load()
-    sim.fetch_quantity_on_grid(based_on, dtype=float)
+fig, AX = pt.figure(axes=(len(np.unique(sim.synSubsamplingFraction)),1),
+                    figsize=(1., 1.), reshape_axes=False)
 
-    COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
-    fig, ax = pt.figure(figsize=(1.2, 1.))
-    fig.suptitle('sparsening %i%%' % i)
+for i, frac in enumerate(np.unique(sim.synSubsamplingFraction)):
+    AX[0][i].set_title('sparsening: %.1f%%' % (100*frac), fontsize=7)
     for f, fU in enumerate([False, True]):
         for iDistance in np.unique(sim.iDistance):
-            params = {'iDistance':iDistance, 'from_uniform':fU}
-            ax.bar([iDistance+0.4*f], [100-np.mean(sim.get(based_on, params))],
+            params = dict(iDistance=iDistance, from_uniform=fU, synSubsamplingFraction=frac)
+            AX[0][i].bar([iDistance+0.4*f], [100-np.mean(sim.get(based_on, params))],
                    yerr=[np.nanstd(sim.get(based_on, params))], color=COLORS[f], width=0.35)
-        pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
-    pt.set_plot(ax, ylabel='suppr. (%)',# ylabel='efficacy (%)',
-                xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
-
-# %%
-for i in np.arange(2,6):
-    sim = Parallel(\
-            filename='../../data/detailed_model/Basket_clusterStim_sims%iS2.zip' % i)
-    sim.load()
-    sim.fetch_quantity_on_grid('peak_efficacy_soma', dtype=float)
-
-    COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
-    fig, ax = pt.figure(figsize=(1.2, 1.))
-    fig.suptitle('sparsening %i%%' % i)
-    for f, fU in enumerate([False, True]):
-        for iDistance in np.unique(sim.iDistance):
-            params = {'iDistance':iDistance, 'from_uniform':fU}
-            ax.bar([iDistance+0.4*f], [100-np.nanmean(sim.get('peak_efficacy_soma', params))],
-                   yerr=[np.nanstd(sim.get('peak_efficacy_soma', params))], color=COLORS[f], width=0.35)
-        pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
-    pt.set_plot(ax, ylabel='suppr. (%)',# ylabel='efficacy (%)',
-                xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
-
-# %%
-for i in np.arange(2,8):
-    sim = Parallel(\
-            filename='../../data/detailed_model/Basket_clusterStim_sims%iS3.zip' % i)
-    sim.load()
-    sim.fetch_quantity_on_grid('peak_efficacy_soma', dtype=float)
-
-    COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
-    fig, ax = pt.figure(figsize=(1.2, 1.))
-    fig.suptitle('sparsening %i%%' % i)
-    for f, fU in enumerate([False, True]):
-        for iDistance in np.unique(sim.iDistance):
-            params = {'iDistance':iDistance, 'from_uniform':fU}
-            ax.bar([iDistance+0.4*f], [100-np.nanmean(sim.get('peak_efficacy_soma', params))],
-                   yerr=[np.nanstd(sim.get('peak_efficacy_soma', params))], color=COLORS[f], width=0.35)
-        pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
-    pt.set_plot(ax, ylabel='suppr. (%)',# ylabel='efficacy (%)',
-                xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
-
-# %%
-for i in np.arange(3,6):
-    sim = Parallel(\
-            filename='../../data/detailed_model/Basket_clusterStim_sims%iS1.zip' % i)
-    sim.load()
-    sim.fetch_quantity_on_grid('peak_efficacy_soma', dtype=float)
-
-    COLORS, LABELS = ['tab:red', 'tab:grey'], ['real', 'uniform']
-    fig, ax = pt.figure(figsize=(1.2, 1.))
-    fig.suptitle('sparsening %i%%' % i)
-    for f, fU in enumerate([False, True]):
-        for iDistance in np.unique(sim.iDistance):
-            params = {'iDistance':iDistance, 'from_uniform':fU}
-            ax.bar([iDistance+0.4*f], [100-np.nanmean(sim.get('peak_efficacy_soma', params))],
-                   yerr=[np.nanstd(sim.get('peak_efficacy_soma', params))], color=COLORS[f], width=0.35)
-        pt.annotate(ax, f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
-    pt.set_plot(ax, ylabel='suppr. (%)',# ylabel='efficacy (%)',
-                xticks=0.2+np.arange(3), xticks_labels=['prox.', 'mid.', 'dist.'], xticks_rotation=30)
+        if i==0:
+            pt.annotate(AX[0][-1], f*'\n'+LABELS[f], (1,1), va='top', color=COLORS[f])
+    pt.set_plot(AX[0][i], ylabel='suppr. (%)',# ylabel='efficacy (%)',
+                xticks=0.2+np.arange(2), xticks_labels=['prox.', 'dist.'],
+                xticks_rotation=30)
 
 # %%
 loc, based_on = 'soma', 'peak'
@@ -136,6 +64,8 @@ dt = sim.fetch_quantity_on_grid('dt', return_last=True)
 
 fig, AX = pt.figure(axes=(2*len(np.unique(sim.iDistance)),
                           len(np.unique(sim.iBranch))))
+plt.subplots_adjust(top=.8)
+pt.annotate(fig, 'sparsening: X%%\n\n', (0.5, .79), ha='center', xycoords='figure fraction')
 
 CONDS = ['proximal', 'distal']
 COLORS, LABELS = ['tab:red', 'tab:grey'], [' real', ' uniform']
