@@ -14,7 +14,7 @@ def train(freq,
     """
 
     spikes = np.cumsum(\
-            np.random.exponential(1./freq, int(2*tstop*freq)))
+            np.random.exponential(1./freq, int(2.*tstop*freq)+10))
 
     return spikes[spikes<tstop]
 

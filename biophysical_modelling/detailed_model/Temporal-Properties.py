@@ -27,9 +27,13 @@ import matplotlib.pylab as plt
 
 # %%
 results = np.load('single_sim.npy', allow_pickle=True).item()
-t = np.arange(len(results['Vm_dend']))*results['dt']
-plt.plot(t, results['Vm_dend'], lw=0.5)
-plt.plot(t, results['Vm_soma'])
+
+t = np.arange(len(results['Vm_soma']))*results['dt']
+fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
+
+ax.plot(t, results['Vm_dend'], lw=0.5)
+ax.plot(t, results['Vm_soma'])
+
 plt.show()
 
 

@@ -10,23 +10,18 @@ import matplotlib.pylab as plt
 def run_sim(cellType='Basket', 
             iBranch=0,
             from_uniform=False,
-            # cluster props
-            # -- if from distance intervals
-            distance_intervals=[],
-            iDistance=-1,
-            # -- if from distance points
-            nCluster=None,
-            distance=100,
-            # synapse subsampling
-            bgStimFreq=1e-3,
-            bgStimSeed=1,
+            # stim props
             nStimRepeat=2,
-            # biophysical props
-            NMDAtoAMPA_ratio=0,
-            # sim props
+            stimSeed=3,
+            nCluster=10,
             interspike=2,
             t0=200,
             ISI=300,
+            # bg stim
+            bgStimFreq=1e-3,
+            bgStimSeed=1,
+            # biophysical props
+            NMDAtoAMPA_ratio=0,
             filename='single_sim.npy',
             dt= 0.025):
 
@@ -53,20 +48,20 @@ def run_sim(cellType='Basket',
     tstop=t0+nStimRepeat*ISI
 
     # prepare presynaptic spike trains
-    # 1) single events
+    # -- background activity 
     np.random.seed(10+8**bgStimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
-        TRAINS.append(train(bgStimFreq, tstop=tstop))
-
-    # TRAINS, tstop = [], t0
-    # for i, syn in enumerate(synapses):
-        # TRAINS.append([tstop])
-        # tstop += ISI
-    # # 2) grouped events
-    # for i, syn in enumerate(synapses):
-        # TRAINS[i].append(tstop+i*interspike)
-    # tstop += ISI
+        TRAINS.append(list(train(bgStimFreq, tstop=tstop)))
+    # -- stim evoked activity 
+    np.random.seed(stimSeed)
+    for n in range(nStimRepeat):
+        picked = np.random.choice(synapses, nCluster)
+        for i, syn in enumerate(picked):
+            TRAINS[np.flatnonzero(picked==syn)[0]].append(t0+n*ISI+i*interspike)
+    # -- reoardering spike trains
+    for i, syn in enumerate(synapses):
+        TRAINS[i] = np.sort(TRAINS[i])
 
     AMPAS, NMDAS = [], []
     ampaNETCONS, nmdaNETCONS = [], []
@@ -147,7 +142,7 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # bg props
-    parser.add_argument("--bgStimFreq", type=float, default=1e-3)
+    parser.add_argument("--bgStimFreq", type=float, default=5e-4)
     parser.add_argument("--bgStimSeed", type=float, default=1)
 
     # stim props
