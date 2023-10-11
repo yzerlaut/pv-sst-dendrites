@@ -1,4 +1,5 @@
 from cell_template import *
+from bgStim_to_firingFreq import train
 from parallel import Parallel
 
 import sys
@@ -17,14 +18,15 @@ def run_sim(cellType='Basket',
             nCluster=None,
             distance=100,
             # synapse subsampling
-            synSubsamplingFraction=0.03,
-            synSubsamplingSeed=2,
+            bgStimFreq=1e-3,
+            bgStimSeed=1,
+            nStimRepeat=2,
             # biophysical props
             NMDAtoAMPA_ratio=0,
             # sim props
             interspike=2,
             t0=200,
-            ISI=200,
+            ISI=300,
             filename='single_sim.npy',
             dt= 0.025):
 
@@ -44,20 +46,27 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, params_key=params_key)
 
     if from_uniform:
-        full_synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+        synapses = cell.set_of_synapses_spatially_uniform[iBranch]
     else:
-        full_synapses = cell.set_of_synapses[iBranch]                      
+        synapses = cell.set_of_synapses[iBranch]                      
+
+    tstop=t0+nStimRepeat*ISI
 
     # prepare presynaptic spike trains
     # 1) single events
-    TRAINS, tstop = [], t0
+    np.random.seed(10+8**bgStimSeed)
+    TRAINS = []
     for i, syn in enumerate(synapses):
-        TRAINS.append([tstop])
-        tstop += ISI
-    # 2) grouped events
-    for i, syn in enumerate(synapses):
-        TRAINS[i].append(tstop+i*interspike)
-    tstop += ISI
+        TRAINS.append(train(bgStimFreq, tstop=tstop))
+
+    # TRAINS, tstop = [], t0
+    # for i, syn in enumerate(synapses):
+        # TRAINS.append([tstop])
+        # tstop += ISI
+    # # 2) grouped events
+    # for i, syn in enumerate(synapses):
+        # TRAINS[i].append(tstop+i*interspike)
+    # tstop += ISI
 
     AMPAS, NMDAS = [], []
     ampaNETCONS, nmdaNETCONS = [], []
@@ -95,11 +104,7 @@ def run_sim(cellType='Basket',
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
-    if len(synapses)>0:
-        Vm_dend.record(cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v) # last one in the loop
-    else:
-        Vm_dend.record(cell.dend[0](0.5)._ref_v) # root dend
-
+    Vm_dend.record(cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v)
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
@@ -116,31 +121,11 @@ def run_sim(cellType='Basket',
     ampaNETCONS, nmdaNETCONS = None, None
     STIMS, VECSTIMS = None, None
 
-    # compute the linear prediction
-    real_soma, linear_soma = build_linear_pred(np.array(Vm_soma),
-                                               dt, t0, ISI, interspike, len(synapses))
-    real_dend, linear_dend = build_linear_pred(np.array(Vm_dend),
-                                               dt, t0, ISI, interspike, len(synapses))
-
-    t = np.arange(len(real_soma))*dt
-
     # save the output
     output = {'output_rate': float(apc.n*1e3/tstop),
-              'real_soma':real_soma, 'real_dend':real_dend,
-              'peak_efficacy_soma':efficacy(real_soma, linear_soma,
-                                            based_on='peak'),
-              'integral_efficacy_soma':efficacy(real_soma, linear_soma,
-                                                based_on='integral'),
-              'peak_efficacy_dend':efficacy(real_dend, linear_dend,
-                                            based_on='peak'),
-              'integral_efficacy_dend':efficacy(real_dend, linear_dend,
-                                                based_on='integral'),
-              'linear_soma':linear_soma,
-              'linear_dend':linear_dend,
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
               'dt': dt, 't0':t0, 'ISI':ISI,'interspike':interspike,
-              'distance_inervals':distance_intervals,
               'synapses':synapses,
               'tstop':tstop}
 
@@ -161,11 +146,12 @@ if __name__=='__main__':
                         - Martinotti
                         """, default='Basket')
     
-    # cluster props
-    parser.add_argument("--Proximal", type=float, nargs=2, default=(20,60))
-    parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
-    parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
-    parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
+    # bg props
+    parser.add_argument("--bgStimFreq", type=float, default=1e-3)
+    parser.add_argument("--bgStimSeed", type=float, default=1)
+
+    # stim props
+    parser.add_argument("--nStimRepeat", type=int, default=2)
     parser.add_argument("--interspike", type=float, default=1.0)
 
     # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
@@ -185,16 +171,13 @@ if __name__=='__main__':
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     args = parser.parse_args()
 
-    distance_intervals = [args.Proximal, args.Distal]
-
     if args.test:
 
         params = dict(cellType=args.cellType,
                       iBranch=args.iBranch,
-                      iDistance=args.iDistance,
-                      synSubsamplingFraction=args.synSubsamplingFraction,
-                      interspike=args.interspike,
-                      distance_intervals=distance_intervals)
+                      bgStimFreq=args.bgStimFreq,
+                      bgStimSeed=args.bgStimSeed,
+                      interspike=args.interspike)
         run_sim(**params)
 
     else:
