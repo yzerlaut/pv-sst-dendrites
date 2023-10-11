@@ -72,7 +72,7 @@ PARAMETER {
 	Cmax	= 1	 (mM)           : max transmitter concentration
 	Cdur	= 1	 (ms)		: transmitter duration (rising phase) 
 	Alpha	= 4	 (/ms /mM)	: forward (binding) rate (4)
-	Beta	= 0.02	(/ms)		: backward rate
+	Beta	= 0.125	(/ms)		: backward rate (updated by Y. Zerlaut 2023 for 80ms decay)
 	e	= 0	 (mV)		: reversal potential
         mg      = 1      (mM)           : external magnesium concentration
 

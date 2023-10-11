@@ -10,6 +10,10 @@ h.load_file("import3d.hoc")
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 from utils.markdown_tables import read_table
 
+
+BRANCH_COLORS = ['tab:cyan', 'tab:pink', 'tab:blue',
+                 'tab:purple', 'tab:green', 'tab:olive']
+
 class Cell:
 
     params = read_table(\
