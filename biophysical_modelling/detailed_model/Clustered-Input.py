@@ -28,7 +28,7 @@ import matplotlib.pylab as plt
 
 # %%
 sim = Parallel(\
-        filename='../../data/detailed_model/Basket_clusterStim_sim.zip')
+        filename='../../data/detailed_model/Basket_clusterStim_simSS1.zip')
 
 based_on = 'peak_efficacy_soma' # summary quantity to plot
 
