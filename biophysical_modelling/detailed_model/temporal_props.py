@@ -81,7 +81,7 @@ def run_sim(cellType='Basket',
 
         if NMDAtoAMPA_ratio>0:
             NMDAS.append(\
-                    h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+                    h.NMDA(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
         VECSTIMS.append(h.VecStim())
         STIMS.append(h.Vector(TRAINS[i]))
@@ -120,7 +120,9 @@ def run_sim(cellType='Basket',
     output = {'output_rate': float(apc.n*1e3/tstop),
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'dt': dt, 't0':t0, 'ISI':ISI,'interspike':interspike,
+              'nStimRepeat':nStimRepeat,
+              'dt': dt, 't0':t0, 'ISI':ISI,
+              'interspike':interspike,
               'synapses':synapses,
               'tstop':tstop}
 
@@ -147,52 +149,53 @@ if __name__=='__main__':
 
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=2)
-    parser.add_argument("--interspike", type=float, default=1.0)
+    parser.add_argument("--interspike", type=float, default=0.5)
+    parser.add_argument("--nCluster", type=int, default=10)
 
-    # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
-    # parser.add_argument("--NsynSubsamplingSeed", type=int, default=1)
-    parser.add_argument("--iDistance", help="min input", type=int, default=1)
     # Branch number
     parser.add_argument("--iBranch", type=int, default=0)
-    parser.add_argument("--nBranch", type=int, default=6)
+    parser.add_argument("--nBranch", type=int, default=2)
+
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
-    parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
     parser.add_argument("--suffix", help="suffix for saving", default='')
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     args = parser.parse_args()
 
+    params = dict(cellType=args.cellType,
+                  iBranch=args.iBranch,
+                  bgStimFreq=args.bgStimFreq,
+                  bgStimSeed=args.bgStimSeed,
+                  nStimRepeat=args.nStimRepeat,
+                  nCluster=args.nCluster,
+                  interspike=args.interspike)
+
     if args.test:
 
-        params = dict(cellType=args.cellType,
-                      iBranch=args.iBranch,
-                      bgStimFreq=args.bgStimFreq,
-                      bgStimSeed=args.bgStimSeed,
-                      interspike=args.interspike)
+        # run with the given params as a test
         run_sim(**params)
 
     else:
+   
+        # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_clusterStim_sim%s.zip' % (args.cellType,
+            filename='../../data/detailed_model/%s_simpleStim_sim%s.zip' % (args.cellType,
                                                                              args.suffix))
 
-        params = dict(iBranch=np.arange(args.nBranch),
-                      iDistance=range(2))
+        grid = dict(iBranch=np.arange(args.nBranch))
 
         if args.test_uniform:
-            params = dict(from_uniform=[False, True], **params)
+            grid = dict(from_uniform=[False, True], **grid)
         if args.test_NMDA:
-            params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
+            grid = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **grid)
 
-        sim.build(params)
+        sim.build(grid)
 
+        print(dict({k:v for k,v in params.items() if k not in grid}))
         sim.run(run_sim,
-                single_run_args=dict(cellType=args.cellType,
-                                     synSubsamplingFraction=args.synSubsamplingFraction,
-                                     interspike=args.interspike,
-                                     distance_intervals=distance_intervals))
+            single_run_args=dict({k:v for k,v in params.items() if k not in grid}))

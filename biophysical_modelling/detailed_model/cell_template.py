@@ -143,33 +143,35 @@ class Cell:
             sec.insert('pas')
             sec.g_pas = self.params[params_key+'_soma_gPas']
             sec.e_pas = self.params[params_key+'_ePas']
+
+            # -------- ACTIVE PROPS --------- #V
             # sodium channels
-            sec.insert('Nafx')
-            # sec.gnafbar_Nafx= soma_Nafin*0.6*5
-            sec.gnafbar_Nafx= self.params[params_key+'_soma_gNafx']
-            # potassium channels
-            sec.insert('kdrin')
-            sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
-            # 
-            sec.insert('IKsin')
-            # sec.gKsbar_IKsin= soma_Kslowin
-            sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
-            #
-            sec.insert('hin')
-            # sec.gbar_hin=soma_hin
-            sec.gbar_hin = self.params[params_key+'_soma_gHin']
-            # 
-            sec.insert('kapin')
-            # sec.gkabar_kapin=soma_kapin
-            sec.gkabar_kapin = self.params[params_key+'_soma_gKapin']
-            #
-            sec.insert('kctin')
-            sec.gkcbar_kctin = self.params[params_key+'_soma_gKctin']
-            #
-            sec.insert('kcain')
-            sec.gbar_kcain = self.params[params_key+'_soma_gKcain']
-            #
-            sec.insert('cadynin')
+            # sec.insert('Nafx')
+            # # sec.gnafbar_Nafx= soma_Nafin*0.6*5
+            # sec.gnafbar_Nafx= self.params[params_key+'_soma_gNafx']
+            # # potassium channels
+            # sec.insert('kdrin')
+            # sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
+            # # 
+            # sec.insert('IKsin')
+            # # sec.gKsbar_IKsin= soma_Kslowin
+            # sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
+            # #
+            # sec.insert('hin')
+            # # sec.gbar_hin=soma_hin
+            # sec.gbar_hin = self.params[params_key+'_soma_gHin']
+            # # 
+            # sec.insert('kapin')
+            # # sec.gkabar_kapin=soma_kapin
+            # sec.gkabar_kapin = self.params[params_key+'_soma_gKapin']
+            # #
+            # sec.insert('kctin')
+            # sec.gkcbar_kctin = self.params[params_key+'_soma_gKctin']
+            # #
+            # sec.insert('kcain')
+            # sec.gbar_kcain = self.params[params_key+'_soma_gKcain']
+            # #
+            # sec.insert('cadynin')
 
         # AXON
         for sec in self.compartments['axon']:
@@ -184,12 +186,14 @@ class Cell:
             sec.insert('pas')
             sec.g_pas = self.params[params_key+'_axon_gPas']
             sec.e_pas = self.params[params_key+'_ePas']
+
+            # -------- ACTIVE PROPS --------- #V
             # sodium channels
-            sec.insert('Nafx')
-            sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
-            # potassium channels
-            sec.insert('kdrin')
-            sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
+            # sec.insert('Nafx')
+            # sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
+            # # potassium channels
+            # sec.insert('kdrin')
+            # sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
 
 
         # PROX DEND

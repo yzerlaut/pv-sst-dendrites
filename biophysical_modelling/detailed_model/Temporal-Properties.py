@@ -26,24 +26,48 @@ import matplotlib.pylab as plt
 
 
 # %%
-results = np.load('single_sim.npy', allow_pickle=True).item()
+# results = np.load('single_sim.npy', allow_pickle=True).item()
 
-t = np.arange(len(results['Vm_soma']))*results['dt']
-fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
+# t = np.arange(len(results['Vm_soma']))*results['dt']
+# fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
 
-ax.plot(t, results['Vm_dend'], lw=0.5)
-ax.plot(t, results['Vm_soma'])
+# for i in range(results['nStimRepeat']):
+    # pt.arrow(ax, [results['t0']+i*results['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
 
-plt.show()
+# ax.plot(t, results['Vm_dend'], lw=0.5)
+# ax.plot(t, results['Vm_soma'])
+
+# plt.show()
 
 
 # %%
-# sim = Parallel(\
-        # filename='../../data/detailed_model/Basket_bgStim_sim.zip')
+sim = Parallel(\
+        filename='../../data/detailed_model/Basket_simpleStim_sim.zip')
 
-# sim.load()
-# sim.fetch_quantity_on_grid('Vm', dtype=object) 
-# sim.fetch_quantity_on_grid('Vm_dend', dtype=object) 
-# sim.fetch_quantity_on_grid('output_rate', dtype=float) 
-# dt = sim.fetch_quantity_on_grid('dt', dtype=float) 
-# dt = np.unique(sim.dt)[0]
+loc = 'soma'
+
+sim.load()
+sim.fetch_quantity_on_grid('Vm_%s' % loc, dtype=object) 
+
+p = {}
+for k in ['dt', 'nStimRepeat', 'ISI', 't0']:
+    p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True) 
+
+params = dict(iBranch=0)
+
+fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
+
+for NAr, label in zip([0, np.unique(sim.NMDAtoAMPA_ratio)[1], 0],
+                      ['without', 'with-NMDA']):
+    Vm = sim.get('Vm_%s' % loc, dict(NMDAtoAMPA_ratio=NAr, **params))[0]
+    ax.plot(np.arange(len(Vm))*p['dt'], Vm, label=label)
+
+for i in range(int(p['nStimRepeat'])):
+    pt.arrow(ax, [p['t0']+i*p['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
+
+ax.legend()
+plt.show()
+
+# %%
+
+
