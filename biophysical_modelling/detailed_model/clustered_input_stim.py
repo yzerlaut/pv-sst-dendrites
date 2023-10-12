@@ -143,7 +143,7 @@ def run_sim(cellType='Basket',
             synSubsamplingFraction=0.03,
             synSubsamplingSeed=2,
             # biophysical props
-            NMDAtoAMPA_ratio=0,
+            with_NMDA=False,
             # sim props
             interspike=2,
             t0=200,

@@ -1,5 +1,6 @@
 from cell_template import *
-from bgStim_to_firingFreq import train
+from synaptic_input import add_synaptic_input
+from synaptic_input import PoissonSpikeTrain as train
 from parallel import Parallel
 
 import sys
@@ -41,6 +42,7 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, 
                 passive_only=True,
                 params_key=params_key)
+    cell.params_key = params_key
 
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
@@ -49,17 +51,28 @@ def run_sim(cellType='Basket',
 
     tstop=t0+nStimRepeat*ISI*len(nCluster)
 
+    # build synaptic input
+    AMPAS, NMDAS, GABAS,\
+       ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
+        STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
+                                                         with_NMDA=with_NMDA)
+
     # prepare presynaptic spike trains
     # -- background activity 
     np.random.seed(10+8**bgStimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
-        TRAINS.append(list(train(bgStimFreq, tstop=tstop)))
+        if syn in excitatory:
+            TRAINS.append(list(train(bgStimFreq, tstop=tstop)))
+        else:
+            TRAINS.append(list(train(4.*bgStimFreq, tstop=tstop)))
+
     # -- stim evoked activity 
     np.random.seed(stimSeed)
     for n in range(nStimRepeat):
         for c, nC in enumerate(nCluster):
-            picked = np.random.choice(synapses, nC)
+            picked = np.random.choice(synapses[excitatory],
+                                      nC) # in stim in excitatory syn.
             for i, syn in enumerate(picked):
                 TRAINS[np.flatnonzero(picked==syn)[0]].append(t0+\
                                                         c*nStimRepeat*ISI+\
@@ -69,38 +82,12 @@ def run_sim(cellType='Basket',
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
 
-    AMPAS, NMDAS = [], []
-    ampaNETCONS, nmdaNETCONS = [], []
-    STIMS, VECSTIMS = [], []
+
 
     for i, syn in enumerate(synapses):
 
-        np.random.seed(syn)
-
-        # need to avoid x=0 and x=1, to allow ion concentrations variations in NEURON
-        x = np.clip(cell.SEGMENTS['NEURON_segment'][syn], 
-                1, cell.SEGMENTS['NEURON_section'][syn].nseg-2)\
-                        /cell.SEGMENTS['NEURON_section'][syn].nseg
-
-        AMPAS.append(\
-                h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
-        if with_NMDA:
-            NMDAS.append(\
-                    h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
-        VECSTIMS.append(h.VecStim())
         STIMS.append(h.Vector(TRAINS[i]))
-
-        VECSTIMS[-1].play(STIMS[-1])
-
-        ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
-
-        if with_NMDA:
-            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
-            nmdaNETCONS[-1].weight[0] = cell.params['%s_NAR'%params_key]*\
-                                            cell.params['%s_qAMPA'%params_key]
+        VECSTIMS[i].play(STIMS[-1])
 
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
@@ -119,8 +106,8 @@ def run_sim(cellType='Basket',
     for i in range(int(tstop/dt)):
         h.fadvance()
 
-    AMPAS, NMDAS = None, None
-    ampaNETCONS, nmdaNETCONS = None, None
+    AMPAS, NMDAS, GABAS = None, None, None
+    ampaNETCONS, nmdaNETCONS, gabaNETCONS = None, None, None
     STIMS, VECSTIMS = None, None
 
     # save the output
