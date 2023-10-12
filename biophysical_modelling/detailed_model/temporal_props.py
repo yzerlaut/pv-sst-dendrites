@@ -13,7 +13,7 @@ def run_sim(cellType='Basket',
             # stim props
             nStimRepeat=2,
             stimSeed=3,
-            nCluster=10,
+            nCluster=[10],
             interspike=2,
             t0=200,
             ISI=300,
@@ -21,7 +21,7 @@ def run_sim(cellType='Basket',
             bgStimFreq=1e-3,
             bgStimSeed=1,
             # biophysical props
-            NMDAtoAMPA_ratio=0,
+            with_NMDA=False,
             filename='single_sim.npy',
             dt= 0.025):
 
@@ -38,14 +38,16 @@ def run_sim(cellType='Basket',
         params_key='MC'
     else:
         raise Exception(' cell type not recognized  !')
-    cell = Cell(ID=ID, params_key=params_key)
+    cell = Cell(ID=ID, 
+                passive_only=True,
+                params_key=params_key)
 
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
     else:
         synapses = cell.set_of_synapses[iBranch]                      
 
-    tstop=t0+nStimRepeat*ISI
+    tstop=t0+nStimRepeat*ISI*len(nCluster)
 
     # prepare presynaptic spike trains
     # -- background activity 
@@ -56,9 +58,13 @@ def run_sim(cellType='Basket',
     # -- stim evoked activity 
     np.random.seed(stimSeed)
     for n in range(nStimRepeat):
-        picked = np.random.choice(synapses, nCluster)
-        for i, syn in enumerate(picked):
-            TRAINS[np.flatnonzero(picked==syn)[0]].append(t0+n*ISI+i*interspike)
+        for c, nC in enumerate(nCluster):
+            picked = np.random.choice(synapses, nC)
+            for i, syn in enumerate(picked):
+                TRAINS[np.flatnonzero(picked==syn)[0]].append(t0+\
+                                                        c*nStimRepeat*ISI+\
+                                                        n*ISI+\
+                                                        i*interspike)
     # -- reoardering spike trains
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
@@ -79,9 +85,9 @@ def run_sim(cellType='Basket',
         AMPAS.append(\
                 h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
-        if NMDAtoAMPA_ratio>0:
+        if with_NMDA:
             NMDAS.append(\
-                    h.NMDA(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+                    h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
         VECSTIMS.append(h.VecStim())
         STIMS.append(h.Vector(TRAINS[i]))
@@ -91,9 +97,10 @@ def run_sim(cellType='Basket',
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
         ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
 
-        if NMDAtoAMPA_ratio>0:
-            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
+        if with_NMDA:
+            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
+            nmdaNETCONS[-1].weight[0] = cell.params['%s_NAR'%params_key]*\
+                                            cell.params['%s_qAMPA'%params_key]
 
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
@@ -120,6 +127,7 @@ def run_sim(cellType='Basket',
     output = {'output_rate': float(apc.n*1e3/tstop),
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
+              'nCluster':nCluster,
               'nStimRepeat':nStimRepeat,
               'dt': dt, 't0':t0, 'ISI':ISI,
               'interspike':interspike,
@@ -150,7 +158,8 @@ if __name__=='__main__':
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=2)
     parser.add_argument("--interspike", type=float, default=0.5)
-    parser.add_argument("--nCluster", type=int, default=10)
+    parser.add_argument("--nCluster", type=int, nargs='*', 
+                        default=[10])
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=0)
@@ -159,7 +168,6 @@ if __name__=='__main__':
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
-    parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
     parser.add_argument("--suffix", help="suffix for saving", default='')
 
@@ -192,10 +200,10 @@ if __name__=='__main__':
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
         if args.test_NMDA:
-            grid = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **grid)
+            grid = dict(with_NMDA=[False, True], **grid)
 
         sim.build(grid)
 
-        print(dict({k:v for k,v in params.items() if k not in grid}))
         sim.run(run_sim,
-            single_run_args=dict({k:v for k,v in params.items() if k not in grid}))
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}))

@@ -216,7 +216,7 @@ def run_sim(cellType='Basket',
         ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
 
         if NMDAtoAMPA_ratio>0:
-            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
+            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
             nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
 
     Vm_soma, Vm_dend = h.Vector(), h.Vector()

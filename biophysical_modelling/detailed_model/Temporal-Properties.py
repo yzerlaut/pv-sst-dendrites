@@ -42,7 +42,7 @@ import matplotlib.pylab as plt
 
 # %%
 sim = Parallel(\
-        filename='../../data/detailed_model/Basket_simpleStim_sim.zip')
+        filename='../../data/detailed_model/Martinotti_simpleStim_sim.zip')
 
 loc = 'soma'
 
@@ -52,21 +52,51 @@ sim.fetch_quantity_on_grid('Vm_%s' % loc, dtype=object)
 p = {}
 for k in ['dt', 'nStimRepeat', 'ISI', 't0']:
     p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True) 
+p['nCluster'] = sim.fetch_quantity_on_grid('nCluster', dtype=object, return_last=True) 
+print(p['nCluster'])
 
 params = dict(iBranch=0)
 
-fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
+fig, ax = pt.figure(figsize=(3,1), left=0.2, bottom=0.5)
 
-for NAr, label in zip([0, np.unique(sim.NMDAtoAMPA_ratio)[1], 0],
-                      ['without', 'with-NMDA']):
-    Vm = sim.get('Vm_%s' % loc, dict(NMDAtoAMPA_ratio=NAr, **params))[0]
+for l, label in enumerate(['without', 'with-NMDA']):
+    Vm = sim.get('Vm_%s' % loc, dict(with_NMDA=(label=='with-NMDA'), **params))[0]
     ax.plot(np.arange(len(Vm))*p['dt'], Vm, label=label)
 
-for i in range(int(p['nStimRepeat'])):
-    pt.arrow(ax, [p['t0']+i*p['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
+for r in range(int(p['nStimRepeat'])):
+    for c, nC in enumerate(p['nCluster']):
+        pt.arrow(ax, [p['t0']+r*p['ISI']+c*p['nStimRepeat']*p['ISI'], 0, 0, -10],
+                 head_width=2, head_length=5, width=0.1)
 
-ax.legend()
-plt.show()
+ax.legend(loc=(1,0.4), frameon=False)
+
+
+# %%
+def trial_alignement(Vm, p, 
+                     pre=-30, post=200):
+    
+    t = np.arange(len(Vm))*p['dt']
+    T = np.arange(int(pre/p['dt']), int(post/p['dt']))*p['dt']
+    X = []
+    for c, nC in enumerate(p['nCluster']):
+        X.append([])
+        for r in range(int(p['nStimRepeat'])):
+            tstart = p['t0']+r*p['ISI']+c*p['nStimRepeat']*p['ISI']
+            cond = t>=(tstart+T[0])
+            X[c].append(Vm[cond][:len(T)])
+        
+    return T, np.array(X)
+
+
+fig, AX = pt.figure(axes=(2,1), figsize=(2,2))
+for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
+    Vm = sim.get('Vm_%s' % loc, dict(with_NMDA=(label=='with-NMDA'), **params))[0]
+    T, X = trial_alignement(Vm, p)
+    for c, nC in enumerate(p['nCluster']):
+        AX[l].plot(T, X[c].mean(axis=0), color=color)
+
+pt.set_common_ylims(AX)
+#ax.legend(loc=(1,0.4), frameon=False)
 
 # %%
 

@@ -27,7 +27,7 @@ def run_sim(cellType='Basket',
             # spread synapses uniformly:
             from_uniform=False,
             # biophysical props
-            NMDAtoAMPA_ratio=0,
+            with_NMDA=False,
             # sim props
             filename='single_sim.npy',
             with_Vm=False,
@@ -82,7 +82,7 @@ def run_sim(cellType='Basket',
         AMPAS.append(\
                 h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
-        if NMDAtoAMPA_ratio>0:
+        if with_NMDA:
             NMDAS.append(\
                     h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
@@ -94,9 +94,10 @@ def run_sim(cellType='Basket',
         ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
         ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
 
-        if NMDAtoAMPA_ratio>0:
-            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
+        if with_NMDA:
+            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
+            nmdaNETCONS[-1].weight[0] = cell.params['%s_NAR'%params_key]*\
+                                            cell.params['%s_qAMPA'%params_key]
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
     Vm, Vm_dend = h.Vector(), h.Vector()
@@ -152,23 +153,34 @@ if __name__=='__main__':
     parser.add_argument("--Fmax", help="max input", type=float, default=1.1e-2)
     parser.add_argument("--nF", help="N input", type=int, default=10)
     parser.add_argument("--logF", help="test func", action="store_true")
+
     # Input Seed Variations
     parser.add_argument("--nSeed", type=int, default=1)
+
     # Branch number
+    parser.add_argument("--iBranch", type=int, default=0)
     parser.add_argument("--nBranch", type=int, default=6)
+
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
-    parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
+
+    # sim props
     parser.add_argument("--tstop", type=float, default=1000.)
-
-    parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
-
     parser.add_argument("-t", "--test", help="test func", action="store_true")
+
     args = parser.parse_args()
 
+    # default params
+    params = dict(cellType=args.cellType,
+                  iBranch=0,
+                  bgStimFreq=args.Fmin,
+                  bgStimSeed=1,
+                  tstop=args.tstop,
+                  with_Vm=True)
+
     if args.test:
-        run_sim()
+        run_sim(**params)
     else:
         sim = Parallel(\
             filename='../../data/detailed_model/%s_bgStim_sim.zip' % args.cellType)
@@ -178,19 +190,17 @@ if __name__=='__main__':
         else:
             F = np.linspace(args.Fmin, args.Fmax, args.nF)
            
-        params = dict(bgStimFreq=F,
-                      iBranch=np.arange(args.nBranch),
-                      bgStimSeed=1+np.arange(args.nSeed)*5)
+        grid = dict(bgStimFreq=F,
+                    iBranch=np.arange(args.nBranch),
+                    bgStimSeed=1+np.arange(args.nSeed)*5)
 
         if args.test_uniform:
-            params = dict(from_uniform=[False, True], **params)
+            grid= dict(from_uniform=[False, True], **grid)
         if args.test_NMDA:
-            params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
+            grid = dict(with_NMDA=[False, True], **grid)
 
-        sim.build(params)
+        sim.build(grid)
 
         sim.run(run_sim,
-                single_run_args={'cellType':args.cellType,
-                                 'tstop':args.tstop,
-                                 'with_Vm':True}) 
-
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}))

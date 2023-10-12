@@ -25,6 +25,7 @@ class Cell:
                  proximal_limit=100,
                  ID = '864691135396580129_296758', # Basket Cell example
                  params_key='BC',
+                 passive_only=False,
                  debug=False):
 
         self.load_morphology(ID)
@@ -37,6 +38,7 @@ class Cell:
         self.label_compartments(proximal_limit, verbose=debug)
 
         self.insert_mechanisms_and_properties(params_key,
+                                              passive_only=passive_only,
                                               debug=debug)
 
         self.map_SEGMENTS_to_NEURON()
@@ -128,6 +130,7 @@ class Cell:
 
     def insert_mechanisms_and_properties(self,
                                          params_key,
+                                         passive_only=False,
                                          debug=False):
 
         # SOMA
@@ -145,33 +148,34 @@ class Cell:
             sec.e_pas = self.params[params_key+'_ePas']
 
             # -------- ACTIVE PROPS --------- #V
-            # sodium channels
-            # sec.insert('Nafx')
-            # # sec.gnafbar_Nafx= soma_Nafin*0.6*5
-            # sec.gnafbar_Nafx= self.params[params_key+'_soma_gNafx']
-            # # potassium channels
-            # sec.insert('kdrin')
-            # sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
-            # # 
-            # sec.insert('IKsin')
-            # # sec.gKsbar_IKsin= soma_Kslowin
-            # sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
-            # #
-            # sec.insert('hin')
-            # # sec.gbar_hin=soma_hin
-            # sec.gbar_hin = self.params[params_key+'_soma_gHin']
-            # # 
-            # sec.insert('kapin')
-            # # sec.gkabar_kapin=soma_kapin
-            # sec.gkabar_kapin = self.params[params_key+'_soma_gKapin']
-            # #
-            # sec.insert('kctin')
-            # sec.gkcbar_kctin = self.params[params_key+'_soma_gKctin']
-            # #
-            # sec.insert('kcain')
-            # sec.gbar_kcain = self.params[params_key+'_soma_gKcain']
-            # #
-            # sec.insert('cadynin')
+            if not passive_only:
+                # sodium channels
+                sec.insert('Nafx')
+                # sec.gnafbar_Nafx= soma_Nafin*0.6*5
+                sec.gnafbar_Nafx= self.params[params_key+'_soma_gNafx']
+                # potassium channels
+                sec.insert('kdrin')
+                sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
+                # 
+                sec.insert('IKsin')
+                # sec.gKsbar_IKsin= soma_Kslowin
+                sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
+                #
+                sec.insert('hin')
+                # sec.gbar_hin=soma_hin
+                sec.gbar_hin = self.params[params_key+'_soma_gHin']
+                # 
+                sec.insert('kapin')
+                # sec.gkabar_kapin=soma_kapin
+                sec.gkabar_kapin = self.params[params_key+'_soma_gKapin']
+                #
+                sec.insert('kctin')
+                sec.gkcbar_kctin = self.params[params_key+'_soma_gKctin']
+                #
+                sec.insert('kcain')
+                sec.gbar_kcain = self.params[params_key+'_soma_gKcain']
+                #
+                sec.insert('cadynin')
 
         # AXON
         for sec in self.compartments['axon']:
@@ -188,12 +192,13 @@ class Cell:
             sec.e_pas = self.params[params_key+'_ePas']
 
             # -------- ACTIVE PROPS --------- #V
-            # sodium channels
-            # sec.insert('Nafx')
-            # sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
-            # # potassium channels
-            # sec.insert('kdrin')
-            # sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
+            if not passive_only:
+                # sodium channels
+                sec.insert('Nafx')
+                sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
+                # potassium channels
+                sec.insert('kdrin')
+                sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
 
 
         # PROX DEND
@@ -202,6 +207,7 @@ class Cell:
             # cable
             if not debug:
                 sec.nseg = sec.n3d()
+
             # cable props
             sec.cm = self.params[params_key+'_prox_cm']
             sec.Ra = self.params[params_key+'_prox_Ra']
@@ -209,59 +215,66 @@ class Cell:
             sec.insert('pas')
             sec.g_pas = self.params[params_key+'_prox_gPas']
             sec.e_pas = self.params[params_key+'_ePas']
-            # sodium channels
-            sec.insert('Nafx')
-            sec.gnafbar_Nafx= self.params[params_key+'_prox_gNafx']
-            # potassium channels
-            sec.insert('kdrin')
-            sec.gkdrbar_kdrin = self.params[params_key+'_prox_gKdrin']
-            # 
-            sec.insert('kapin')
-            sec.gkabar_kapin = self.params[params_key+'_prox_gKapin']
-            #
-            sec.insert('can')
-            sec.gcabar_can = self.params[params_key+'_prox_gCan']
-            #
-            sec.insert('cat')
-            sec.gcatbar_cat = self.params[params_key+'_prox_gCat']
-            #
-            sec.insert('cal')
-            sec.gcalbar_cal = self.params[params_key+'_prox_gCal']
-            #
-            sec.insert('cadynin')
+
+            if not passive_only:
+                # sodium channels
+                sec.insert('Nafx')
+                sec.gnafbar_Nafx= self.params[params_key+'_prox_gNafx']
+                # potassium channels
+                sec.insert('kdrin')
+                sec.gkdrbar_kdrin = self.params[params_key+'_prox_gKdrin']
+                # 
+                sec.insert('kapin')
+                sec.gkabar_kapin = self.params[params_key+'_prox_gKapin']
+                #
+                sec.insert('can')
+                sec.gcabar_can = self.params[params_key+'_prox_gCan']
+                #
+                sec.insert('cat')
+                sec.gcatbar_cat = self.params[params_key+'_prox_gCat']
+                #
+                sec.insert('cal')
+                sec.gcalbar_cal = self.params[params_key+'_prox_gCal']
+                #
+                sec.insert('cadynin')
 
         # DISTAL DEND
         for sec in self.compartments['distal']:
+
             # cable
             if not debug:
                 sec.nseg = sec.n3d()
+
             # cable props
             sec.cm = self.params[params_key+'_dist_cm']
             sec.Ra = self.params[params_key+'_dist_Ra']
+
             # passive current
             sec.insert('pas')
             sec.g_pas = self.params[params_key+'_dist_gPas']
             sec.e_pas = self.params[params_key+'_ePas']
-            # sodium channels
-            sec.insert('Nafx')
-            sec.gnafbar_Nafx= self.params[params_key+'_dist_gNafx']
-            # potassium channels
-            sec.insert('kdrin')
-            sec.gkdrbar_kdrin = self.params[params_key+'_dist_gKdrin']
-            # 
-            sec.insert('kapin')
-            sec.gkabar_kapin = self.params[params_key+'_dist_gKapin']
-            #
-            sec.insert('can')
-            sec.gcabar_can = self.params[params_key+'_dist_gCan']
-            #
-            sec.insert('cat')
-            sec.gcatbar_cat = self.params[params_key+'_dist_gCat']
-            #
-            sec.insert('cal')
-            sec.gcalbar_cal = self.params[params_key+'_dist_gCal']
-            #
-            sec.insert('cadynin')
+
+            if not passive_only:
+                # sodium channels
+                sec.insert('Nafx')
+                sec.gnafbar_Nafx= self.params[params_key+'_dist_gNafx']
+                # potassium channels
+                sec.insert('kdrin')
+                sec.gkdrbar_kdrin = self.params[params_key+'_dist_gKdrin']
+                # 
+                sec.insert('kapin')
+                sec.gkabar_kapin = self.params[params_key+'_dist_gKapin']
+                #
+                sec.insert('can')
+                sec.gcabar_can = self.params[params_key+'_dist_gCan']
+                #
+                sec.insert('cat')
+                sec.gcatbar_cat = self.params[params_key+'_dist_gCat']
+                #
+                sec.insert('cal')
+                sec.gcalbar_cal = self.params[params_key+'_dist_gCal']
+                #
+                sec.insert('cadynin')
 
         for sec in self.all:
             sec.v = self.params[params_key+'_ePas']
