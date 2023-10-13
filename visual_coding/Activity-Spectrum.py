@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -150,13 +150,13 @@ for stim in []:#['all', 'natural-movies', 'spontaneous']:
 
             DATA[key].append(results)            
 
-    np.save('../data/visual-coding-%s-spikes-data.npy' % stim, DATA)
+    np.save('../data/visual_coding/%s-spikes-data.npy' % stim, DATA)
 
 # %% [markdown]
 # # 2) Load summary data
 
 # %%
-DATA = np.load('../data/visual_coding/visual-coding-spikes-data-spontaneous.npy', allow_pickle=True).item()
+DATA = np.load('../data/visual_coding/spontaneous-spikes-data.npy', allow_pickle=True).item()
 
 # %% [markdown]
 # # Wavelet-Based analysis: cross-correl with wavelet
@@ -219,7 +219,7 @@ for stim in ['all', 'natural-movies', 'spontaneous']:
 
     RESULTS ={'freqs': np.logspace(-1, 2, 20)}
     
-    DATA = np.load('../data/visual-coding-%s-spikes-data.npy' % stim, allow_pickle=True).item()
+    DATA = np.load('../data/visual_coding/%s-spikes-data.npy' % stim, allow_pickle=True).item()
 
     for key in ['PV', 'SST']:
             
@@ -237,7 +237,7 @@ for stim in ['all', 'natural-movies', 'spontaneous']:
                     RESULTS['%s_posUnits_spike-wavelet-correl' % key] += \
                                     DATA[key][index]['posUnits-spike-wavelet-correl']
 
-    np.save('../data/visual-coding-%s-spikes-wavelet-correl.npy' % stim, RESULTS)
+    np.save('../data/visual_coding/%s-spikes-wavelet-correl.npy' % stim, RESULTS)
 
 # %%
 #for stim in ['natural-movies', 'spontaneous']:

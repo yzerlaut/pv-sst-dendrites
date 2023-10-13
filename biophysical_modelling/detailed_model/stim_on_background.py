@@ -9,6 +9,7 @@ import plot_tools as pt
 import matplotlib.pylab as plt
 
 def run_sim(cellType='Basket', 
+            passive_only=False,
             iBranch=0,
             from_uniform=False,
             # stim props
@@ -20,6 +21,7 @@ def run_sim(cellType='Basket',
             ISI=300,
             # bg stim
             bgStimFreq=1e-3,
+            bgFreqInhFactor=4.,
             bgStimSeed=1,
             # biophysical props
             with_NMDA=False,
@@ -40,7 +42,7 @@ def run_sim(cellType='Basket',
     else:
         raise Exception(' cell type not recognized  !')
     cell = Cell(ID=ID, 
-                passive_only=True,
+                passive_only=passive_only,
                 params_key=params_key)
     cell.params_key = params_key
 
@@ -62,10 +64,10 @@ def run_sim(cellType='Basket',
     np.random.seed(10+8**bgStimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
-        if syn in excitatory:
+        if excitatory[i]:
             TRAINS.append(list(train(bgStimFreq, tstop=tstop)))
         else:
-            TRAINS.append(list(train(4.*bgStimFreq, tstop=tstop)))
+            TRAINS.append(list(train(bgFreqInhFactor*bgStimFreq, tstop=tstop)))
 
     # -- stim evoked activity 
     np.random.seed(stimSeed)
@@ -74,9 +76,9 @@ def run_sim(cellType='Basket',
             picked = np.random.choice(synapses[excitatory],
                                       nC) # in stim in excitatory syn.
             for i, syn in enumerate(picked):
-                TRAINS[np.flatnonzero(picked==syn)[0]].append(t0+\
-                                                        c*nStimRepeat*ISI+\
-                                                        n*ISI+\
+                TRAINS[np.flatnonzero(synapses==syn)[0]].append(t0+\
+                                                        n*len(nCluster)*ISI+\
+                                                        c*ISI+\
                                                         i*interspike)
     # -- reoardering spike trains
     for i, syn in enumerate(synapses):
@@ -139,22 +141,25 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # bg props
-    parser.add_argument("--bgStimFreq", type=float, default=5e-4)
+    parser.add_argument("--bgStimFreq", type=float, default=1e-3)
+    parser.add_argument("--bgFreqInhFactor", type=float, default=4.)
     parser.add_argument("--bgStimSeed", type=float, default=1)
 
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=2)
     parser.add_argument("--interspike", type=float, default=0.5)
+    parser.add_argument("--ISI", type=float, default=200)
     parser.add_argument("--nCluster", type=int, nargs='*', 
-                        default=[10])
+                        default=np.arange(20)*5)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=0)
-    parser.add_argument("--nBranch", type=int, default=2)
+    parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
+    parser.add_argument("--passive", action="store_true")
 
     parser.add_argument("--suffix", help="suffix for saving", default='')
 
@@ -162,7 +167,10 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     params = dict(cellType=args.cellType,
+                  passive_only=args.passive,
+                  bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
+                  ISI=args.ISI,
                   bgStimFreq=args.bgStimFreq,
                   bgStimSeed=args.bgStimSeed,
                   nStimRepeat=args.nStimRepeat,
@@ -179,8 +187,8 @@ if __name__=='__main__':
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_simpleStim_sim%s.zip' % (args.cellType,
-                                                                             args.suffix))
+            filename='../../data/detailed_model/%s_StimOnBg_sim%s.zip' % (args.cellType,
+                                                                          args.suffix))
 
         grid = dict(iBranch=np.arange(args.nBranch))
 

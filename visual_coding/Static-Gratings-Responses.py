@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -220,7 +220,7 @@ def show_single_unit_response(spikes_matrix, orientations,
 
 fig = show_single_unit_response(spikes_matrix, orientations, ms=0.5, color='tab:red')
 fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], RESP[Key][i]), color='k')
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.png'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.png'))
 
 # %%
 # loop over all units
