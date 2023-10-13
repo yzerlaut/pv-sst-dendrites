@@ -26,7 +26,7 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_NMDA=False,
             filename='single_sim.npy',
-            dt= 0.025):
+            dt= 0.01):
 
     ######################################################
     ##   simulation preparation  #########################
@@ -164,6 +164,10 @@ if __name__=='__main__':
     parser.add_argument("--suffix", help="suffix for saving", default='')
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
+    parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
+
+    parser.add_argument("--dt", type=float, default=0.025)
+
     args = parser.parse_args()
 
     params = dict(cellType=args.cellType,
@@ -175,9 +179,35 @@ if __name__=='__main__':
                   bgStimSeed=args.bgStimSeed,
                   nStimRepeat=args.nStimRepeat,
                   nCluster=args.nCluster,
-                  interspike=args.interspike)
+                  interspike=args.interspike,
+                  dt=args.dt)
 
     if args.test:
+
+        # run with the given params as a test
+        run_sim(**params)
+
+    if args.background_calibration:
+    
+        sim = Parallel(\
+            filename='../../data/detailed_model/%s_StimOnBg_BgCalib.zip' % args.cellType)
+
+        params['ISI'] = 1000
+        params['nCluster'] = [40]
+        params['nStimRepeat'] = 5
+
+        grid = dict(cellType=['Basket', 'Martinotti'],
+                    # bgStimFreq=[1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3],
+                    # bgFreqInhFactor=[0.25, 0.5, 1, 2, 4],
+                    bgStimFreq=[5e-4, 2e-3],
+                    bgFreqInhFactor=[0.5, 2],
+                    iBranch=np.arange(args.nBranch))
+
+        sim.build(grid)
+
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}))
 
         # run with the given params as a test
         run_sim(**params)
