@@ -44,7 +44,6 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, 
                 passive_only=passive_only,
                 params_key=params_key)
-    cell.params_key = params_key
 
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
@@ -185,23 +184,22 @@ if __name__=='__main__':
     if args.test:
 
         # run with the given params as a test
+        print('running test simulation [...]')
         run_sim(**params)
 
-    if args.background_calibration:
+    elif args.background_calibration:
     
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_StimOnBg_BgCalib.zip' % args.cellType)
+            filename='../../data/detailed_model/StimOnBg_BgCalib.zip')
 
         params['ISI'] = 1000
-        params['nCluster'] = [40]
-        params['nStimRepeat'] = 5
+        params['nCluster'] = [30,60]
+        params['nStimRepeat'] = 4
 
         grid = dict(cellType=['Basket', 'Martinotti'],
-                    # bgStimFreq=[1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3],
-                    # bgFreqInhFactor=[0.25, 0.5, 1, 2, 4],
-                    bgStimFreq=[5e-4, 2e-3],
-                    bgFreqInhFactor=[0.5, 2],
-                    iBranch=np.arange(args.nBranch))
+                    bgStimFreq=[5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3],
+                    bgFreqInhFactor=[0.25, 0.5, 1, 2, 4],
+                    iBranch=np.arange(3))
 
         sim.build(grid)
 

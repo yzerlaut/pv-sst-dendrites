@@ -40,6 +40,7 @@ class Cell:
         self.insert_mechanisms_and_properties(params_key,
                                               passive_only=passive_only,
                                               debug=debug)
+        self.params_key = params_key
 
         self.map_SEGMENTS_to_NEURON()
 
@@ -107,7 +108,8 @@ class Cell:
     def label_compartments(self, proximal_limit,
                            verbose=False):
 
-        self.compartments = {'soma':[], 'proximal':[], 'distal':[], 'axon':[]}
+        self.compartments = {'soma':[], 'proximal':[],
+                             'distal':[], 'axon':[]}
 
         for sec in self.all:
             # loop over all compartments
@@ -131,6 +133,7 @@ class Cell:
     def insert_mechanisms_and_properties(self,
                                          params_key,
                                          passive_only=False,
+                                         with_axon=False,
                                          debug=False):
 
         # SOMA
@@ -151,15 +154,14 @@ class Cell:
             if not passive_only:
                 # sodium channels
                 sec.insert('Nafx')
-                # sec.gnafbar_Nafx= soma_Nafin*0.6*5
-                sec.gnafbar_Nafx= self.params[params_key+'_soma_gNafx']
+                sec.gnafbar_Nafx= 10*self.params[params_key+'_soma_gNafx']
                 # potassium channels
                 sec.insert('kdrin')
-                sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
+                sec.gkdrbar_kdrin = 10*self.params[params_key+'_soma_gKdrin']
                 # 
                 sec.insert('IKsin')
                 # sec.gKsbar_IKsin= soma_Kslowin
-                sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
+                sec.gKsbar_IKsin = 10*self.params[params_key+'_soma_gKslowin']
                 #
                 sec.insert('hin')
                 # sec.gbar_hin=soma_hin
@@ -180,25 +182,28 @@ class Cell:
         # AXON
         for sec in self.compartments['axon']:
 
-            # if not debug:
-                # sec.nseg = sec.n3d()
-
             # cable props
             sec.cm = self.params[params_key+'_axon_cm']
             sec.Ra = self.params[params_key+'_axon_Ra']
-            # passive current
-            sec.insert('pas')
-            sec.g_pas = self.params[params_key+'_axon_gPas']
-            sec.e_pas = self.params[params_key+'_ePas']
 
-            # -------- ACTIVE PROPS --------- #V
-            if not passive_only:
-                # sodium channels
-                sec.insert('Nafx')
-                sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
-                # potassium channels
-                sec.insert('kdrin')
-                sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
+            if with_axon:
+
+                if not debug:
+                    sec.nseg = sec.n3d()
+
+                # passive current
+                sec.insert('pas')
+                sec.g_pas = self.params[params_key+'_axon_gPas']
+                sec.e_pas = self.params[params_key+'_ePas']
+
+                # -------- ACTIVE PROPS --------- #V
+                if not passive_only:
+                    # sodium channels
+                    sec.insert('Nafx')
+                    sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
+                    # potassium channels
+                    sec.insert('kdrin')
+                    sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
 
 
         # PROX DEND

@@ -1,4 +1,5 @@
 from cell_template import *
+from synaptic_input import add_synaptic_input
 from parallel import Parallel
 
 import sys
@@ -131,6 +132,7 @@ def efficacy(real, linear,
 
 def run_sim(cellType='Basket', 
             iBranch=0,
+            passive_only=True,
             from_uniform=False,
             # cluster props
             # -- if from distance intervals
@@ -164,7 +166,9 @@ def run_sim(cellType='Basket',
         params_key='MC'
     else:
         raise Exception(' cell type not recognized  !')
-    cell = Cell(ID=ID, params_key=params_key)
+    cell = Cell(ID=ID, 
+                passive_only=passive_only,
+                params_key=params_key)
 
     synapses = find_clustered_input(cell, 
                                     iBranch,
@@ -187,44 +191,22 @@ def run_sim(cellType='Basket',
         TRAINS[i].append(tstop+i*interspike)
     tstop += ISI
 
-    AMPAS, NMDAS = [], []
-    ampaNETCONS, nmdaNETCONS = [], []
-    STIMS, VECSTIMS = [], []
-
-    for i, syn in enumerate(synapses):
-
-        np.random.seed(syn)
-
-        # need to avoid x=0 and x=1, to allow ion concentrations variations in NEURON
-        x = np.clip(cell.SEGMENTS['NEURON_segment'][syn], 
-                1, cell.SEGMENTS['NEURON_section'][syn].nseg-2)\
-                        /cell.SEGMENTS['NEURON_section'][syn].nseg
-
-        AMPAS.append(\
-                h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
-        if NMDAtoAMPA_ratio>0:
-            NMDAS.append(\
-                    h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
-        VECSTIMS.append(h.VecStim())
-        STIMS.append(h.Vector(TRAINS[i]))
-
-        VECSTIMS[-1].play(STIMS[-1])
-
-        ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-        ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%params_key]
-
-        if NMDAtoAMPA_ratio>0:
-            nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
-            nmdaNETCONS[-1].weight[0] = NMDAtoAMPA_ratio*cell.params['%s_qAMPA'%params_key]
+    # build synaptic input
+    AMPAS, NMDAS, GABAS,\
+       ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
+        STIMS, VECSTIMS, excitatory = add_synaptic_input(cell,\
+                                            synapses, 
+                                            EI_ratio=0,
+                                            with_NMDA=with_NMDA)
 
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
     if len(synapses)>0:
-        Vm_dend.record(cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v) # last one in the loop
+        # last one in the loop
+        Vm_dend.record(\
+            cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v) 
     else:
         Vm_dend.record(cell.dend[0](0.5)._ref_v) # root dend
 
@@ -240,15 +222,15 @@ def run_sim(cellType='Basket',
     for i in range(int(tstop/dt)):
         h.fadvance()
 
-    AMPAS, NMDAS = None, None
-    ampaNETCONS, nmdaNETCONS = None, None
+    AMPAS, NMDAS, GABAS = None, None, None
+    ampaNETCONS, nmdaNETCONS, gabaNETCONS = None, None, None
     STIMS, VECSTIMS = None, None
 
     # compute the linear prediction
     real_soma, linear_soma = build_linear_pred(np.array(Vm_soma),
-                                               dt, t0, ISI, interspike, len(synapses))
+                            dt, t0, ISI, interspike, len(synapses))
     real_dend, linear_dend = build_linear_pred(np.array(Vm_dend),
-                                               dt, t0, ISI, interspike, len(synapses))
+                            dt, t0, ISI, interspike, len(synapses))
 
     t = np.arange(len(real_soma))*dt
 
@@ -306,7 +288,6 @@ if __name__=='__main__':
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
-    parser.add_argument("--NMDAtoAMPA_ratio", type=float, default=2.0)
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
     parser.add_argument("--suffix", help="suffix for saving", default='')
@@ -343,7 +324,7 @@ if __name__=='__main__':
         if args.test_uniform:
             params = dict(from_uniform=[False, True], **params)
         if args.test_NMDA:
-            params = dict(NMDAtoAMPA_ratio=[0., args.NMDAtoAMPA_ratio], **params)
+            params = dict(with_NMDA=[False, True], **params)
 
         sim.build(params)
 
