@@ -385,12 +385,9 @@ class Cell:
 
 if __name__=='__main__':
 
-    # cell = Cell(debug=True)
-    # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
-
-    # ID = '864691135571546917_264824' # Martinotti
-    # cell = PVcell(ID=ID, debug=False)
-    # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
+    ID = '864691135571546917_264824' # Martinotti
+    cell = PVcell(ID=ID, debug=False)
+    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
     """
     n = 0
