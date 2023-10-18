@@ -26,9 +26,11 @@ class Cell:
                  ID = '864691135396580129_296758', # Basket Cell example
                  params_key='BC',
                  passive_only=False,
+                 with_axon=False,
                  debug=False):
 
-        self.load_morphology(ID)
+        self.load_morphology(ID,
+                             with_axon=with_axon)
 
         self.SEGMENTS = np.load("morphologies/%s/segments.npy" % ID,
                                 allow_pickle=True).item()
@@ -85,9 +87,23 @@ class Cell:
                 uSynapses.append(branch[bIndex])
             self.set_of_synapses_spatially_uniform.append(np.array(uSynapses))
 
-    def load_morphology(self, ID):
+    def load_morphology(self, ID,
+                        with_axon=True):
         cell = h.Import3d_SWC_read()
-        cell.input("morphologies/%s/%s.swc" % (ID,ID))
+        if with_axon:
+            # we just read the full morphology file
+            cell.input("morphologies/%s/%s.swc" % (ID,ID))
+        else:
+            # we cut the file
+            new_swc = ''
+            with open("morphologies/%s/%s.swc" % (ID,ID), 'r') as f:
+                for line in f.readlines():
+                    if line.split(' ')[1]!='3':
+                        new_swc += line
+            with open("morphologies/%s/%s_no_axon.swc" % (ID,ID), 'w') as f:
+                f.write(new_swc)
+            cell.input("morphologies/%s/%s_no_axon.swc" % (ID,ID))
+
         i3d = h.Import3d_GUI(cell, False)
         i3d.instantiate(self)
 
@@ -154,14 +170,14 @@ class Cell:
             if not passive_only:
                 # sodium channels
                 sec.insert('Nafx')
-                sec.gnafbar_Nafx= 10*self.params[params_key+'_soma_gNafx']
+                sec.gnafbar_Nafx = self.params[params_key+'_soma_gNafx']
                 # potassium channels
                 sec.insert('kdrin')
-                sec.gkdrbar_kdrin = 10*self.params[params_key+'_soma_gKdrin']
+                sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
                 # 
                 sec.insert('IKsin')
                 # sec.gKsbar_IKsin= soma_Kslowin
-                sec.gKsbar_IKsin = 10*self.params[params_key+'_soma_gKslowin']
+                sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
                 #
                 sec.insert('hin')
                 # sec.gbar_hin=soma_hin
@@ -222,9 +238,10 @@ class Cell:
             sec.e_pas = self.params[params_key+'_ePas']
 
             if not passive_only:
-                # sodium channels
+
+                # sodium channels (here keep the custom ones)
                 sec.insert('Nafx')
-                sec.gnafbar_Nafx= self.params[params_key+'_prox_gNafx']
+                sec.gnafbar_Nafx = self.params[params_key+'_prox_gNafx']
                 # potassium channels
                 sec.insert('kdrin')
                 sec.gkdrbar_kdrin = self.params[params_key+'_prox_gKdrin']
@@ -386,43 +403,37 @@ class Cell:
 if __name__=='__main__':
 
     ID = '864691135571546917_264824' # Martinotti
-    cell = PVcell(ID=ID, debug=False)
-    cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
-    """
-    n = 0
-    for sec in cell.all:
-        n += sec.nseg-2
-    print(n)
-    
+    # cell = Cell(ID=ID, debug=True)
+    # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
+
+    cell = Cell(ID=ID)
+
     ic = h.IClamp(cell.soma[0](0.5))
     ic.amp = 0. 
     ic.dur =  1e9 * ms
     ic.delay = 0 * ms
 
-    dt, tstop = 0.025, 500
+    dt= 0.01
 
-    t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
     Vm = h.Vector()
-
     Vm.record(cell.soma[0](0.5)._ref_v)
 
     h.finitialize()
 
-    for i in range(int(50/dt)):
+    for i in range(int(20/dt)):
         h.fadvance()
 
-    for i in range(1, 11):
+    for i in range(1, 3):
 
         ic.amp = i/10.
-        for i in range(int(100/dt)):
+        for i in range(int(50/dt)):
             h.fadvance()
         ic.amp = 0
-        for i in range(int(100/dt)):
+        for i in range(int(50/dt)):
             h.fadvance()
 
     import matplotlib.pylab as plt
     plt.figure(figsize=(9,3))
     plt.plot(np.arange(len(Vm))*dt, np.array(Vm))
     plt.show()
-    """
