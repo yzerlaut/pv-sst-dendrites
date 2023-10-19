@@ -33,17 +33,29 @@ def load_params_from(sim):
 
     return p
 
+# %% [markdown]
+# ### Run Test Simulations
+#
+# ```
+# python stim_on_background.py --test -c Martinotti --nCluster 50 --bgStimFreq 1e-3 --bgFreqInhFactor 2 --nStimRepeat 10
+# ```
+
 # %%
 results = np.load('single_sim.npy', allow_pickle=True).item()
 
 t = np.arange(len(results['Vm_soma']))*results['dt']
-fig, ax = pt.figure(figsize=(4,2), left=0.2, bottom=0.5)
+fig, ax = pt.figure(figsize=(3,2.5), left=0, bottom=0.)
 
 for i in range(results['nStimRepeat']):
     pt.arrow(ax, [results['t0']+i*results['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
 
-# ax.plot(t, results['Vm_dend'], lw=0.5)
+#ax.plot(t, results['Vm_dend'], lw=0.5)
 ax.plot(t, results['Vm_soma'])
+ax.plot(t, -60+0*t, 'k:')
+pt.annotate(ax, '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
+
+ax.axis('off')
+pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
 
 # %%
 sim = Parallel(\

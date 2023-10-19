@@ -27,9 +27,9 @@ def FIcurve_sim(cell,
     apc = h.APCount(cell.soma[0](0.5))
 
     h.dt = dt
-    h.finitialize(cell.El)
+    h.finitialize(-70)
 
-    for i in range(int(100/dt)):
+    for i in range(int(duration/dt)):
         h.fadvance()
 
     V0 = cell.soma[0](0.5).v # after relaxation
@@ -50,20 +50,34 @@ def FIcurve_sim(cell,
         for i in range(int(duration/dt)):
             h.fadvance()
             
-    return dict(Vm=np.array(Vm), dt=dt,
+    return dict(Vm=np.array(Vm), 
+                dt=dt, duration=duration,
                 Rin=Rin, AMPS=np.array(AMPS),
-                RATES=RATES)
+                RATES=RATES, V0=V0)
 
 
-def FIcurve_plot(results):
+def FIcurve_plot(results, Vbar=10):
+
     fig, ax = plt.subplots(figsize=(9,3))
-    ax.plot(np.arange(len(results['Vm']))*results['dt'], results['Vm'], color='tab:grey')
+
+    t = np.arange(len(results['Vm']))*results['dt']
+    ax.plot(t[(t>100)], results['Vm'][(t>100)], color='tab:grey')
+    # current trace
+    I = 0*t
+    for a, amp in enumerate(results['AMPS']):
+        cond = (t>((2*a+1)*results['duration'])) & (t<((2*a+2)*results['duration']))
+        I[cond] = amp
+    ax.plot(t[(t>100)], results['Vm'].min()-3*Vbar/2+I[(t>100)]/I.max()*Vbar, color='k')
+
     ax.axis('off')
     pt.draw_bar_scales(ax, loc='top-right',
                        Xbar=100, Xbar_label='100ms',
-                       Ybar=10, Ybar_label='10mV')
+                       Ybar=Vbar, Ybar_label='%imV' % Vbar, 
+                       Ybar_label2='%.1fpA'%(1e3*I.max()), ycolor='tab:grey', ycolor2='k') 
     pt.annotate(ax, '      R$_{in}$=%.1fM$\Omega$ ' % results['Rin'], (0, 0), va='top')
+    pt.annotate(ax, '\n      V$_{rest}$=%.1fmV ' % results['V0'], (0, 0), va='top')
 
+    # f-I curve inset
     inset = pt.inset(ax, [0, 0.6, 0.2, 0.4])
     inset.plot(1e3*results['AMPS'], results['RATES'], 'ko-', lw=0.5)
     pt.set_plot(inset, xlabel='amp. (pA)', ylabel='firing rate (Hz)')
@@ -74,7 +88,7 @@ def FIcurve_plot(results):
 
 def resistance_profile(cell,
                        amp=-25e-3,
-                       duration=100,
+                       duration=150,
                        dt=0.025):
 
     h.dt = dt
@@ -92,7 +106,7 @@ def resistance_profile(cell,
             ic = h.IClamp(cell.SEGMENTS['NEURON_section'][b](x))
             ic.amp, ic.dur = 0. , 1e3
 
-            h.finitialize(cell.El)
+            h.finitialize(-70)
             ic.amp = 0 # in relaxation period
             for i in range(int(duration/dt)):
                 h.fadvance()

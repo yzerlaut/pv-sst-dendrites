@@ -31,12 +31,12 @@
 | **Parameter description**  | **location**      |  **Name**       |     **Value**        | **Unit**               |                                                         | 
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
 | **leak conductance**       |                   |                 |                      |                        | N.B. /2 w.r.t. Basket for -200MOhm input resistance         |
-|                            | soma              | `MC_soma_gPas`  | 6.76 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | soma              | `MC_soma_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 |                            | axon              | `MC_axon_gPas`  | 4.80 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | proximal dendrite | `MC_prox_gPas`  | 6.76 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | distal dendrite   | `MC_dist_gPas`  | 6.76 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | proximal dendrite | `MC_prox_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
+|                            | distal dendrite   | `MC_dist_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
-|                            | *all*             | `MC_ePas`       | -70.0                | mV                     |                                                         |
+|                            | *all*             | `MC_ePas`       | -60.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
 |                            | soma              | `MC_soma_Ra`    | 172                  | ohm.cm                 |                                                         |
 |                            | axon              | `MC_axon_Ra`    | 172                  | ohm.cm                 |                                                         |
@@ -78,8 +78,8 @@
 |     | **Channel Type**  |  **Name**  |  **Density** (S/cm<sup>2</sup>) |           _comment_           |
 | --- | --- | --- | --- | --- | 
 | **soma** |     |     |     |          |
-|          | Fast Sodium current                           | `BC_soma_gNafx`    | 1.35 10<sup>-1</sup> | original 1.35e-1     |
-|          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 3.60 10<sup>-2</sup> | original 3.60e-2     |
+|          | Fast Sodium current                           | `BC_soma_gNafx`    | 3.35 10<sup>-1</sup> | original 1.35e-1     |
+|          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 9.60 10<sup>-2</sup> | original 3.60e-2     |
 |          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 7.25 10<sup>-4</sup> | original 7.25e-4     |
 |          | H-type cation current                         | `BC_soma_gHin`     | 1.00 10<sup>-5</sup> | original 1e-5        |
 |          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 3.20 10<sup>-3</sup> | original 3.20e-3     |
@@ -115,8 +115,8 @@
 |     | **Channel Type**  |  **Name**  |  **Density** (S/cm<sup>2</sup>) |           _comment_           |
 | --- | --- | --- | --- | --- | 
 | **soma** |     |     |     |          |
-|          | Fast Sodium current                           | `MC_soma_gNafx`    | 2.35 10<sup>-1</sup> | original 1.35e-1 |
-|          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 1.60 10<sup>-1</sup> | original 3.60e-2 |
+|          | Fast Sodium current                           | `MC_soma_gNafx`    | 7.00 10<sup>-1</sup> | original 1.35e-1 |
+|          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 4.00 10<sup>-1</sup> | original 3.60e-2 |
 |          | M-type current                                | `MC_soma_gM`       | 2.00 10<sup>-2</sup> |                  |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **axon** |     |     |     |

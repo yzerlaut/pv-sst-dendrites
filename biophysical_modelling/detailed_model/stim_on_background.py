@@ -141,12 +141,12 @@ if __name__=='__main__':
     
     # bg props
     parser.add_argument("--bgStimFreq", type=float, default=1e-3)
-    parser.add_argument("--bgFreqInhFactor", type=float, default=4.)
+    parser.add_argument("--bgFreqInhFactor", type=float, default=2.)
     parser.add_argument("--bgStimSeed", type=float, default=1)
 
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=2)
-    parser.add_argument("--interspike", type=float, default=0.5)
+    parser.add_argument("--interspike", type=float, default=0.1)
     parser.add_argument("--ISI", type=float, default=200)
     parser.add_argument("--nCluster", type=int, nargs='*', 
                         default=np.arange(20)*5)
