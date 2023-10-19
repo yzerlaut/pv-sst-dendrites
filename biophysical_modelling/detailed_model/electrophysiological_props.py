@@ -79,7 +79,7 @@ def resistance_profile(cell,
 
     h.dt = dt
     DISTANCE, RIN, RT = [], [], []
-    for iB, branch in enumerate(cell.branches['branches']):
+    for iB, branch in enumerate(cell.set_of_branches):
 
         Distance = []
         Rin, Rt = [], [] # input and transfer resistance
@@ -102,7 +102,7 @@ def resistance_profile(cell,
             for i in range(int(duration/dt)):
                 h.fadvance()
             Rin.append((cell.SEGMENTS['NEURON_section'][b](x).v-V0in)/amp) # Mohm
-            Rt.append((cell.soma[0](0.5).v-V0sim)/amp) # Mohm
+            Rt.append((cell.soma[0](0.5).v-V0soma)/amp) # Mohm
         RIN.append(Rin)
         RT.append(Rt)
         DISTANCE.append(Distance)
