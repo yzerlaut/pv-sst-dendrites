@@ -26,6 +26,7 @@ def FIcurve_sim(cell,
 
     apc = h.APCount(cell.soma[0](0.5))
 
+    h.dt = dt
     h.finitialize(cell.El)
 
     for i in range(int(50/dt)):
@@ -65,4 +66,38 @@ def FIcurve_plot(results):
     inset.plot(1e3*results['AMPS'], results['RATES'], 'ko-', lw=0.5)
     pt.set_plot(inset, xlabel='amp. (pA)', ylabel='firing rate (Hz)')
     return fig
+
+
+###############################################################################################
+
+def resistance_profile(cell,
+                       amp=-25e-3,
+                       duration=100,
+                       dt=0.025):
+
+    DISTANCE, RIN, RT = [], [], []
+    for iB, branch in enumerate(cell.branches['branches']):
+
+        Distance = []
+        Rin, Rt = [], [] # input and transfer resistance
+        for b in branch:
+
+            x = cell.SEGMENTS['NEURON_segment'][b]/cell.SEGMENTS['NEURON_section'][b].nseg
+            Distance.append(h.distance(cell.SEGMENTS['NEURON_section'][b](x),
+                                       cell.soma[0](0.5)))
+
+            ic = h.IClamp(cell.SEGMENTS['NEURON_section'][b](x))
+            ic.amp, ic.dur = 0. , 1e3
+
+            h.finitialize(cell.El)
+            ic.amp = amp
+            for i in range(int(duration/dt)):
+                h.fadvance()
+
+            Rin.append((cell.SEGMENTS['NEURON_section'][b](x).v-cell.El)/amp) # Mohm
+            Rt.append((cell.soma[0](0.5).v-cell.El)/amp) # Mohm
+        RIN.append(Rin)
+        RT.append(Rt)
+        DISTANCE.append(Distance)
+    return {'distance':DISTANCE, 'Rin':RIN, 'Rt':RT}
 

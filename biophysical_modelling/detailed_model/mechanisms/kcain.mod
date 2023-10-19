@@ -3,7 +3,7 @@ TITLE Slow Ca-dependent potassium current
 :   Ca++ dependent K+ current responsible for slow AHP
 
 NEURON {
-	SUFFIX kcain
+	SUFFIX Kcain
 	USEION k READ ko, ki WRITE ik
 	USEION ca READ cai
 	RANGE  gbar, po, ik

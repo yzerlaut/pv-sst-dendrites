@@ -1,4 +1,3 @@
-
 TITLE Kct current
 
 COMMENT Equations from 
@@ -13,11 +12,10 @@ Copyright	  Maciej Lazarewicz, 2001
 ENDCOMMENT
 
 NEURON {
-	:SUFFIX  mykca
-	SUFFIX kctin
+	SUFFIX Kctin
 	USEION k READ ek WRITE ik
 	USEION ca READ cai   
-	RANGE  gkcbar,ik
+	RANGE  gbar ,ik
 }
 
 UNITS {
@@ -29,7 +27,7 @@ UNITS {
 }
 
 PARAMETER {
-        gkcbar	= 0	 (S/cm2)
+        gbar 	= 0	 (S/cm2)
 	:gkbar	= 1.0e-3 (S/cm2)
 }
 
@@ -50,7 +48,7 @@ STATE { cst ost ist }
 
 BREAKPOINT { 
 	SOLVE kin METHOD sparse
-	ik = gkcbar * ost *( v - ek ) 
+	ik = gbar * ost *( v - ek ) 
 }
 
 INITIAL {

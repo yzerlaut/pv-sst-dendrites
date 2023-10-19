@@ -117,8 +117,8 @@ class Cell:
     def label_compartments(self, proximal_limit,
                            verbose=False):
 
-        self.compartments = {'soma':[], 'proximal':[],
-                             'distal':[], 'axon':[]}
+        self.compartments = {'soma':[], 'prox':[],
+                             'dist':[], 'axon':[]}
 
         for sec in self.all:
             # loop over all compartments
@@ -130,9 +130,9 @@ class Cell:
                 # dendrites
                 distS = self.distance_to_soma(sec)
                 if distS<proximal_limit:
-                    self.compartments['proximal'].append(sec)
+                    self.compartments['prox'].append(sec)
                 else:
-                    self.compartments['distal'].append(sec)
+                    self.compartments['dist'].append(sec)
 
         if verbose:
             for comp in self.compartments:
@@ -145,154 +145,44 @@ class Cell:
                                          with_axon=False,
                                          debug=False):
 
-        # SOMA
-        for sec in self.compartments['soma']:
-            # cable
-            if not debug:
-                sec.nseg = sec.n3d()
+        for LOC in ['soma', 'axon', 'prox', 'dist']:
 
-            # cable props
-            sec.cm = self.params[params_key+'_soma_cm']
-            sec.Ra = self.params[params_key+'_soma_Ra']
-            # passive current
-            sec.insert('pas')
-            sec.g_pas = self.params[params_key+'_soma_gPas']
-            sec.e_pas = self.params[params_key+'_ePas']
+            for sec in self.compartments[LOC]:
 
-            # -------- ACTIVE PROPS --------- #V
-            if not passive_only:
-                # sodium channels
-                sec.insert('Nafx')
-                sec.gnafbar_Nafx = self.params[params_key+'_soma_gNafx']
-                # potassium channels
-                sec.insert('kdrin')
-                sec.gkdrbar_kdrin = self.params[params_key+'_soma_gKdrin']
-                # 
-                sec.insert('IKsin')
-                # sec.gKsbar_IKsin= soma_Kslowin
-                sec.gKsbar_IKsin = self.params[params_key+'_soma_gKslowin']
-                #
-                sec.insert('hin')
-                # sec.gbar_hin=soma_hin
-                sec.gbar_hin = self.params[params_key+'_soma_gHin']
-                # 
-                sec.insert('kapin')
-                # sec.gkabar_kapin=soma_kapin
-                sec.gkabar_kapin = self.params[params_key+'_soma_gKapin']
-                #
-                sec.insert('kctin')
-                sec.gkcbar_kctin = self.params[params_key+'_soma_gKctin']
-                #
-                sec.insert('kcain')
-                sec.gbar_kcain = self.params[params_key+'_soma_gKcain']
-                #
-                sec.insert('cadynin')
-
-        # AXON
-        for sec in self.compartments['axon']:
-
-            # cable props
-            sec.cm = self.params[params_key+'_axon_cm']
-            sec.Ra = self.params[params_key+'_axon_Ra']
-
-            if with_axon:
-
+                # cable
                 if not debug:
                     sec.nseg = sec.n3d()
 
+                # cable props
+                sec.cm = self.params['%s_%s_cm' % (params_key, LOC)]
+                sec.Ra = self.params['%s_%s_Ra' % (params_key, LOC)]
                 # passive current
                 sec.insert('pas')
-                sec.g_pas = self.params[params_key+'_axon_gPas']
-                sec.e_pas = self.params[params_key+'_ePas']
+                sec.g_pas = self.params['%s_%s_gPas' % (params_key, LOC)]
+                sec.e_pas = self.params['%s_%s_ePas' % (params_key, LOC)]
 
                 # -------- ACTIVE PROPS --------- #V
                 if not passive_only:
-                    # sodium channels
-                    sec.insert('Nafx')
-                    sec.gnafbar_Nafx= self.params[params_key+'_axon_gNafx']
-                    # potassium channels
-                    sec.insert('kdrin')
-                    sec.gkdrbar_kdrin = self.params[params_key+'_axon_gKdrin']
 
+                    for mech in ['Nafx', 'Kdrin', 'Kslowin', 
+                                 'Hin', 
+                                 'Kapin', 'Kapin',
+                                 'Kctin', 'Kcain',
+                                 'Can', 'Cat', 'Cal']:
 
-        # PROX DEND
-        for sec in self.compartments['proximal']:
+                        gKey = '%s_%s_g%s' % (params_key, LOC, mech)
 
-            # cable
-            if not debug:
-                sec.nseg = sec.n3d()
+                        if gKey in self.params:
 
-            # cable props
-            sec.cm = self.params[params_key+'_prox_cm']
-            sec.Ra = self.params[params_key+'_prox_Ra']
-            # passive current
-            sec.insert('pas')
-            sec.g_pas = self.params[params_key+'_prox_gPas']
-            sec.e_pas = self.params[params_key+'_ePas']
+                            sec.insert(mech)
+                            getattr(sec, 'gbar_%s' % mech) = self.params[gKey]
 
-            if not passive_only:
+                    # + Calcium Decay Dynamics
+                    sec.insert('cadynin')
 
-                # sodium channels (here keep the custom ones)
-                sec.insert('Nafx')
-                sec.gnafbar_Nafx = self.params[params_key+'_prox_gNafx']
-                # potassium channels
-                sec.insert('kdrin')
-                sec.gkdrbar_kdrin = self.params[params_key+'_prox_gKdrin']
-                # 
-                sec.insert('kapin')
-                sec.gkabar_kapin = self.params[params_key+'_prox_gKapin']
-                #
-                sec.insert('can')
-                sec.gcabar_can = self.params[params_key+'_prox_gCan']
-                #
-                sec.insert('cat')
-                sec.gcatbar_cat = self.params[params_key+'_prox_gCat']
-                #
-                sec.insert('cal')
-                sec.gcalbar_cal = self.params[params_key+'_prox_gCal']
-                #
-                sec.insert('cadynin')
-
-        # DISTAL DEND
-        for sec in self.compartments['distal']:
-
-            # cable
-            if not debug:
-                sec.nseg = sec.n3d()
-
-            # cable props
-            sec.cm = self.params[params_key+'_dist_cm']
-            sec.Ra = self.params[params_key+'_dist_Ra']
-
-            # passive current
-            sec.insert('pas')
-            sec.g_pas = self.params[params_key+'_dist_gPas']
-            sec.e_pas = self.params[params_key+'_ePas']
-
-            if not passive_only:
-                # sodium channels
-                sec.insert('Nafx')
-                sec.gnafbar_Nafx= self.params[params_key+'_dist_gNafx']
-                # potassium channels
-                sec.insert('kdrin')
-                sec.gkdrbar_kdrin = self.params[params_key+'_dist_gKdrin']
-                # 
-                sec.insert('kapin')
-                sec.gkabar_kapin = self.params[params_key+'_dist_gKapin']
-                #
-                sec.insert('can')
-                sec.gcabar_can = self.params[params_key+'_dist_gCan']
-                #
-                sec.insert('cat')
-                sec.gcatbar_cat = self.params[params_key+'_dist_gCat']
-                #
-                sec.insert('cal')
-                sec.gcalbar_cal = self.params[params_key+'_dist_gCal']
-                #
-                sec.insert('cadynin')
-
-        for sec in self.all:
-            sec.v = self.params[params_key+'_ePas']
+            # initialize
+            for sec in self.all:
+                sec.v = self.params[params_key+'_ePas']
         
         h.ko0_k_ion = 3.82 #  //mM
         h.ki0_k_ion = 140  #  //mM  

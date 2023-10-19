@@ -4,10 +4,9 @@ TITLE t-type calcium channel with high threshold for activation
 
 
 NEURON {
-	SUFFIX cat
+	SUFFIX Cat
 	USEION ca READ cai, eca    
-        RANGE gcatbar, iCa
-        RANGE gcatbar, ica
+    RANGE gbar, ica
 	GLOBAL hinf, minf
 }
 
@@ -19,9 +18,9 @@ UNITS {
 	FARADAY = (faraday) (coulomb)
 	R = (k-mole) (joule/degC)
 }
-
+gbar
 PARAMETER {           
-	gcatbar = 0   (mho/cm2)  : initialized conductance
+	gbar = 0   (mho/cm2)  : initialized conductance
 	zetam = -3
 	zetah = 5.2
 	vhalfm =-36 (mV)
@@ -56,7 +55,7 @@ INITIAL {
 
 BREAKPOINT {
 	SOLVE states METHOD cnexp
-	ica = gcatbar*m*m*h*(v-eca)	: dummy calcium current induced by this channel
+	ica = gbar*m*m*h*(v-eca)	: dummy calcium current induced by this channel
 
 }
 

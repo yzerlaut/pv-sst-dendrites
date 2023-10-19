@@ -1,9 +1,9 @@
 : Delayed rectifier K+ channel
 
 NEURON {
-	SUFFIX kdrin
+	SUFFIX Kdrin
 	USEION k READ ki, ko WRITE ik
-	RANGE gkdrbar, ik, gk
+	RANGE gbar, ik, gk
 	
 }
 
@@ -17,7 +17,7 @@ INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
 PARAMETER {
 	v (mV)
 	dt (ms)
-	gkdrbar= 0.0338 (mho/cm2) <0,1e9>
+	gbar= 0.0338 (mho/cm2) <0,1e9>
 	
 	
 }
@@ -45,7 +45,7 @@ INITIAL {
 
 BREAKPOINT {
 	SOLVE states METHOD cnexp
-	gk= gkdrbar*n*n*n*n
+	gk= gbar*n*n*n*n
 	ek = 25 * log(ko/ki)
 	ik = gk*(v-ek)
 	
