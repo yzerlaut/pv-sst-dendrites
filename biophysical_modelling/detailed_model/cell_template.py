@@ -165,7 +165,7 @@ class Cell:
                 if not passive_only:
 
                     for mech in ['Nafx', 'Kdrin', 'Kslowin', 
-                                 'Hin', 
+                                 'Hin', 'M',
                                  'Kapin', 'Kapin',
                                  'Kctin', 'Kcain',
                                  'Canin', 'Cat', 'Cal']:

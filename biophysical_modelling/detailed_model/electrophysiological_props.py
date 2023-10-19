@@ -29,8 +29,10 @@ def FIcurve_sim(cell,
     h.dt = dt
     h.finitialize(cell.El)
 
-    for i in range(int(50/dt)):
+    for i in range(int(100/dt)):
         h.fadvance()
+
+    V0 = cell.soma[0](0.5).v # after relaxation
 
     RATES = []
     for a, amp in enumerate(AMPS):
@@ -41,7 +43,7 @@ def FIcurve_sim(cell,
             h.fadvance()
         if a==0:
             # calculate input res.
-            Rin = (cell.soma[0](0.5).v-cell.El)/amp # Mohm
+            Rin = (cell.soma[0](0.5).v-V0)/amp # Mohm
 
         RATES.append(apc.n*1e3/duration) # rates in Hz
         ic.amp = 0
@@ -75,6 +77,7 @@ def resistance_profile(cell,
                        duration=100,
                        dt=0.025):
 
+    h.dt = dt
     DISTANCE, RIN, RT = [], [], []
     for iB, branch in enumerate(cell.branches['branches']):
 
@@ -90,12 +93,16 @@ def resistance_profile(cell,
             ic.amp, ic.dur = 0. , 1e3
 
             h.finitialize(cell.El)
-            ic.amp = amp
+            ic.amp = 0 # in relaxation period
             for i in range(int(duration/dt)):
                 h.fadvance()
-
-            Rin.append((cell.SEGMENTS['NEURON_section'][b](x).v-cell.El)/amp) # Mohm
-            Rt.append((cell.soma[0](0.5).v-cell.El)/amp) # Mohm
+            V0soma = cell.soma[0](0.5).v # after relaxation
+            V0in = cell.SEGMENTS['NEURON_section'][b](x).v
+            ic.amp = amp # in evoked period
+            for i in range(int(duration/dt)):
+                h.fadvance()
+            Rin.append((cell.SEGMENTS['NEURON_section'][b](x).v-V0in)/amp) # Mohm
+            Rt.append((cell.soma[0](0.5).v-V0sim)/amp) # Mohm
         RIN.append(Rin)
         RT.append(Rt)
         DISTANCE.append(Distance)
