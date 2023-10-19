@@ -39,6 +39,7 @@ class Cell:
 
         self.label_compartments(proximal_limit, verbose=debug)
 
+        self.El = self.params[params_key+'_ePas']
         self.insert_mechanisms_and_properties(params_key,
                                               passive_only=passive_only,
                                               debug=debug)
@@ -49,7 +50,6 @@ class Cell:
         if not debug:
             self.check_that_all_dendritic_branches_are_well_covered(verbose=False)
 
-        self.El = self.params[params_key+'_ePas']
 
     def preprocess_branches(self, ID):
         """
@@ -159,7 +159,7 @@ class Cell:
                 # passive current
                 sec.insert('pas')
                 sec.g_pas = self.params['%s_%s_gPas' % (params_key, LOC)]
-                sec.e_pas = self.params['%s_%s_ePas' % (params_key, LOC)]
+                sec.e_pas = self.El
 
                 # -------- ACTIVE PROPS --------- #V
                 if not passive_only:
@@ -168,21 +168,22 @@ class Cell:
                                  'Hin', 
                                  'Kapin', 'Kapin',
                                  'Kctin', 'Kcain',
-                                 'Can', 'Cat', 'Cal']:
+                                 'Canin', 'Cat', 'Calin']:
 
                         gKey = '%s_%s_g%s' % (params_key, LOC, mech)
 
                         if gKey in self.params:
 
+                            print(mech)
                             sec.insert(mech)
-                            getattr(sec, 'gbar_%s' % mech) = self.params[gKey]
+                            setattr(sec, 'gbar_%s' % mech, self.params[gKey])
 
                     # + Calcium Decay Dynamics
                     sec.insert('cadynin')
 
             # initialize
             for sec in self.all:
-                sec.v = self.params[params_key+'_ePas']
+                sec.v = self.El
         
         h.ko0_k_ion = 3.82 #  //mM
         h.ki0_k_ion = 140  #  //mM  

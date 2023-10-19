@@ -5,7 +5,7 @@ TITLE L-type calcium channel with high threshold for activation
 :  Updated by Maria Markaki  12/02/03
 
 NEURON {
-	SUFFIX cal
+	SUFFIX Cal
 	USEION ca READ cai, eca WRITE ica
     RANGE gbar, ica, po
 	GLOBAL inf, s_inf, tau_m
