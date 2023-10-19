@@ -168,13 +168,12 @@ class Cell:
                                  'Hin', 
                                  'Kapin', 'Kapin',
                                  'Kctin', 'Kcain',
-                                 'Canin', 'Cat', 'Calin']:
+                                 'Canin', 'Cat', 'Cal']:
 
                         gKey = '%s_%s_g%s' % (params_key, LOC, mech)
 
                         if gKey in self.params:
 
-                            print(mech)
                             sec.insert(mech)
                             setattr(sec, 'gbar_%s' % mech, self.params[gKey])
 
@@ -205,7 +204,7 @@ class Cell:
                                                    dtype=object)
         iMins = []
         # for sec in self.all:
-        for sec in self.compartments['proximal']+self.compartments['distal']+self.compartments['soma']:
+        for sec in self.compartments['prox']+self.compartments['dist']+self.compartments['soma']:
             for iseg in range(sec.nseg):
                 try:
                     D = np.sqrt((1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
