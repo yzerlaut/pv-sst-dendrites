@@ -18,7 +18,7 @@ UNITS {
 	FARADAY = (faraday) (coulomb)
 	R = (k-mole) (joule/degC)
 }
-gbar
+
 PARAMETER {           
 	gbar = 0   (mho/cm2)  : initialized conductance
 	zetam = -3
