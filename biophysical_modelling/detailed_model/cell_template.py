@@ -89,19 +89,12 @@ class Cell:
 
     def load_morphology(self, ID,
                         with_axon=True):
+
         cell = h.Import3d_SWC_read()
         if with_axon:
             # we just read the full morphology file
             cell.input("morphologies/%s/%s.swc" % (ID,ID))
         else:
-            # we cut the file
-            new_swc = ''
-            with open("morphologies/%s/%s.swc" % (ID,ID), 'r') as f:
-                for line in f.readlines():
-                    if line.split(' ')[1]!='3':
-                        new_swc += line
-            with open("morphologies/%s/%s_no_axon.swc" % (ID,ID), 'w') as f:
-                f.write(new_swc)
             cell.input("morphologies/%s/%s_no_axon.swc" % (ID,ID))
 
         i3d = h.Import3d_GUI(cell, False)
@@ -403,12 +396,15 @@ class Cell:
 if __name__=='__main__':
 
     ID = '864691135571546917_264824' # Martinotti
+    # ID = '864691135396580129_296758' # Basket
 
     # cell = Cell(ID=ID, debug=True)
     # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
 
-    cell = Cell(ID=ID)
+    cell = Cell(ID=ID, with_axon=False)
+    print(cell.compartments['axon'])
 
+    """
     ic = h.IClamp(cell.soma[0](0.5))
     ic.amp = 0. 
     ic.dur =  1e9 * ms
@@ -437,3 +433,5 @@ if __name__=='__main__':
     plt.figure(figsize=(9,3))
     plt.plot(np.arange(len(Vm))*dt, np.array(Vm))
     plt.show()
+    """
+
