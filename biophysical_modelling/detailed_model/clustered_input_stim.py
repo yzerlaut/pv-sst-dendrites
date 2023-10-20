@@ -272,6 +272,7 @@ def run_sim(cellType='Basket',
               'synapses':synapses,
               'tstop':tstop}
 
+    print(filename)
     np.save(filename, output)
 
 
@@ -313,36 +314,33 @@ if __name__=='__main__':
 
     distance_intervals = [args.Proximal, args.Distal]
 
+    params = dict(cellType=args.cellType,
+                  iBranch=args.iBranch,
+                  iDistance=1,
+                  synSubsamplingFraction=args.sparsening[0]/100.,
+                  interspike=args.interspike,
+                  distance_intervals=distance_intervals)
+
     if args.test:
 
-        params = dict(cellType=args.cellType,
-                      iBranch=args.iBranch,
-                      iDistance=1,
-                      synSubsamplingFraction=args.sparsening[0]/100.,
-                      interspike=args.interspike,
-                      distance_intervals=distance_intervals)
         run_sim(**params)
 
     else:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_clusterStim_sim%s.zip' % (args.cellType,
-                                                                             args.suffix))
+            filename='../../data/detailed_model/clusterStim_sim%s_%s.zip' % (args.suffix, args.cellType))
 
-        single_run_args=dict(cellType=args.cellType,
-                             interspike=args.interspike,
-                             distance_intervals=distance_intervals)
-
-        params = dict(iBranch=np.arange(args.nBranch),
-                      synSubsamplingFraction=[s/100. for s in args.sparsening],
-                      iDistance=range(2))
+        grid = dict(iBranch=np.arange(args.nBranch),
+                    iDistance=range(2),
+                    synSubsamplingFraction=[s/100. for s in args.sparsening])
 
         if args.test_uniform:
-            params = dict(from_uniform=[False, True], **params)
+            grid = dict(from_uniform=[False, True], **grid)
         if args.test_NMDA:
-            params = dict(with_NMDA=[False, True], **params)
+            grid = dict(with_NMDA=[False, True], **grid)
 
-        sim.build(params)
+        sim.build(grid)
 
         sim.run(run_sim,
-                single_run_args=single_run_args)
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}))
