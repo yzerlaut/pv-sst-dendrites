@@ -79,12 +79,12 @@ def run_sim(cellType='Basket',
                                                         n*len(nCluster)*ISI+\
                                                         c*ISI+\
                                                         i*interspike)
-    # -- reoardering spike trains
+    # -- reordering spike trains
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
 
 
-
+    # -- link events to synapses
     for i, syn in enumerate(synapses):
 
         STIMS.append(h.Vector(TRAINS[i]))

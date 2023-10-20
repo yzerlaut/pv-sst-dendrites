@@ -203,6 +203,8 @@ def run_sim(cellType='Basket',
         TRAINS[i].append(tstop+i*interspike)
     tstop += ISI
 
+    print(TRAINS)
+
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
@@ -211,9 +213,15 @@ def run_sim(cellType='Basket',
                                             EI_ratio=0,
                                             with_NMDA=with_NMDA)
 
+    # -- link events to synapses
+    for i, syn in enumerate(synapses):
+
+        STIMS.append(h.Vector(TRAINS[i]))
+        VECSTIMS[i].play(STIMS[-1])
+
     Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
-    # Vm rec
+    # -- Vm recording
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
     if len(synapses)>0:
         # last one in the loop
@@ -223,14 +231,14 @@ def run_sim(cellType='Basket',
         Vm_dend.record(cell.dend[0](0.5)._ref_v) # root dend
 
 
-    # spike count
+    # -- spike count
     apc = h.APCount(cell.soma[0](0.5))
 
     ######################################################
     ##   simulation run   ################################
     ######################################################
 
-    h.finitialize(cell.El)
+    h.finitialize(-70)
     for i in range(int(tstop/dt)):
         h.fadvance()
 
@@ -261,7 +269,7 @@ def run_sim(cellType='Basket',
               'linear_dend':linear_dend,
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'dt': dt, 't0':t0, 'ISI':ISI,'interspike':interspike,
+              'dt': dt, 't0':t0, 'ISI':ISI, 'interspike':interspike,
               'distance_inervals':distance_intervals,
               'synapses':synapses,
               'tstop':tstop}
@@ -287,15 +295,11 @@ if __name__=='__main__':
     
     # cluster props
     parser.add_argument("--Proximal", type=float, nargs=2, default=(20,60))
-    # parser.add_argument("--Medial", type=float, nargs=2, default=(90,130))
     parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
-    parser.add_argument("--synSubsamplingFraction", type=float, default=5e-2)
-    parser.add_argument("--sparsening", help="in percent", type=float, default=[5], nargs='*')
+    parser.add_argument("--sparsening", help="in percent", type=float, 
+                        default=[5], nargs='*')
     parser.add_argument("--interspike", type=float, default=1.0)
 
-    # parser.add_argument("--synSubsamplingSeed", type=int, default=5)
-    # parser.add_argument("--NsynSubsamplingSeed", type=int, default=1)
-    parser.add_argument("--iDistance", help="min input", type=int, default=1)
     # Branch number
     parser.add_argument("--iBranch", type=int, default=0)
     parser.add_argument("--nBranch", type=int, default=6)
@@ -315,7 +319,7 @@ if __name__=='__main__':
 
         params = dict(cellType=args.cellType,
                       iBranch=args.iBranch,
-                      iDistance=args.iDistance,
+                      iDistance=1,
                       synSubsamplingFraction=args.sparsening[0]/100.,
                       interspike=args.interspike,
                       distance_intervals=distance_intervals)
