@@ -1,5 +1,9 @@
 """
 USING THE `multiprocessing` MODULE TO PARALLELIZE FUNCTION EXECUTION
+
+using `dill` to serialize python closures by subclassing the mp.Process 
+See:
+https://stackoverflow.com/questions/72766345/attributeerror-cant-pickle-local-object-in-multiprocessing
 """
 
 import dill
