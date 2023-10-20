@@ -57,11 +57,8 @@ pt.annotate(ax, '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
 ax.axis('off')
 pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
 
-# %%
-sim = Parallel(\
-        filename='../../data/detailed_model/Basket_StimOnBg_simDemo.zip')
-sim.load()
 
+# %%
 def show_Vm_trace(sim, 
                   loc='soma',
                   iBranch=0, 
@@ -105,7 +102,14 @@ def show_Vm_trace(sim,
     ax.axis('off')
     ax.legend(loc=(1,0.4), frameon=False)
     pt.draw_bar_scales(ax, Xbar=50, Xbar_label='50ms', Ybar=20, Ybar_label='20mV')
-    
+
+
+
+# %%
+sim = Parallel(\
+        filename='../../data/detailed_model/Basket_StimOnBg_simDemo.zip')
+sim.load()
+
 t0 = 000
 show_Vm_trace(sim, 
               iBranch=1, zoom=[t0,t0+2000],
@@ -116,6 +120,8 @@ show_Vm_trace(sim,
                       'uniform':{'varied_key':True,
                                  'color':'tab:grey',
                                  'lw':0.5}})
+
+# %%
 
 # %%
 sim = Parallel(\
@@ -193,13 +199,13 @@ T, VMs, SPIKEs = extract_trials(sim,
 fig, AX = pt.figure(axes=(2,VMs['with-NMDA'].shape[0]), figsize=(2,2))
 for iBranch in range(VMs['with-NMDA'].shape[0]):
     for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
-        print(VMs[label].shape)
         for c in range(VMs[label].shape[1]):
-            for r in range(VMs[label].shape[2]):
-                AX[iBranch][l].plot(T, VMs[label][iBranch,c,r,:], color=color)
-                spikes = T[SPIKEs[label][iBranch,c,r,:]==1]
-                AX[iBranch][l].plot(spikes, 0*spikes, 'o', ms=4)
-    #AX[l].set_ylim([-70,-50])
+            AX[iBranch][l].plot(T, VMs[label][iBranch,c,:,:].mean(axis=0), color=color)
+            #for r in range(VMs[label].shape[2]):
+            #    AX[iBranch][l].plot(T, VMs[label][iBranch,c,r,:], color=color)
+            #    spikes = T[SPIKEs[label][iBranch,c,r,:]==1]
+            #    AX[iBranch][l].plot(spikes, 0*spikes, 'o', ms=4)
+        AX[iBranch][l].set_ylim([-70,-50])
 #pt.set_common_ylims(AX)
 #ax.legend(loc=(1,0.4), frameon=False)
 

@@ -1,22 +1,9 @@
-from cell_template import *
 from parallel import Parallel
 
 import sys
 sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
-
-
-def train(freq,
-          tstop=1.):
-    """
-    Poisson spike train from a given frequency (homogeneous process)
-    """
-
-    spikes = np.cumsum(\
-            np.random.exponential(1./freq, int(2.*tstop*freq)+10))
-
-    return spikes[spikes<tstop]
 
 
 def run_sim(cellType='Basket', 
@@ -33,6 +20,11 @@ def run_sim(cellType='Basket',
             with_Vm=False,
             dt= 0.025,
             tstop = 1000):
+
+    # need to import module for the parallelization
+    from cell_template import Cell, h
+    from synaptic_input import PoissonSpikeTrain
+    import numpy as np
 
     ######################################################
     ##   simulation preparation  #########################
@@ -61,7 +53,7 @@ def run_sim(cellType='Basket',
     np.random.seed(10+8**bgStimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
-        TRAINS.append(train(bgStimFreq, tstop=tstop))
+        TRAINS.append(PoissonSpikeTrain(bgStimFreq, tstop=tstop))
 
     ######################################################
     ##   true simulation         #########################
@@ -100,21 +92,20 @@ def run_sim(cellType='Basket',
                                             cell.params['%s_qAMPA'%params_key]
 
     t_stim_vec = h.Vector(np.arange(int(tstop/dt))*dt)
-    Vm, Vm_dend = h.Vector(), h.Vector()
+    Vm_soma, Vm_dend = h.Vector(), h.Vector()
 
     # Vm rec @ soma
-    Vm.record(cell.soma[0](0.5)._ref_v)
+    Vm_soma.record(cell.soma[0](0.5)._ref_v)
     # Vm rec @ dend
     syn = cell.set_of_branches[iBranch][-5] # 
     Vm_dend.record(cell.SEGMENTS['NEURON_section'][syn](0.5)._ref_v)
-
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
     apc.thresh = -35
 
     # run
-    h.finitialize(cell.El)
+    h.finitialize(-70)
     for i in range(int(tstop/dt)):
         h.fadvance()
 
@@ -128,7 +119,7 @@ def run_sim(cellType='Basket',
               'tstop':tstop}
 
     if with_Vm:
-        output['Vm'] = np.array(Vm)
+        output['Vm_soma'] = np.array(Vm_soma)
         output['Vm_dend'] = np.array(Vm_dend)
 
     np.save(filename, output)

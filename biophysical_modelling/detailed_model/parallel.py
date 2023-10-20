@@ -2,11 +2,29 @@
 USING THE `multiprocessing` MODULE TO PARALLELIZE FUNCTION EXECUTION
 """
 
+import dill
 import multiprocessing as mp
 import numpy as np
 from itertools import product
-import zipfile, os, pathlib, sys
+import zipfile
+import os
+import pathlib
 import tempfile
+
+class DillProcess(mp.Process):
+
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        # Save the target function as bytes, using dill:
+        self._target = dill.dumps(self._target)  
+
+    def run(self):
+        if self._target:
+            # Unpickle the target function before executing:
+            self._target = dill.loads(self._target)    
+            # Execute the target function:
+            self._target(*self._args, **self._kwargs)  
 
 class Parallel:
     """
@@ -89,6 +107,7 @@ class Parallel:
                 output = None
 
             def run_func(i, output):
+                import os
                 params = {}
                 for key in self.KEYS:
                     params[key] = self.PARAMS_SCAN[key][i]
@@ -101,11 +120,11 @@ class Parallel:
                     if fix_missing_only:
                         if not os.path.isfile(FN): # if it doesn't exists !
                             print('running configuration ', FN)
-                            PROCESSES.append(mp.Process(target=run_func, args=(i, output)))
+                            PROCESSES.append(DillProcess(target=run_func, args=(i, output)))
                         else:
                             print('configuration DONE: ', FN)
                     else:
-                        PROCESSES.append(mp.Process(target=run_func, args=(i, output)))
+                        PROCESSES.append(DillProcess(target=run_func, args=(i, output)))
                 else:
                     run_func(i, 0)
              
@@ -237,6 +256,9 @@ class Parallel:
     
 if __name__=='__main__':
 
+    import sys
+    import os
+
     ##################################################
     # the "running_sim_func" should look like that  ##
     ##################################################
@@ -246,6 +268,9 @@ if __name__=='__main__':
                         c=3,
                         filename='test.npy',
                         delay=0.1):
+        import time, os
+        import numpy as np
+
         """
         it should have the "filename" argument at least
         """
