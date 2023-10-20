@@ -49,13 +49,14 @@ fig, ax = pt.figure(figsize=(3,2.5), left=0, bottom=0.)
 for i in range(results['nStimRepeat']):
     pt.arrow(ax, [results['t0']+i*results['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
 
-#ax.plot(t, results['Vm_dend'], lw=0.5)
-ax.plot(t, results['Vm_soma'])
+ax.plot(t, results['Vm_dend'], 'k:', lw=0.5, label='distal dend')
+ax.plot(t, results['Vm_soma'], 'tab:red', label='soma')
 ax.plot(t, -60+0*t, 'k:')
 pt.annotate(ax, '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
 
 ax.axis('off')
 pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
+ax.legend(frameon=False, loc='best')
 
 
 # %%

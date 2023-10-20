@@ -1,5 +1,3 @@
-from cell_template import *
-from synaptic_input import add_synaptic_input
 from parallel import Parallel
 
 import sys
@@ -23,6 +21,8 @@ def find_clustered_input(cell,
                          synSubsamplingSeed=3,
                          ax=None, syn_color='r',
                          with_plot=False):
+
+    import numpy as np
 
     branch = cell.set_of_branches[iBranch]
     
@@ -104,6 +104,11 @@ def find_clustered_input(cell,
 
 
 def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
+    """
+    build the linear prediction from the full stim protocol
+    """
+    import numpy as np
+
     t = np.arange(len(Vm))*dt
     # extract single EPSPs
     sEPSPS = []
@@ -125,6 +130,9 @@ def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
 
 def efficacy(real, linear,
                 based_on='integral'):
+
+    import numpy as np
+
     if based_on=='peak':
         return 100.*np.max(real-real[0])/np.max(linear-linear[0])
     elif based_on=='integral':
@@ -152,6 +160,10 @@ def run_sim(cellType='Basket',
             ISI=200,
             filename='single_sim.npy',
             dt= 0.025):
+
+    from cell_template import Cell, h, np
+    from synaptic_input import add_synaptic_input
+
 
     ######################################################
     ##   simulation preparation  #########################
