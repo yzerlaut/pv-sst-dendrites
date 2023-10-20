@@ -203,8 +203,6 @@ def run_sim(cellType='Basket',
         TRAINS[i].append(tstop+i*interspike)
     tstop += ISI
 
-    print(TRAINS)
-
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
