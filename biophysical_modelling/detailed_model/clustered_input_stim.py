@@ -272,6 +272,8 @@ def run_sim(cellType='Basket',
 if __name__=='__main__':
 
     import argparse
+    import numpy as np
+
     # First a nice documentation 
     parser=argparse.ArgumentParser(description="script description",
                                    formatter_class=argparse.RawTextHelpFormatter)
