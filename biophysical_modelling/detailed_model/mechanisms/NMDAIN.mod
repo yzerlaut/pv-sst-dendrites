@@ -58,7 +58,7 @@ NEURON {
 	POINT_PROCESS NMDAIN
 	RANGE g, Alpha, Beta, e, gmax, ica
 	USEION ca WRITE ica
-	NONSPECIFIC_CURRENT  iNMDA            
+	NONSPECIFIC_CURRENT iNMDA            
 	GLOBAL Cdur, mg, Cmax
 }
 UNITS {
@@ -72,7 +72,7 @@ PARAMETER {
 	Cmax	= 1	 (mM)           : max transmitter concentration
 	Cdur	= 1	 (ms)		: transmitter duration (rising phase) 
 	Alpha	= 4	 (/ms /mM)	: forward (binding) rate (4)
-	Beta	= 0.125	(/ms)		: backward rate (updated by Y. Zerlaut 2023 for 80ms decay)
+	Beta	= 0.0125	(/ms)		: backward rate (updated by Y. Zerlaut 2023 for 80ms decay)
 	e	= 0	 (mV)		: reversal potential
         mg      = 1      (mM)           : external magnesium concentration
 
