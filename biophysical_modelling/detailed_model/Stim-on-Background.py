@@ -130,7 +130,7 @@ sim = Parallel(\
         filename='../../data/detailed_model/Martinotti_StimOnBg_simDemo.zip')
 sim.load()
 t0 = 100
-show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+2000],
+show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+4000],
               varied_key = 'with_NMDA',
               plot = {'with-NMDA':{'varied_key':True,
                                        'color':'tab:orange',
@@ -146,7 +146,11 @@ def extract_trials(sim,
                   varied_key = 'with_NMDA',
                   true_false_labels=['with-NMDA', 'without'],
                   pre=-30, post=150):
-    
+    """
+    returns elements of shape:
+               VMs     (nBranch, nStims, nStimRepeat, nTimeSamples)
+               SPIKES  (nBranch, nStims, nStimRepeat, nTimeSamples)
+    """
     sim.fetch_quantity_on_grid('Vm_%s' % loc, dtype=object) 
     p = load_params_from(sim)
     

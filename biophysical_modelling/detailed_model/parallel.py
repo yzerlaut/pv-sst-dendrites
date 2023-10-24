@@ -69,8 +69,8 @@ class Parallel:
                 FN += '_'+key+'_'+str(val)
 
         # not too mix up results of repeated/successive sims:
-        FN += '_'+str(np.random.randint(100000))+'.npy' 
-        # FN += '.npy' 
+        # FN += '_'+str(np.random.randint(100000))+'.npy' 
+        FN += '.npy' 
         return FN
 
 
