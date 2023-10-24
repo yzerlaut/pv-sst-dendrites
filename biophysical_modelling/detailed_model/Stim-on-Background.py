@@ -269,12 +269,12 @@ sim = Parallel(\
 loc = 'soma'
 
 sim.load()
-sim.fetch_quantity_on_grid('Vm_%s' % loc, dtype=object) 
+sim.fetch_quantity_on_grid('Vm_%s' % loc, dtype=object)
 
 p = {}
 for k in ['dt', 'nStimRepeat', 'ISI', 't0']:
-    p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True) 
-p['nCluster'] = sim.fetch_quantity_on_grid('nCluster', dtype=object, return_last=True) 
+    p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True)
+p['nCluster'] = sim.fetch_quantity_on_grid('nCluster', dtype=object, return_last=True)
 print(p['nCluster'])
 
 params = dict(iBranch=0)
