@@ -163,6 +163,8 @@ def run_sim(cellType='Basket',
 
     from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input
+    from clustered_input_stim import find_clustered_input,\
+            build_linear_pred, efficacy
 
 
     ######################################################
