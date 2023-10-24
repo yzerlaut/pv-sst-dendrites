@@ -336,6 +336,7 @@ if __name__=='__main__':
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
+
         if args.test_NMDA:
             grid = dict(with_NMDA=[False, True], **grid)
 
