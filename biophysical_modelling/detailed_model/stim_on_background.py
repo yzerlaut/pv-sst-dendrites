@@ -215,8 +215,8 @@ if __name__=='__main__':
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/%s_StimOnBg_sim%s.zip' % (args.cellType,
-                                                                          args.suffix))
+            filename='../../data/detailed_model/StimOnBg_sim%s_%s.zip' % (args.suffix,
+                                                                          args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch))
 

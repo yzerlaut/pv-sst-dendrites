@@ -51,7 +51,7 @@ for i in range(results['nStimRepeat']):
     pt.arrow(ax, [results['t0']+i*results['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
 
 ax.plot(t, results['Vm_dend'], 'k:', lw=0.5, label='distal dend')
-ax.plot(t, results['Vm_soma'], 'tab:red', label='soma')
+ax.plot(t, results['Vm_soma'], 'tab:purple', label='soma')
 ax.plot(t, -60+0*t, 'k:')
 pt.annotate(ax, '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
 
@@ -129,8 +129,8 @@ show_Vm_trace(sim,
 sim = Parallel(\
         filename='../../data/detailed_model/Martinotti_StimOnBg_simDemo.zip')
 sim.load()
-t0 = 100
-show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+4000],
+t0 = 6100
+show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+2100],
               varied_key = 'with_NMDA',
               plot = {'with-NMDA':{'varied_key':True,
                                        'color':'tab:orange',
@@ -197,8 +197,24 @@ def trial_alignement(Vm, p,
 
 # %%
 T, VMs, SPIKEs = extract_trials(sim,
+                                loc='soma',
                                 varied_key = 'with_NMDA',
                                 true_false_labels=['with-NMDA', 'without'])
+
+# %%
+from scipy.stats import sem
+fig, ax = pt.figure()#figsize=(1.3,1.5))
+for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
+    AX[l].set_title(label, color=color)
+    pt.plot(np.unique(sim.nCluster)[0],
+            SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=(0,2)),
+            sy=sem(SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=2), axis=0),
+            color=color, ax=ax)
+pt.set_plot(ax, xlabel='$n_{syn}$', ylabel='spike proba',yticks=[0,0.1,0.2])
+#ax.legend(loc=(1,0.4), frameon=False)
+
+# %%
+SPIKEs[label].shape
 
 # %%
 
@@ -211,7 +227,7 @@ for iBranch in range(VMs['with-NMDA'].shape[0]):
             #    AX[iBranch][l].plot(T, VMs[label][iBranch,c,r,:], color=color)
             #    spikes = T[SPIKEs[label][iBranch,c,r,:]==1]
             #    AX[iBranch][l].plot(spikes, 0*spikes, 'o', ms=4)
-        AX[iBranch][l].set_ylim([-70,-50])
+        #AX[iBranch][l].set_ylim([-70,-50])
 #pt.set_common_ylims(AX)
 #ax.legend(loc=(1,0.4), frameon=False)
 
