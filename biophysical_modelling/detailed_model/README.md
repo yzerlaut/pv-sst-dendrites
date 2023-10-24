@@ -144,7 +144,7 @@
 | **NMDA receptor** |                            |            |                    |           |                                                                      |
 |                   | NMDA/AMPA quantal ratio    | `BC_NAR`   | 0                  |           |   in Basket cell                                                     |
 |                   | NMDA/AMPA quantal ratio    | `MC_NAR`   | 1.5                |           |   in Martinotti cell                                                 |
-|                   | decay time constant        |            | 70.0               | ms        | changed directly in the [`nmdain.mod`](./mechanisms/nmdain.mod) file |
+|                   | decay time constant        |            | 80.0               | ms        | changed directly in the [`nmdain.mod`](./mechanisms/nmdain.mod) file |
 |-------------------|----------------------------|------------|--------------------|-----------|----------------------------------------------------------------------|
 | **GABAa receptor**|                            |            |                    |           |                                                                      |
 |                   | conductance quantal        | `BC_qGABA` | 4.0 10<sup>-3</sup>| uS        |    in Basket cell                                                    |

@@ -1,6 +1,4 @@
-from cell_template import *
-from synaptic_input import add_synaptic_input
-from synaptic_input import PoissonSpikeTrain as train
+import numpy as np
 from parallel import Parallel
 
 import sys
@@ -27,6 +25,9 @@ def run_sim(cellType='Basket',
             with_NMDA=False,
             filename='single_sim.npy',
             dt= 0.01):
+
+    from cell_template import Cell, h, np
+    from synaptic_input import add_synaptic_input, PoissonSpikeTrain
 
     ######################################################
     ##   simulation preparation  #########################
@@ -64,9 +65,10 @@ def run_sim(cellType='Basket',
     TRAINS = []
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(train(bgStimFreq, tstop=tstop)))
+            TRAINS.append(list(PoissonSpikeTrain(bgStimFreq, tstop=tstop)))
         else:
-            TRAINS.append(list(train(bgFreqInhFactor*bgStimFreq, tstop=tstop)))
+            TRAINS.append(list(PoissonSpikeTrain(bgFreqInhFactor*bgStimFreq,
+                                                 tstop=tstop)))
 
     # -- stim evoked activity 
     np.random.seed(stimSeed)
@@ -81,6 +83,11 @@ def run_sim(cellType='Basket',
                                                         i*interspike)
     # -- reordering spike trains
     for i, syn in enumerate(synapses):
+        if excitatory[i]:
+            print('exc', TRAINS[i][:-10])
+        else:
+            print('inh', TRAINS[i][:-10])
+
         TRAINS[i] = np.sort(TRAINS[i])
 
 

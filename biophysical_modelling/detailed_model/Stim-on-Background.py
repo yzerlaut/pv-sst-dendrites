@@ -223,7 +223,7 @@ T, VMs, _ = extract_trials(sim,
 
 # %%
 
-fig, AX = pt.figure(axes=(2,VMs['with-NMDA'].shape[0]), figsize=(2,2))
+fig, AX = pt.figure(axes=(2,VMs['with-NMDA'].shape[0]), figsize=(1,1))
 for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
     AX[0][l].set_title(label, color=color)
     for iBranch in range(VMs['with-NMDA'].shape[0]):
