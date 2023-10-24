@@ -161,6 +161,7 @@ if __name__=='__main__':
     parser.add_argument("--passive", action="store_true")
 
     parser.add_argument("--suffix", help="suffix for saving", default='')
+    parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
@@ -229,4 +230,5 @@ if __name__=='__main__':
 
         sim.run(run_sim,
                 single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}))
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)

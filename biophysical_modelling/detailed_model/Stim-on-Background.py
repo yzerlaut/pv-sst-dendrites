@@ -34,7 +34,7 @@ def load_params_from(sim):
     return p
 
 # %% [markdown]
-# ### Test Simulations
+# ### Test Simulation
 #
 # Run with:
 # ```
@@ -112,7 +112,7 @@ sim = Parallel(\
         filename='../../data/detailed_model/Basket_StimOnBg_simDemo.zip')
 sim.load()
 
-t0 = 000
+t0 = 0
 show_Vm_trace(sim, 
               iBranch=1, zoom=[t0,t0+2000],
               varied_key='from_uniform', 
@@ -205,7 +205,6 @@ T, VMs, SPIKEs = extract_trials(sim,
 from scipy.stats import sem
 fig, ax = pt.figure()#figsize=(1.3,1.5))
 for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
-    AX[l].set_title(label, color=color)
     pt.plot(np.unique(sim.nCluster)[0],
             SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=(0,2)),
             sy=sem(SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=2), axis=0),
@@ -214,15 +213,23 @@ pt.set_plot(ax, xlabel='$n_{syn}$', ylabel='spike proba',yticks=[0,0.1,0.2])
 #ax.legend(loc=(1,0.4), frameon=False)
 
 # %%
-SPIKEs[label].shape
+sim = Parallel(\
+        filename='../../data/detailed_model/Martinotti_StimOnBg_simPassive.zip')
+sim.load()
+T, VMs, _ = extract_trials(sim,
+                            loc='dend',
+                            varied_key = 'with_NMDA',
+                            true_false_labels=['with-NMDA', 'without'])
 
 # %%
 
 fig, AX = pt.figure(axes=(2,VMs['with-NMDA'].shape[0]), figsize=(2,2))
-for iBranch in range(VMs['with-NMDA'].shape[0]):
-    for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
+for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
+    AX[0][l].set_title(label, color=color)
+    for iBranch in range(VMs['with-NMDA'].shape[0]):
         for c in range(VMs[label].shape[1]):
-            AX[iBranch][l].plot(T, VMs[label][iBranch,c,:,:].mean(axis=0), color=color)
+            AX[iBranch][l].plot(T, VMs[label][iBranch,c,:,:].mean(axis=0),
+                                color=color)
             #for r in range(VMs[label].shape[2]):
             #    AX[iBranch][l].plot(T, VMs[label][iBranch,c,r,:], color=color)
             #    spikes = T[SPIKEs[label][iBranch,c,r,:]==1]

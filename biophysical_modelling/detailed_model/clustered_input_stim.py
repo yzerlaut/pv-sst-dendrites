@@ -308,6 +308,7 @@ if __name__=='__main__':
 
     parser.add_argument("-wVm", "--with_Vm", help="store Vm", action="store_true")
     parser.add_argument("--suffix", help="suffix for saving", default='')
+    parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     args = parser.parse_args()
@@ -344,4 +345,5 @@ if __name__=='__main__':
 
         sim.run(run_sim,
                 single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}))
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)
