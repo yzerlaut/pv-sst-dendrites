@@ -70,6 +70,7 @@ class Parallel:
 
         # not too mix up results of repeated/successive sims:
         FN += '_'+str(np.random.randint(100000))+'.npy' 
+        # FN += '.npy' 
         return FN
 
 
@@ -122,7 +123,7 @@ class Parallel:
             for i, FN in enumerate(self.PARAMS_SCAN['filenames']):
                 if parallelize:
                     if fix_missing_only:
-                        if not os.path.isfile(FN): # if it doesn't exists !
+                        if not os.path.isfile(os.path.join(self.temp_folder, FN)): # if it doesn't exists !
                             print('running configuration ', FN)
                             PROCESSES.append(DillProcess(target=run_func, args=(i, output)))
                         else:
@@ -147,9 +148,10 @@ class Parallel:
                         p.join()
                     print('multiprocessing loop: %i/%i' % (i, len(PROCESSES)//Nmax_simultaneous_processes))
                     # print('   n=%i/%i' % (i*len(PROCESSES), len(PROCESSES)))
-                    
+
             # write all single sim files in the zip file
             for FN in self.PARAMS_SCAN['filenames']:
+                print(FN)
                 zf.write(os.path.join(self.temp_folder, FN), arcname=FN)
 
             # add the scan metadata to the zip
