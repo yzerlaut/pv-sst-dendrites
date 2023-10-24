@@ -34,8 +34,9 @@ def load_params_from(sim):
     return p
 
 # %% [markdown]
-# ### Run Test Simulations
+# ### Test Simulations
 #
+# Run with:
 # ```
 # python stim_on_background.py --test -c Martinotti --nCluster 50 --bgStimFreq 1e-3 --bgFreqInhFactor 2 --nStimRepeat 10
 # ```
@@ -128,7 +129,7 @@ show_Vm_trace(sim,
 sim = Parallel(\
         filename='../../data/detailed_model/Martinotti_StimOnBg_simDemo.zip')
 sim.load()
-    
+t0 = 100
 show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+2000],
               varied_key = 'with_NMDA',
               plot = {'with-NMDA':{'varied_key':True,
