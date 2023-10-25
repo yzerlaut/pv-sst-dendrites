@@ -80,32 +80,31 @@
 | **soma** |     |     |     |          |
 |          | Fast Sodium current                           | `BC_soma_gNafx`    | 3.35 10<sup>-1</sup> | original 1.35e-1     |
 |          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 9.60 10<sup>-2</sup> | original 3.60e-2     |
-|          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 7.25 10<sup>-4</sup> | original 7.25e-4     |
-|          | H-type cation current                         | `BC_soma_gHin`     | 1.00 10<sup>-5</sup> | original 1e-5        |
-|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 3.20 10<sup>-3</sup> | original 3.20e-3     |
-|          | fast Ca2+ dependent Potassium current         | `BC_soma_gKctin`   | 1.00 10<sup>-4</sup> | original 1.00e-4     |
-|          | slow Ca2+ dependent Potassium current         | `BC_soma_gKcain`   | 2.00 10<sup>-2</sup> | original 2.00e-2     |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
-| **axon** |     |     |     |
-|          | Fast Sodium current                           | `BC_axon_gNafx`    | 6.75 10<sup>-1</sup> |
-|          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 3.60 10<sup>-2</sup> |
-| **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
-|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-2</sup> |
-|          | Fast Sodium current                           | `BC_prox_gNafx`    | 1.80 10<sup>-3</sup> |
-|          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 9.00 10<sup>-4</sup> |
-|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 1.00 10<sup>-3</sup> |
-|          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 2.00 10<sup>-4</sup> | 
-|          | N-type Ca2+ current                           | `BC_prox_gCanin`     | 3.00 10<sup>-5</sup> |
-|          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 3.00 10<sup>-5</sup> |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
-| **distal dendrites** | ($\leq$ 100 um from soma) |    |     |     |
-|          | Fast Sodium current                           | `BC_dist_gNafx`    | 1.40 10<sup>-2</sup> |
-|          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 9.00 10<sup>-3</sup> |
-|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 9.00 10<sup>-4</sup> |
-|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 2.16 10<sup>-3</sup> |
-|          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 2.00 10<sup>-4</sup> | 
-|          | N-type Ca2+ current                           | `BC_dist_gCanin`     | 3.00 10<sup>-5</sup> |
-|          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 3.00 10<sup>-5</sup> |
+|          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 0.00 10<sup>-4</sup> | original 7.25e-4     |
+|          | H-type cation current                         | `BC_soma_gHin`     | 0.00 10<sup>-5</sup> | original 1e-5        |
+|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 0.00 10<sup>-3</sup> | original 3.20e-3     |
+|          | fast Ca2+ dependent Potassium current         | `BC_soma_gKctin`   | 0.00 10<sup>-4</sup> | original 1.00e-4     |
+|          | slow Ca2+ dependent Potassium current         | `BC_soma_gKcain`   | 0.00 10<sup>-2</sup> | original 2.00e-2     |
+|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |                      |
+| **axon** |                                               |                    |                      |                      |
+|          | Fast Sodium current                           | `BC_axon_gNafx`    | 6.75 10<sup>-1</sup> | original 6.75e-1     |
+|          | Delayed rectifier Potassium current           | `BC_axon_gKdrin`   | 3.60 10<sup>-2</sup> | original 3.60e-2     |
+| **proximal dendrites** | ($\leq$ 100 um from soma)       |                    |                      |                      |
+|          | Fast Sodium current                           | `BC_prox_gNafx`    | 0.00 10<sup>-3</sup> | original 1.80e-3     |
+|          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 0.00 10<sup>-4</sup> | original 9.00e-3     |
+|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 0.00 10<sup>-3</sup> | original 1.00e-3     |
+|          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 0.00 10<sup>-4</sup> | original 2.00e-4     |
+|          | N-type Ca2+ current                           | `BC_prox_gCanin`   | 0.00 10<sup>-5</sup> | original 3.00e-5     |
+|          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 0.00 10<sup>-5</sup> | original 3.00e-5     |
+|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |                      |
+|   **distal dendrites** | ($\geq$ 100 um from soma)       |                    |                      |                      |
+|          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> | original 1.40e-2     |
+|          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup>-3</sup> | original 9.00e-3     |
+|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 0.00 10<sup>-4</sup> | original 9.00e-4     |
+|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 0.00 10<sup>-3</sup> | original 2.16e-3     |
+|          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 0.00 10<sup>-4</sup> | original 2.00e-4     |
+|          | N-type Ca2+ current                           | `BC_dist_gCanin`   | 0.00 10<sup>-5</sup> | original 3.00e-5     |
+|          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 0.00 10<sup>-5</sup> | original 3.00e-5     |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | --- | --- | --- | --- |
 

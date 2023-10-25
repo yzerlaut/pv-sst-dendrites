@@ -24,6 +24,7 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_NMDA=False,
             filename='single_sim.npy',
+            with_presynaptic_spikes=False,
             dt= 0.01):
 
     from cell_template import Cell, h, np
@@ -74,20 +75,15 @@ def run_sim(cellType='Basket',
     np.random.seed(stimSeed)
     for n in range(nStimRepeat):
         for c, nC in enumerate(nCluster):
-            picked = np.random.choice(synapses[excitatory],
-                                      nC) # in stim in excitatory syn.
+            picked = np.random.choice(np.arange(len(synapses))[excitatory],
+                                      nC, replace=False) # in excitatory only
             for i, syn in enumerate(picked):
-                TRAINS[np.flatnonzero(synapses==syn)[0]].append(t0+\
-                                                        n*len(nCluster)*ISI+\
-                                                        c*ISI+\
-                                                        i*interspike)
+                TRAINS[syn].append(t0+\
+                                   n*len(nCluster)*ISI+\
+                                   c*ISI+\
+                                   i*interspike)
     # -- reordering spike trains
     for i, syn in enumerate(synapses):
-        if excitatory[i]:
-            print('exc', TRAINS[i][:-10])
-        else:
-            print('inh', TRAINS[i][:-10])
-
         TRAINS[i] = np.sort(TRAINS[i])
 
 
@@ -128,6 +124,12 @@ def run_sim(cellType='Basket',
               'interspike':interspike,
               'synapses':synapses,
               'tstop':tstop}
+
+    if with_presynaptic_spikes:
+        output['presynaptic_exc_events'] = [TRAINS[i]\
+                for i in range(len(excitatory)) if excitatory[i]]
+        output['presynaptic_inh_events'] = [TRAINS[i]\
+                for i in range(len(excitatory)) if not excitatory[i]]
 
     np.save(filename, output)
 
@@ -172,6 +174,7 @@ if __name__=='__main__':
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
+    parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
 
@@ -187,6 +190,7 @@ if __name__=='__main__':
                   nStimRepeat=args.nStimRepeat,
                   nCluster=args.nCluster,
                   interspike=args.interspike,
+                  with_presynaptic_spikes=args.with_presynaptic_spikes,
                   dt=args.dt)
 
     if args.test:

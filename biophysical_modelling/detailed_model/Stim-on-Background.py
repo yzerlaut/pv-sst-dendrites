@@ -13,8 +13,12 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Stimulus-Evoked Activity under *in vivo*-like conditions
+
 # %%
 import numpy as np
+from scipy.stats import sem
 
 from cell_template import BRANCH_COLORS
 from parallel import Parallel
@@ -24,43 +28,66 @@ sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
-def load_params_from(sim):
-
-    p = {}
-    for k in ['dt', 'nStimRepeat', 'ISI', 't0']:
-        p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True) 
-    p['nCluster'] = sim.fetch_quantity_on_grid('nCluster', dtype=object, return_last=True)
-
-    return p
+# %% [markdown]
+# # Protocol Description
+#
+# - synapses splitted in excitatory (80%) and inhibitory (20%) categories
+# - background excitatory+inhibitory synaptic events at a given frequency (events through Poisson process)
+# - stimulus events: a set of synaptic events randomly picked within the excitatory population
+# - stimulus stength variable: **$n_{syn}$** the number of randomly picked synapses
+# - simulations on a per branch basis -- considering only the synapses of a given branch -- performing simulations on each branch
+# - firing response in Hz measured in [0,100]ms window following the stimulus
 
 # %% [markdown]
-# ### Test Simulation
-#
-# Run with:
+# ### Example Simulation
+# Run the below example with:
 # ```
-# python stim_on_background.py --test -c Martinotti --nCluster 50 --bgStimFreq 1e-3 --bgFreqInhFactor 2 --nStimRepeat 10
+# python stim_on_background.py --test -c Martinotti --nCluster 5 15 25 35 45 --bgStimFreq 1e-3 --bgFreqInhFactor 1 --nStimRepeat 2 --with_presynaptic_spikes
 # ```
 
 # %%
 results = np.load('single_sim.npy', allow_pickle=True).item()
 
 t = np.arange(len(results['Vm_soma']))*results['dt']
-fig, ax = pt.figure(figsize=(3,2.5), left=0, bottom=0.)
+fig, AX = pt.figure(axes_extents=[[(1,2)],[(1,1)]],
+                    figsize=(3,1), left=0, bottom=0., hspace=0.)
+for r in range(int(results['nStimRepeat'])):
+    for c, nC in enumerate(results['nCluster']):
+        tstart = results['t0']+r*len(results['nCluster'])*results['ISI']+c*results['ISI']
+        pt.arrow(AX[0], [tstart, 0, 0, -10],
+                 head_width=4, head_length=5, width=0.1)
+        pt.annotate(AX[0], 'n$_{syn}$=%i' % nC, (tstart, 5), 
+                    rotation=90, xycoords='data', fontsize=6, ha='right')
+AX[0].plot(t, results['Vm_dend'], 'k:', lw=0.5, label=' distal\ndendrite')
+AX[0].plot(t, results['Vm_soma'], 'tab:purple', label='soma')
+AX[0].plot(t, -60+0*t, 'k:')
+pt.annotate(AX[0], '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
+pt.draw_bar_scales(AX[0], Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
+AX[0].legend(frameon=False, loc=(1, 0.3))
+for i, events in enumerate(results['presynaptic_exc_events']):
+    AX[1].plot(events, i*np.ones(len(events)), '.', color='g')
+for i, events in enumerate(results['presynaptic_inh_events']):
+    AX[1].plot(events, len(results['presynaptic_exc_events'])+i*np.ones(len(events)), '.', 
+               color='r')
+pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
+pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
 
-for i in range(results['nStimRepeat']):
-    pt.arrow(ax, [results['t0']+i*results['ISI'], 0, 0, -10], head_width=2, head_length=5, width=0.1)
+pt.set_common_xlims(AX, lims=[t[0], t[-1]])
+for ax in AX:
+    ax.axis('off')
 
-ax.plot(t, results['Vm_dend'], 'k:', lw=0.5, label='distal dend')
-ax.plot(t, results['Vm_soma'], 'tab:purple', label='soma')
-ax.plot(t, -60+0*t, 'k:')
-pt.annotate(ax, '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
 
-ax.axis('off')
-pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
-ax.legend(frameon=False, loc='best')
-
+# %% [markdown]
+# ### Functions to Load and Analyze the Simulation Data
 
 # %%
+def load_params_from(sim):
+    p = {}
+    for k in ['dt', 'nStimRepeat', 'ISI', 't0']:
+        p[k] = sim.fetch_quantity_on_grid(k, dtype=float, return_last=True) 
+    p['nCluster'] = sim.fetch_quantity_on_grid('nCluster', dtype=object, return_last=True)
+    return p
+
 def show_Vm_trace(sim, 
                   loc='soma',
                   iBranch=0, 
@@ -90,7 +117,7 @@ def show_Vm_trace(sim,
             t = t[(t>zoom[0]) & (t<zoom[1])]
         else:
             zoom=[t[0], t[-1]]
-        ax.plot(t, Vm, label=label, color=plot[label]['color'])
+        ax.plot(t, Vm, label=label, color=plot[label]['color'], lw=plot[label]['lw'])
 
     for r in range(int(p['nStimRepeat'])):
         for c, nC in enumerate(p['nCluster']):
@@ -99,48 +126,12 @@ def show_Vm_trace(sim,
                 pt.arrow(ax, [tstart, 0, 0, -10],
                          head_width=4, head_length=5, width=0.1)
                 pt.annotate(ax, 'n$_{syn}$=%i' % nC, (tstart, 5), 
-                            rotation=90, xycoords='data', fontsize=6, ha='center')
+                            rotation=90, xycoords='data', fontsize=6, ha='right')
             
     ax.axis('off')
     ax.legend(loc=(1,0.4), frameon=False)
-    pt.draw_bar_scales(ax, Xbar=50, Xbar_label='50ms', Ybar=20, Ybar_label='20mV')
+    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms', Ybar=20, Ybar_label='20mV')
 
-
-
-# %%
-sim = Parallel(\
-        filename='../../data/detailed_model/Basket_StimOnBg_simDemo.zip')
-sim.load()
-
-t0 = 0
-show_Vm_trace(sim, 
-              iBranch=1, zoom=[t0,t0+2000],
-              varied_key='from_uniform', 
-              plot = {'real':{'varied_key':False,
-                              'color':'tab:red',
-                              'lw':1.0},
-                      'uniform':{'varied_key':True,
-                                 'color':'tab:grey',
-                                 'lw':0.5}})
-
-# %%
-
-# %%
-sim = Parallel(\
-        filename='../../data/detailed_model/Martinotti_StimOnBg_simDemo.zip')
-sim.load()
-t0 = 6100
-show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+2100],
-              varied_key = 'with_NMDA',
-              plot = {'with-NMDA':{'varied_key':True,
-                                       'color':'tab:orange',
-                                       'lw':1.0},
-                      'without':{'varied_key':False,
-                                 'color':'tab:grey',
-                                 'lw':0.5}})
-
-
-# %%
 def extract_trials(sim, 
                   loc='soma',
                   varied_key = 'with_NMDA',
@@ -157,11 +148,12 @@ def extract_trials(sim,
     T = np.arange(int(pre/p['dt']), int(post/p['dt']))*p['dt']
     nBranch = len(np.unique(sim.iBranch))
     nStims = len(p['nCluster'])
-    VMs, SPIKEs = {}, {}
+    VMs, SPIKEs, RATEs = {}, {}, {}
     
     for l, label in enumerate(true_false_labels):
         VMs[label] = np.zeros((nBranch, nStims, int(p['nStimRepeat']), len(T)))
         SPIKEs[label] = np.zeros((nBranch, nStims, int(p['nStimRepeat']), len(T)), dtype=int)
+        RATEs[label] = np.zeros((nBranch, nStims, int(p['nStimRepeat']), len(T)), dtype=float)
         
         for iBranch in np.unique(sim.iBranch):
             
@@ -172,8 +164,9 @@ def extract_trials(sim,
             
             _, VMs[label][iBranch, :, :, :], SPIKEs[label][iBranch, :, :, :] = \
                     trial_alignement(Vm, p, pre=pre, post=post)
+            RATEs[label][iBranch, :, :, :] = SPIKEs[label][iBranch, :, :, :]/p['dt']
             
-    return T, VMs, SPIKEs
+    return T, VMs, SPIKEs, RATEs
     
 def trial_alignement(Vm, p, 
                      spike_threshold=-20,
@@ -195,54 +188,196 @@ def trial_alignement(Vm, p,
     return T, VMs, SPIKEs
 
 
-# %%
-T, VMs, SPIKEs = extract_trials(sim,
-                                loc='soma',
-                                varied_key = 'with_NMDA',
-                                true_false_labels=['with-NMDA', 'without'])
+# %% [markdown]
+# # Basket Cell
 
-# %%
-from scipy.stats import sem
-fig, ax = pt.figure()#figsize=(1.3,1.5))
-for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
-    pt.plot(np.unique(sim.nCluster)[0],
-            SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=(0,2)),
-            sy=sem(SPIKEs[label][:,:,:,:].sum(axis=3).mean(axis=2), axis=0),
-            color=color, ax=ax)
-pt.set_plot(ax, xlabel='$n_{syn}$', ylabel='spike proba',yticks=[0,0.1,0.2])
-#ax.legend(loc=(1,0.4), frameon=False)
+# %% [markdown]
+# ### Demo Simulation
+#
+# ```
+# python stim_on_background.py -c Basket --nCluster 5 15 25 35 45 --bgStimFreq 2e-3 --bgFreqInhFactor 1 --nStimRepeat 10 --test_uniform --suffix Demo
+# ```
 
 # %%
 sim = Parallel(\
-        filename='../../data/detailed_model/Martinotti_StimOnBg_simPassive.zip')
+        filename='../../data/detailed_model/StimOnBg_simDemo_Basket.zip')
 sim.load()
-T, VMs, _ = extract_trials(sim,
-                            loc='dend',
-                            varied_key = 'with_NMDA',
-                            true_false_labels=['with-NMDA', 'without'])
+t0 = 100
+show_Vm_trace(sim, iBranch=2, zoom=[t0,t0+3000],
+              varied_key = 'from_uniform',
+              plot = {'real':{'varied_key':False,
+                              'color':'tab:red',
+                                       'lw':1.0},
+                      'uniform':{'varied_key':True,
+                                 'color':'tab:grey',
+                                 'lw':0.5}})
 
 # %%
+T, VMs, SPIKEs, RATEs = extract_trials(sim,
+                                       loc='soma',
+                                       varied_key = 'from_uniform',
+                                       true_false_labels=['uniform', 'real'],
+                                       pre=0, post=100)
 
-fig, AX = pt.figure(axes=(2,VMs['with-NMDA'].shape[0]), figsize=(1,1))
-for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
-    AX[0][l].set_title(label, color=color)
-    for iBranch in range(VMs['with-NMDA'].shape[0]):
-        for c in range(VMs[label].shape[1]):
-            AX[iBranch][l].plot(T, VMs[label][iBranch,c,:,:].mean(axis=0),
-                                color=color)
-            #for r in range(VMs[label].shape[2]):
-            #    AX[iBranch][l].plot(T, VMs[label][iBranch,c,r,:], color=color)
-            #    spikes = T[SPIKEs[label][iBranch,c,r,:]==1]
-            #    AX[iBranch][l].plot(spikes, 0*spikes, 'o', ms=4)
-        #AX[iBranch][l].set_ylim([-70,-50])
-#pt.set_common_ylims(AX)
+# %%
+fig, ax = pt.figure()#figsize=(1.3,1.5))
+for l, label, color in zip(range(2), ['uniform', 'real'], ['tab:grey', 'tab:red']):
+    pt.plot(np.unique(sim.nCluster)[0],
+            1e3*RATEs[label][:,:,:,:].mean(axis=(0,2,3)),
+            sy=1e3*sem(RATEs[label][:,:,:,:].mean(axis=(2,3)), axis=0),
+            color=color, ax=ax)
+pt.set_plot(ax, xlabel='$n_{syn}$', 
+            xticks=[5, 15, 25, 35, 45], xticks_labels=['5', '', '25', '', '45'],
+            ylabel='stim.-evoked\nfiring (Hz)')
 #ax.legend(loc=(1,0.4), frameon=False)
 
+# %% [markdown]
+# # Martinotti Cell
+
+# %% [markdown]
+# ### Demo Simulation
+#
+# ```
+# python stim_on_background.py -c Martinotti --nCluster 5 15 25 35 45 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 10 --test_NMDA --suffix Demo
+# ```
 
 # %%
-T, VMs, SPIKEs = extract_trials(sim,
-                                varied_key = 'from_uniform',
-                                true_false_labels=['uniform', 'real'])
+sim = Parallel(\
+        filename='../../data/detailed_model/StimOnBg_simDemo_Martinotti.zip')
+sim.load()
+t0 = 3100
+show_Vm_trace(sim, iBranch=1, zoom=[t0,t0+3000],
+              varied_key = 'with_NMDA',
+              plot = {'with-NMDA':{'varied_key':True,
+                                       'color':'tab:orange',
+                                       'lw':1.0},
+                      'AMPA-only':{'varied_key':False,
+                                   'color':'tab:grey',
+                                   'lw':0.5}})
+
+# %%
+T, VMs, SPIKEs, RATEs = extract_trials(sim,
+                                       loc='soma',
+                                       varied_key = 'with_NMDA',
+                                       true_false_labels=['with-NMDA', 'without'],
+                                       pre=0, post=100)
+
+# %%
+fig, ax = pt.figure()#figsize=(1.3,1.5))
+for l, label, color in zip(range(2), ['without', 'with-NMDA'], ['tab:grey', 'tab:orange']):
+    pt.plot(np.unique(sim.nCluster)[0],
+            1e3*RATEs[label][:,:,:,:].mean(axis=(0,2,3)),
+            sy=1e3*sem(RATEs[label][:,:,:,:].mean(axis=(2,3)), axis=0),
+            color=color, ax=ax)
+pt.set_plot(ax, xlabel='$n_{syn}$', 
+            xticks=[5, 15, 25, 35, 45], xticks_labels=['5', '', '25', '', '45'],
+            ylabel='stim.-evoked\nfiring (Hz)')
+
+# %% [markdown]
+# # Temporal Properties
+
+# %% [markdown]
+# ## Vm
+#
+# Simulation in the passive case:
+# ```
+# # Basket Cell
+# python stim_on_background.py -c Basket --nCluster 35 --bgStimFreq 2e-3 --bgFreqInhFactor 1 --nStimRepeat 30 --test_uniform --suffix TimeCourse --ISI 300
+# # Martinotti Cell
+# python stim_on_background.py -c Martinotti --nCluster 35 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 30 --test_NMDA --suffix TimeCourse --ISI 300
+# ```
+
+# %%
+# load the two simulation data
+simBasket = Parallel(\
+        filename='../../data/detailed_model/StimOnBg_simPassive_Basket.zip')
+simBasket.load()
+T, VMsBasket, SpikesBasket, RATEsBasket = extract_trials(simBasket,
+                                    loc='soma',
+                                    varied_key = 'from_uniform',
+                                    true_false_labels=['uniform', 'real'])
+simMartinotti = Parallel(\
+        filename='../../data/detailed_model/StimOnBg_simPassive_Martinotti.zip')
+simMartinotti.load()
+T, VMsMartinotti, SpikesMartinotti, RATEsMartinotti = extract_trials(simMartinotti,
+                              loc='soma',
+                              varied_key = 'with_NMDA',
+                              true_false_labels=['with-NMDA', 'without'])
+
+# %% [markdown]
+# ### Stimulus-Average $V_m$
+#
+# #### Normalized to baseline and peak
+
+# %%
+fig, AX = pt.figure(axes=(2, 1), figsize=(1,1))
+for l, label, color in zip(range(2),
+                           ['without', 'with-NMDA'],
+                           ['tab:grey', 'tab:orange']):
+    pt.annotate(AX[1], label+'\n'*l, (0.5, 1), ha='center', va='bottom',color=color)
+    
+    peak = np.max(VMsMartinotti[label].mean(axis=(0,1,2)))
+    pre_cond = (T<0)
+    baseline = np.mean(VMsMartinotti[label].mean(axis=(0,1,2))[pre_cond])
+    NormVm = (VMsMartinotti[label].mean(axis=(0,1,2))-baseline)/(peak-baseline)
+    pt.plot(T, NormVm, color=color, ax=AX[1])
+for l, label, color in zip(range(2),
+                           ['uniform', 'real'],
+                           ['tab:grey', 'tab:red']):
+    pt.annotate(AX[0], label+'\n'*l, (0.5, 1), ha='center', va='bottom',color=color)
+    peak = np.max(VMsBasket[label].mean(axis=(0,1,2)))
+    pre_cond = (T<0)
+    baseline = np.mean(VMsBasket[label].mean(axis=(0,1,2))[pre_cond])
+    NormVm = (VMsBasket[label].mean(axis=(0,1,2))-baseline)/(peak-baseline)
+    pt.plot(T, NormVm, color=color, ax=AX[0])
+    
+AX[0].set_xlim([0, 30])
+
+
+# %%
+# load the two simulation data
+simBasket = Parallel(\
+        filename='../../data/detailed_model/StimOnBg_simTimeCourse_Basket.zip')
+simBasket.load()
+T, VMsBasket, SpikesBasket, RATEsBasket = extract_trials(simBasket,
+                                    loc='soma',
+                                    varied_key = 'from_uniform',
+                                    true_false_labels=['uniform', 'real'])
+simMartinotti = Parallel(\
+        filename='../../data/detailed_model/StimOnBg_simTimeCourse_Martinotti.zip')
+simMartinotti.load()
+T, VMsMartinotti, SpikesMartinotti, RATEsMartinotti = extract_trials(simMartinotti,
+                              loc='soma',
+                              varied_key = 'with_NMDA',
+                              true_false_labels=['with-NMDA', 'without'])
+
+# %%
+from scipy.ndimage import gaussian_filter1d
+
+fig, AX = pt.figure(axes=(2, 1), figsize=(1,1))
+for l, label, color in zip(range(2),
+                           ['without', 'with-NMDA'],
+                           ['tab:grey', 'tab:orange']):
+    pt.annotate(AX[1], label+'\n'*l, (0.5, 1), ha='center', va='bottom',color=color)
+    
+    peak = np.max(RATEsMartinotti[label].mean(axis=(0,1,2)))
+    pre_cond = (T<0)
+    baseline = np.mean(RATEsMartinotti[label].mean(axis=(0,1,2))[pre_cond])
+    Norm = (RATEsMartinotti[label].mean(axis=(0,1,2))-baseline)/(peak-baseline)
+    pt.plot(T, gaussian_filter1d(Norm, 50), color=color, ax=AX[1])
+for l, label, color in zip(range(2),
+                           ['uniform', 'real'],
+                           ['tab:grey', 'tab:red']):
+    pt.annotate(AX[0], label+'\n'*l, (0.5, 1), ha='center', va='bottom',color=color)
+    peak = np.max(RATEsBasket[label].mean(axis=(0,1,2)))
+    pre_cond = (T<0)
+    baseline = np.mean(RATEsBasket[label].mean(axis=(0,1,2))[pre_cond])
+    Norm = (RATEsBasket[label].mean(axis=(0,1,2))-baseline)/(peak-baseline)
+    pt.plot(T, gaussian_filter1d(Norm, 50), color=color, ax=AX[0])
+    
+AX[0].set_xlim([0, 30])
+AX[1].set_xlim([0, 50])
+#AX[1].set_yscale('log')
 
 # %%
 fig, AX = pt.figure(axes=(2,VMs['real'].shape[0]), figsize=(2,2))
