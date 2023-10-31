@@ -6,13 +6,14 @@
 
 ### Basket Cell
 
+<!--| **leak conductance**       |                   |                 |                      |                        | N.B. x2.7 to match ~80-100MOhm input resistance         |-->
 | **Parameter description**  | **location**      |  **Name**       |     **Value**        | **Unit**               |                                                         | 
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
-| **leak conductance**       |                   |                 |                      |                        | N.B. x2.7 to match ~80-100MOhm input resistance         |
-|                            | soma              | `BC_soma_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | axon              | `BC_axon_gPas`  | 9.59 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | proximal dendrite | `BC_prox_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | proximal dendrite | `BC_dist_gPas`  | 4.46 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
+| **leak conductance**       |                   |                 |                      |                        |                                                         |
+|                            | soma              | `BC_soma_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
+|                            | axon              | `BC_axon_gPas`  | 9.59 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                         |
+|                            | proximal dendrite | `BC_prox_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
+|                            | proximal dendrite | `BC_dist_gPas`  | 4.46 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                         |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
 |                            | *all*             | `BC_ePas`       | -70.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
@@ -28,9 +29,10 @@
 
 ### Martinotti Cell
 
+<!--| **leak conductance** |                   |                 |                      |                        | N.B. /2 w.r.t. Basket for -200MOhm input resistance         |-->
 | **Parameter description**  | **location**      |  **Name**       |     **Value**        | **Unit**               |                                                         | 
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
-| **leak conductance**       |                   |                 |                      |                        | N.B. /2 w.r.t. Basket for -200MOhm input resistance         |
+| **leak conductance**       |                   |                 |                      |                        |                                                             |
 |                            | soma              | `MC_soma_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 |                            | axon              | `MC_axon_gPas`  | 4.80 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
 |                            | proximal dendrite | `MC_prox_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
