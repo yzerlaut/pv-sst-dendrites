@@ -90,13 +90,12 @@ def run_sim(cellType='Basket',
     ampaNETCONS, nmdaNETCONS, gabaNETCONS = None, None, None
     STIMS, VECSTIMS = None, None
 
-    t = np.arange(len(real_soma))*dt
-
     # save the output
     output = {'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'dt': dt, 't0':t0, 'ISI':ISI, 'interspike':interspike,
-              'distance_inervals':distance_intervals,
+              'dt': dt, 't0':t0, 'ISI':ISI, 
+              'interspike':interspike, 
+              'nCluster':nCluster,
               'synapses':synapses,
               'tstop':tstop}
 
@@ -155,9 +154,7 @@ if __name__=='__main__':
         sim = Parallel(\
             filename='../../data/detailed_model/Propagation_sim%s_%s.zip' % (args.suffix, args.cellType))
 
-        grid = dict(iBranch=np.arange(args.nBranch),
-                    iDistance=range(2),
-                    synSubsamplingFraction=[s/100. for s in args.sparsening])
+        grid = dict(iBranch=np.arange(args.nBranch))
 
         if args.test_active:
             grid = dict(passive_only=[True, False], **grid)
