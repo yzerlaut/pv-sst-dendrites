@@ -153,6 +153,9 @@ class Cell:
                 if not debug:
                     sec.nseg = sec.n3d()
 
+                if LOC=='soma':
+                    sec.nseg = 7 # not too low, because large
+
                 # cable props
                 sec.cm = self.params['%s_%s_cm' % (params_key, LOC)]
                 sec.Ra = self.params['%s_%s_Ra' % (params_key, LOC)]
@@ -285,8 +288,8 @@ class Cell:
 
 if __name__=='__main__':
 
-    ID = '864691135571546917_264824' # Martinotti
-    # ID = '864691135396580129_296758' # Basket
+    # ID = '864691135571546917_264824' # Martinotti
+    ID = '864691135396580129_296758' # Basket
 
     # cell = Cell(ID=ID, debug=True)
     # cell.check_that_all_dendritic_branches_are_well_covered(show=True)

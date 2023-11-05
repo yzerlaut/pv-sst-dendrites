@@ -13,7 +13,7 @@
 |                            | soma              | `BC_soma_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
 |                            | axon              | `BC_axon_gPas`  | 9.59 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                         |
 |                            | proximal dendrite | `BC_prox_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
-|                            | proximal dendrite | `BC_dist_gPas`  | 4.46 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                         |
+|                            | distal dendrite  | `BC_dist_gPas`  | 4.46 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                         |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
 |                            | *all*             | `BC_ePas`       | -70.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
@@ -84,7 +84,7 @@
 |          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 9.60 10<sup>-2</sup> | original 3.60e-2     |
 |          | Slowly inactivating Potassium current         | `BC_soma_gKslowin` | 0.00 10<sup>-4</sup> | original 7.25e-4     |
 |          | H-type cation current                         | `BC_soma_gHin`     | 0.00 10<sup>-5</sup> | original 1e-5        |
-|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 0.00 10<sup>-3</sup> | original 3.20e-3     |
+|          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 3.00 10<sup>-3</sup> | original 3.20e-3     |
 |          | fast Ca2+ dependent Potassium current         | `BC_soma_gKctin`   | 0.00 10<sup>-4</sup> | original 1.00e-4     |
 |          | slow Ca2+ dependent Potassium current         | `BC_soma_gKcain`   | 0.00 10<sup>-2</sup> | original 2.00e-2     |
 |          | + Calcium buffering dynamics                  | `CaDyn`            |                      |                      |
@@ -94,7 +94,7 @@
 | **proximal dendrites** | ($\leq$ 100 um from soma)       |                    |                      |                      |
 |          | Fast Sodium current                           | `BC_prox_gNafx`    | 0.00 10<sup>-3</sup> | original 1.80e-3     |
 |          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 0.00 10<sup>-4</sup> | original 9.00e-3     |
-|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 0.00 10<sup>-3</sup> | original 1.00e-3     |
+|          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 2.00 10<sup>-3</sup> | original 1.00e-3     |
 |          | T-type Ca2+ current (high threshold)          | `BC_prox_gCat`     | 0.00 10<sup>-4</sup> | original 2.00e-4     |
 |          | N-type Ca2+ current                           | `BC_prox_gCanin`   | 0.00 10<sup>-5</sup> | original 3.00e-5     |
 |          | L-type Ca2+ current (high threshold)          | `BC_prox_gCal`     | 0.00 10<sup>-5</sup> | original 3.00e-5     |
@@ -102,8 +102,8 @@
 |   **distal dendrites** | ($\geq$ 100 um from soma)       |                    |                      |                      |
 |          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> | original 1.40e-2     |
 |          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup>-3</sup> | original 9.00e-3     |
-|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 0.00 10<sup>-4</sup> | original 9.00e-4     |
-|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 0.00 10<sup>-3</sup> | original 2.16e-3     |
+|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 1.00 10<sup>-3</sup> | original 9.00e-4     |
+|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 4.00 10<sup>-3</sup> | original 2.16e-3     |
 |          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 0.00 10<sup>-4</sup> | original 2.00e-4     |
 |          | N-type Ca2+ current                           | `BC_dist_gCanin`   | 0.00 10<sup>-5</sup> | original 3.00e-5     |
 |          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 0.00 10<sup>-5</sup> | original 3.00e-5     |
