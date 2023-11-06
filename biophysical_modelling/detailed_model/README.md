@@ -102,8 +102,8 @@
 |   **distal dendrites** | ($\geq$ 100 um from soma)       |                    |                      |                      |
 |          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup>-2</sup> | original 1.40e-2     |
 |          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup>-3</sup> | original 9.00e-3     |
-|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 1.00 10<sup>-3</sup> | original 9.00e-4     |
-|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 4.00 10<sup>-3</sup> | original 2.16e-3     |
+|          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 1.00 10<sup>-1</sup> | original 9.00e-4     |
+|          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 1.00 10<sup>-1</sup> | original 2.16e-3     |
 |          | T-type Ca2+ current (high threshold)          | `BC_dist_gCat`     | 0.00 10<sup>-4</sup> | original 2.00e-4     |
 |          | N-type Ca2+ current                           | `BC_dist_gCanin`   | 0.00 10<sup>-5</sup> | original 3.00e-5     |
 |          | L-type Ca2+ current (high threshold)          | `BC_dist_gCal`     | 0.00 10<sup>-5</sup> | original 3.00e-5     |
