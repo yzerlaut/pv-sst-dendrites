@@ -120,7 +120,7 @@ if __name__=='__main__':
     
     # cluster props
     parser.add_argument("--nCluster", type=int, default=1)
-    parser.add_argument("--nmax", type=int, default=1)
+    parser.add_argument("--nmax", type=int, default=int(1e6))
     parser.add_argument("--interspike", type=float, default=1.0)
 
     # Branch number
@@ -128,6 +128,7 @@ if __name__=='__main__':
     parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
+    parser.add_argument("--with_active", action="store_true")
     parser.add_argument("--test_active", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
 
@@ -140,6 +141,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     params = dict(cellType=args.cellType,
+                  passive_only=(not args.with_active),
                   iBranch=args.iBranch,
                   nmax=args.nmax,
                   nCluster=args.nCluster,

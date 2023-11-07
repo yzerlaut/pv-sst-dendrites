@@ -169,14 +169,15 @@ class Cell:
 
                     for mech in ['Nafx', 'Kdrin', 'Kslowin', 
                                  'Hin', 'M',
-                                 'Kapin', 'Kapin',
+                                 'Kapin', 'Kadin',
                                  'Kctin', 'Kcain',
                                  'Canin', 'Cat', 'Cal']:
 
                         gKey = '%s_%s_g%s' % (params_key, LOC, mech)
 
-                        if gKey in self.params:
+                        if (gKey in self.params) and (self.params[gKey]>0):
 
+                            # print(sec, mech)
                             sec.insert(mech)
                             setattr(sec, 'gbar_%s' % mech, self.params[gKey])
 
