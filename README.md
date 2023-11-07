@@ -36,6 +36,8 @@
 
 ## C) Biophysical Modelling of Morphologically-Detailed Reconstructions
 
+/!\ Need to compile the NMODL mechanisms for NEURON with `nrnivmodl mechanisms`.
+
 ### C.1) Morphologies with Dendritic Branches [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/detailed_model/Find-Single-Dendritic-Branches.ipynb)
 
 ### C.2) Electrophysiological Properties [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/detailed_model/Electrophysiological-Properties.ipynb)
