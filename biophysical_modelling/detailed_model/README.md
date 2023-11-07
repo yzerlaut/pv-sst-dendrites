@@ -72,18 +72,15 @@
 |          | Fast Sodium current                           | `BC_soma_gNafx`    | 3.35 10<sup>-1</sup> | original 1.35e-1     |
 |          | Delayed rectifier Potassium current           | `BC_soma_gKdrin`   | 9.60 10<sup>-2</sup> | original 3.60e-2     |
 |          | A-type Potassium current (proximal)           | `BC_soma_gKapin`   | 6.40 10<sup>-3</sup> | original 3.20e-3     |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |                      |
 | **proximal dendrites** | ($\leq$ 100 um from soma)       |                    |                      |                      |
 |          | Fast Sodium current                           | `BC_prox_gNafx`    | 0.00 10<sup> 0</sup> |                      |
 |          | Delayed rectifier Potassium current           | `BC_prox_gKdrin`   | 0.00 10<sup> 0</sup> |                      |
 |          | A-type Potassium current (proximal)           | `BC_prox_gKapin`   | 2.00 10<sup>-3</sup> | original 1.00e-3     |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |                      |
 | **distal dendrites**   | ($\geq$ 100 um from soma)       |                    |                      |                      |
 |          | Fast Sodium current                           | `BC_dist_gNafx`    | 0.00 10<sup> 0</sup> |                      |
 |          | Delayed rectifier Potassium current           | `BC_dist_gKdrin`   | 0.00 10<sup> 0</sup> |                      |
 |          | A-type Potassium current (proximal)           | `BC_dist_gKapin`   | 2.00 10<sup>-3</sup> | original 9.00e-4     |
 |          | A-type Potassium current (distal)             | `BC_dist_gKadin`   | 4.00 10<sup>-3</sup> | original 2.16e-3     |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | --- | --- | --- | --- |
 
 
@@ -95,17 +92,14 @@
 |          | Fast Sodium current                           | `MC_soma_gNafx`    | 7.00 10<sup>-1</sup> | original 1.35e-1 |
 |          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 4.00 10<sup>-1</sup> | original 3.60e-2 |
 |          | M-type current                                | `MC_soma_gM`       | 2.00 10<sup>-2</sup> |                  |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
 |          | Fast Sodium current                           | `MC_prox_gNafx`    | 0.00 10<sup>-2</sup> |
 |          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 0.00 10<sup>-4</sup> |
 |          | M-type current                                | `MC_prox_gM`       | 0.00 10<sup> 0</sup> |                  |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | **distal dendrites** | ($\leq$ 100 um from soma) |    |     |     |
 |          | Fast Sodium current                           | `MC_dist_gNafx`    | 0.00 10<sup>-2</sup> |
 |          | Delayed rectifier Potassium current           | `MC_dist_gKdrin`   | 0.00 10<sup>-3</sup> |
 |          | M-type current                                | `MC_dist_gM`       | 0.00 10<sup> 0</sup> |                  |
-|          | + Calcium buffering dynamics                  | `CaDyn`            |                      |
 | --- | --- | --- | --- |
 
 ## Synaptic properties
