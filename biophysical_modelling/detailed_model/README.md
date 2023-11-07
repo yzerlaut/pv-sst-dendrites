@@ -1,7 +1,5 @@
 # Biophysical Modelling
 
-> starting from the modelling work of [Tzilivaki et al., *Nat. Comm.* (2019)](https://www.nature.com/articles/s41467-019-11537-7) for Basket cells.
-
 ## Passive Properties
 
 ### Basket Cell
