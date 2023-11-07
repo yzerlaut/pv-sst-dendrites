@@ -153,6 +153,9 @@ class Cell:
                 if not debug:
                     sec.nseg = sec.n3d()
 
+                if LOC=='soma':
+                    sec.nseg = 7 # not too low, because large
+
                 # cable props
                 sec.cm = self.params['%s_%s_cm' % (params_key, LOC)]
                 sec.Ra = self.params['%s_%s_Ra' % (params_key, LOC)]
@@ -166,14 +169,15 @@ class Cell:
 
                     for mech in ['Nafx', 'Kdrin', 'Kslowin', 
                                  'Hin', 'M',
-                                 'Kapin', 'Kapin',
+                                 'Kapin', 'Kadin',
                                  'Kctin', 'Kcain',
                                  'Canin', 'Cat', 'Cal']:
 
                         gKey = '%s_%s_g%s' % (params_key, LOC, mech)
 
-                        if gKey in self.params:
+                        if (gKey in self.params) and (self.params[gKey]>0):
 
+                            # print(sec, mech)
                             sec.insert(mech)
                             setattr(sec, 'gbar_%s' % mech, self.params[gKey])
 
@@ -204,7 +208,8 @@ class Cell:
                                                    dtype=object)
         iMins = []
         # for sec in self.all:
-        for sec in self.compartments['prox']+self.compartments['dist']+self.compartments['soma']:
+        for sec_label in ['prox', 'dist', 'soma']:
+            sec = self.compartments[sec_label]
             for iseg in range(sec.nseg):
                 try:
                     D = np.sqrt((1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
@@ -217,8 +222,11 @@ class Cell:
                     self.SEGMENTS['NEURON_segment'][iMin2] = iseg
 
                 except BaseException as be:
-                    print(be)
-                    print('PB with: ', iseg, sec)
+                    # at the soma we have more nseg than the swc discretization
+                    # otherwise, we want the same mapping, so raise an error if not the case:
+                    if sec_label!='soma':
+                        print(be)
+                        print('PB with: ', iseg, sec)
 
 
     def check_that_all_dendritic_branches_are_well_covered(self, 
@@ -285,8 +293,8 @@ class Cell:
 
 if __name__=='__main__':
 
-    ID = '864691135571546917_264824' # Martinotti
-    # ID = '864691135396580129_296758' # Basket
+    # ID = '864691135571546917_264824' # Martinotti
+    ID = '864691135396580129_296758' # Basket
 
     # cell = Cell(ID=ID, debug=True)
     # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
