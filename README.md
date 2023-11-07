@@ -25,12 +25,12 @@
 
 *Build the figure panels related to Figure X.*
 
-### 1) Model Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/Model-Presentation.ipynb)
+### 1) Model Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Model-Presentation.ipynb)
 
 - morphology drawing 
 - input impedance characterization
 
-### 2) Analysis of Synaptic Integration [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/Analysis-of-Synaptic-Integration.ipynb)
+### 2) Analysis of Synaptic Integration [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Analysis-of-Synaptic-Integration.ipynb)
 
 - ...
 
