@@ -11,42 +11,35 @@
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
 | **leak conductance**       |                   |                 |                      |                        |                                                         |
 |                            | soma              | `BC_soma_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
-|                            | axon              | `BC_axon_gPas`  | 9.59 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                         |
 |                            | proximal dendrite | `BC_prox_gPas`  | 4.37 10<sup>-4</sup> | S/cm<sup>2</sup>       |                                                         |
 |                            | distal dendrite  | `BC_dist_gPas`  | 4.46 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                         |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
 |                            | *all*             | `BC_ePas`       | -70.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
 |                            | soma              | `BC_soma_Ra`    | 172                  | ohm.cm                 |                                                         |
-|                            | axon              | `BC_axon_Ra`    | 172                  | ohm.cm                 |                                                         |
 |                            | proximal dendrite | `BC_prox_Ra`    | 142                  | ohm.cm                 |                                                         |
 |                            | proximal dendrite | `BC_dist_Ra`    | 142                  | ohm.cm                 |                                                         |
 | **membrane capacitance**   |                   |                 |                      |                        |                                                         |
 |                            | soma              | `BC_soma_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
-|                            | axon              | `BC_axon_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 |                            | proximal dendrite | `BC_prox_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 |                            | proximal dendrite | `BC_dist_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 
 ### Martinotti Cell
 
-<!--| **leak conductance** |                   |                 |                      |                        | N.B. /2 w.r.t. Basket for -200MOhm input resistance         |-->
 | **Parameter description**  | **location**      |  **Name**       |     **Value**        | **Unit**               |                                                         | 
 |----------------------------|-------------------|-----------------|----------------------|------------------------|---------------------------------------------------------|
 | **leak conductance**       |                   |                 |                      |                        |                                                             |
 |                            | soma              | `MC_soma_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
-|                            | axon              | `MC_axon_gPas`  | 4.80 10<sup>-6</sup> | S/cm<sup>2</sup>       |                                                          |
 |                            | proximal dendrite | `MC_prox_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 |                            | distal dendrite   | `MC_dist_gPas`  | 3.50 10<sup>-5</sup> | S/cm<sup>2</sup>       |                                                          |
 | **leak reversal potential**|                   |                 |                      |                        |                                                         |
 |                            | *all*             | `MC_ePas`       | -60.0                | mV                     |                                                         |
 | **axial resistance**       |                   |                 |                      |                        |                                                         |
 |                            | soma              | `MC_soma_Ra`    | 172                  | ohm.cm                 |                                                         |
-|                            | axon              | `MC_axon_Ra`    | 172                  | ohm.cm                 |                                                         |
 |                            | proximal dendrite | `MC_prox_Ra`    | 142                  | ohm.cm                 |                                                         |
 |                            | proximal dendrite | `MC_dist_Ra`    | 142                  | ohm.cm                 |                                                         |
 | **membrane capacitance**   |                   |                 |                      |                        |                                                         |
 |                            | soma              | `MC_soma_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
-|                            | axon              | `MC_axon_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 |                            | proximal dendrite | `MC_prox_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 |                            | proximal dendrite | `MC_dist_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 
@@ -55,20 +48,16 @@
 
 ### Library of Channels
 
+*channels used in the study:*
+
 | **Channel Type**  |  **Description/Comments**  | **Link to `mod` file** |
 | --- | --- | --- |
 | Passive current                         | classical leak current                                 |    |
 | Sodium current                          | classical Na+ channel, with a fast inactivation        |  [`nafx.mod`](./mechanisms/nafx.mod)  |
 | Delayed rectifier Potassium current     |                                                        |  [`kdrin.mod`](./mechanisms/kdrin.mod)  |
-| Slowly inactivating Potassium current   |                                                        |  [`iksin.mod`](./mechanisms/iksin.mod)  |
-| H-type cation current                   | E<sub>rev</sub>=-10mV,  implementation uses Na+ ions   |  [`hin.mod`](./mechanisms/hin.mod)  |
 | A-type Potassium current (proximal)     | Klee et al. *J. Physiol.* (1995)[^K95]                 |  [`kaproxin.mod`](./mechanisms/kaproxin.mod)  |
 | A-type Potassium current (distal)       | Klee et al. *J. Physiol.* (1995)[^K95]                 |  [`kadistin.mod`](./mechanisms/kadistin.mod)  |
-| fast Ca2+ dependent Potassium current   | AP broadening, Shao et al., *J. Physiol.* (1999)[^S99] |  [`kctin.mod`](./mechanisms/kctin.mod)  |
-| slow Ca2+ dependent Potassium current   | responsible for slow AHP dynamics                      |  [`kcain.mod`](./mechanisms/kcain.mod)  |
-| T-type Ca2+ current (high threshold)    | for somatic and dendritic regions                      |  [`cat.mod`](./mechanisms/cat.mod)  |
-| N-type Ca2+ current                     | for somatic and dendritic regions (ref. Borg ?)        |  [`can.mod`](./mechanisms/can.mod)  |
-| L-type Ca2+ current (high threshold)    | for somatic and dendritic regions (ref. Borg ?)        |  [`cal.mod`](./mechanisms/cal.mod)  |
+| M-type Potassium current                |                                                        |  [`kadistin.mod`](./mechanisms/IM.mod)  |
 | + Calcium dynamics                      | simple first order model                               |  [`cadynin.mod`](./mechanisms/cadynin.mod)  |
 | --- | --- | --- |
 
