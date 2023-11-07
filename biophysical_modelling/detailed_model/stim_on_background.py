@@ -168,6 +168,7 @@ if __name__=='__main__':
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--passive", action="store_true")
+    parser.add_argument("--with_NMDA", action="store_true")
 
     parser.add_argument("--suffix", help="suffix for saving", default='')
     parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
@@ -191,6 +192,7 @@ if __name__=='__main__':
                   nCluster=args.nCluster,
                   interspike=args.interspike,
                   with_presynaptic_spikes=args.with_presynaptic_spikes,
+                  with_NMDA=args.with_NMDA,
                   dt=args.dt)
 
     if args.test:
