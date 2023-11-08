@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.15.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -27,7 +27,8 @@ from physion.analysis.read_NWB import Data, scan_folder_for_NWBfiles
 sys.path.append('../')
 import plot_tools as pt
 
-folder = os.path.join(os.path.expanduser('~'), 'CURATED', 'SST-WT-NR1-GluN3-2023')
+folder = os.path.join(os.path.expanduser('~'),
+                      'CURATED', 'SST-WT-NR1-GluN3-2023')
 
 # %% [markdown]
 # ## Build the dataset from the NWB files
