@@ -57,12 +57,12 @@ def init_summary(DATASET):
 
         # select the sessions
         if ('size-tuning' in protocols[0]):
-
+            
             # sort the sessions according to the mouse genotype
             if ('NR1' in DATASET['subjects'][i]) or ('GluN1' in DATASET['subjects'][i]):
                 SUMMARY['GluN1']['FILES'].append(DATASET['files'][i])
                 SUMMARY['GluN1']['subjects'].append(DATASET['subjects'][i])
-            if ('NR3' in DATASET['subjects'][i]) or ('GluN3' in DATASET['subjects'][i]):
+            elif ('NR3' in DATASET['subjects'][i]) or ('GluN3' in DATASET['subjects'][i]):
                 SUMMARY['GluN3']['FILES'].append(DATASET['files'][i])
                 SUMMARY['GluN3']['subjects'].append(DATASET['subjects'][i])
             else:
