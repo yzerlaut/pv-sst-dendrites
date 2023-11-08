@@ -209,24 +209,24 @@ class Cell:
         iMins = []
         # for sec in self.all:
         for sec_label in ['prox', 'dist', 'soma']:
-            sec = self.compartments[sec_label]
-            for iseg in range(sec.nseg):
-                try:
-                    D = np.sqrt((1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
-                                (1e6*self.SEGMENTS['y']-sec.y3d(iseg))**2+\
-                                (1e6*self.SEGMENTS['z']-sec.z3d(iseg))**2)
-                    # print(np.sqrt(np.min(D)))
-                    iMin = np.argmin(D[cond])
-                    iMin2 = np.arange(len(cond))[cond][iMin]
-                    self.SEGMENTS['NEURON_section'][iMin2] = sec
-                    self.SEGMENTS['NEURON_segment'][iMin2] = iseg
+            for sec in self.compartments[sec_label]:
+                for iseg in range(sec.nseg):
+                    try:
+                        D = np.sqrt((1e6*self.SEGMENTS['x']-sec.x3d(iseg))**2+\
+                                    (1e6*self.SEGMENTS['y']-sec.y3d(iseg))**2+\
+                                    (1e6*self.SEGMENTS['z']-sec.z3d(iseg))**2)
+                        # print(np.sqrt(np.min(D)))
+                        iMin = np.argmin(D[cond])
+                        iMin2 = np.arange(len(cond))[cond][iMin]
+                        self.SEGMENTS['NEURON_section'][iMin2] = sec
+                        self.SEGMENTS['NEURON_segment'][iMin2] = iseg
 
-                except BaseException as be:
-                    # at the soma we have more nseg than the swc discretization
-                    # otherwise, we want the same mapping, so raise an error if not the case:
-                    if sec_label!='soma':
-                        print(be)
-                        print('PB with: ', iseg, sec)
+                    except BaseException as be:
+                        # at the soma we have more nseg than the swc discretization
+                        # otherwise, we want the same mapping, so raise an error if not the case:
+                        if sec_label!='soma':
+                            print(be)
+                            print('PB with: ', iseg, sec)
 
 
     def check_that_all_dendritic_branches_are_well_covered(self, 
