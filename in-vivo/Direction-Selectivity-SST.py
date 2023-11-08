@@ -196,20 +196,20 @@ def compute_summary_responses(DATASET,
 # %%
 for quantity in ['rawFluo', 'neuropil', 'dFoF']:
     SUMMARY = compute_summary_responses(DATASET, quantity=quantity, verbose=False)
-    np.save('../data/%s-ff-gratings.npy' % quantity, SUMMARY)
+    np.save('../data/in-vivo/%s-ff-gratings.npy' % quantity, SUMMARY)
     
 for neuropil_correction_factor in [0.6, 0.7, 0.8, 0.9]:
     SUMMARY = compute_summary_responses(DATASET, quantity='dFoF', 
                                    neuropil_correction_factor=neuropil_correction_factor,
                                    verbose=False)
-    np.save('../data/factor-neuropil-%.1f-ff-gratings.npy' % neuropil_correction_factor, SUMMARY)
+    np.save('../data/in-vivo/factor-neuropil-%.1f-ff-gratings.npy' % neuropil_correction_factor, SUMMARY)
     
 for roi_to_neuropil_fluo_inclusion_factor in [1.05, 1.1, 1.15, 1.2, 1.25, 1.3]:
     SUMMARY = compute_summary_responses(DATASET, 
                                    quantity='dFoF', 
                                    roi_to_neuropil_fluo_inclusion_factor=roi_to_neuropil_fluo_inclusion_factor,
                                    verbose=False)
-    np.save('../data/inclusion-factor-neuropil-%.1f-ff-gratings.npy' % roi_to_neuropil_fluo_inclusion_factor, SUMMARY)
+    np.save('../data/in-vivo/inclusion-factor-neuropil-%.1f-ff-gratings.npy' % roi_to_neuropil_fluo_inclusion_factor, SUMMARY)
 
 # %% [markdown]
 # ## Quantification & Data visualization

@@ -142,20 +142,22 @@ def run_dataset_analysis(DATASET,
     return SUMMARY
 
 
+# %%
+for quantity in ['rawFluo', 'neuropil', 'dFoF']:
+    SUMMARY = run_dataset_analysis(DATASET, quantity=quantity, verbose=False)
+    np.save('../data/in-vivo/size-tuning-%s-summary.npy' % quantity, SUMMARY)
+
 # %% [markdown]
 # ## Varying the preprocessing parameters
 
 # %%
-for quantity in ['rawFluo', 'neuropil', 'dFoF']:
-    SUMMARY = run_dataset_analysis(DATASET, quantity=quantity, verbose=False)
-    np.save('data/%s-summary.npy' % quantity, SUMMARY)
-    
+
 for neuropil_correction_factor in [0.6, 0.7, 0.8, 0.9]:
     # rawFluo
     SUMMARY = run_dataset_analysis(DATASET, quantity='dFoF', 
                                    neuropil_correction_factor=neuropil_correction_factor,
                                    verbose=False)
-    np.save('data/factor-neuropil-%.1f-summary.npy' % neuropil_correction_factor, SUMMARY)
+    np.save('../data/in-vivo/size-tuning-factor-neuropil-%.1f-summary.npy' % neuropil_correction_factor, SUMMARY)
     
 for roi_to_neuropil_fluo_inclusion_factor in [1.1, 1.15, 1.2, 1.25, 1.3]:
     # rawFluo
@@ -163,7 +165,7 @@ for roi_to_neuropil_fluo_inclusion_factor in [1.1, 1.15, 1.2, 1.25, 1.3]:
                                    quantity='dFoF', 
                                    roi_to_neuropil_fluo_inclusion_factor=roi_to_neuropil_fluo_inclusion_factor,
                                    verbose=False)
-    np.save('data/inclusion-factor-neuropil-%.1f-summary.npy' % roi_to_neuropil_fluo_inclusion_factor, SUMMARY)
+    np.save('../data/in-vivo/size-tuning-inclusion-factor-neuropil-%.1f-summary.npy' % roi_to_neuropil_fluo_inclusion_factor, SUMMARY)
 
 # %% [markdown]
 # ## Quantification & Data visualization
@@ -188,11 +190,12 @@ def suppression_index(resp1, resp2):
     return np.clip((resp1-resp2)/resp1, 0, 1)
     
 def plot_summary(SUMMARY,
+                 KEYS = ['WT', 'GluN1'], 
+                 COLORS = ['k', 'tab:blue'],
                  average_by='sessions',
                  xscale='lin', ms=2):
     
     fig, AX = pt.plt.subplots(1, 2, figsize=(3.5,1.))
-    #fig, AX = pt.plt.subplots(1, 3, figsize=(7,1))
     AX[0].annotate('average\nover\n%s' % average_by,
                    (-0.8, 0.5), va='center', ha='center', xycoords='axes fraction')
     plt.subplots_adjust(wspace=0.7)
@@ -204,7 +207,7 @@ def plot_summary(SUMMARY,
     stim_size = 2*angle_lin_to_true_angle(SUMMARY['radii']) # radius to diameter, and linear-approx correction
     SIs = []
     
-    for i, key, color in zip(range(2), ['WT', 'GluN1', 'GluN3'], ['k', 'tab:blue', 'g']):
+    for i, key, color in zip(range(2), KEYS, COLORS):
 
         if average_by=='sessions':
             resp = np.array([np.mean(np.clip(r, 0, np.inf), axis=0) for r in SUMMARY[key]['RESPONSES']])
@@ -244,7 +247,7 @@ def plot_summary(SUMMARY,
                            va='top',color=color, xycoords='axes fraction')
         
     # suppression index
-    for i, key, color in zip(range(2), ['WT', 'GluN1', 'GluN3'], ['k', 'tab:blue', 'g']):
+    for i, key, color in zip(range(2), KEYS, COLORS):
         pt.violin(SIs[i], X=[i], ax=inset, COLORS=[color])
     inset.plot([0,1], 1.05*np.ones(2), 'k-', lw=0.5)
     inset.annotate('p=%.1e' % stats.mannwhitneyu(SIs[0], SIs[1]).pvalue,
@@ -263,9 +266,19 @@ def plot_summary(SUMMARY,
     pt.set_plot(inset, xticks=[], ylabel='suppr. index', yticks=[0, 0.5, 1], ylim=[0, 1.09])
     return fig
 
-SUMMARY = np.load('../data/dFoF-summary.npy', allow_pickle=True).item()
-fig = plot_summary(SUMMARY, average_by='ROIs')
-fig = plot_summary(SUMMARY, average_by='sessions')
+SUMMARY = np.load('../data/in-vivo/size-tuning-dFoF-summary.npy', allow_pickle=True).item()
+fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='ROIs')
+fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='sessions')
+
+# %%
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'g'], average_by='ROIs')
+fig.savefig('size-tuning-WT-GluN3-per-ROI.eps')
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'g'], average_by='sessions')
+fig.savefig('size-tuning-WT-GluN3-per-session.eps')
+
+# %%
+fig = plot_summary(SUMMARY, ['GluN1', 'GluN3'], ['tab:blue', 'g'], average_by='ROIs')
+fig = plot_summary(SUMMARY, ['GluN1', 'GluN3'], ['tab:blue', 'g'], average_by='sessions')
 
 # %%
 for quantity in ['rawFluo', 'neuropil', 'dFoF']:
