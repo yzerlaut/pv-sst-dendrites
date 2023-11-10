@@ -72,9 +72,6 @@ def init_summary(DATASET):
     return SUMMARY
 
 
-# %%
-init_summary(DATASET)
-
 # %% [markdown]
 # ## Analysis
 
@@ -195,10 +192,10 @@ def plot_summary(SUMMARY,
                  average_by='sessions',
                  xscale='lin', ms=2):
     
-    fig, AX = pt.plt.subplots(1, 2, figsize=(3.5,1.))
+    fig, AX = pt.plt.subplots(1, 2, figsize=(5.5,1.))
     AX[0].annotate('average\nover\n%s' % average_by,
                    (-0.8, 0.5), va='center', ha='center', xycoords='axes fraction')
-    plt.subplots_adjust(wspace=0.7)
+    plt.subplots_adjust(wspace=0.7, right=0.6)
 
     center_index = 2
 
@@ -271,10 +268,10 @@ fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='ROIs
 fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='sessions')
 
 # %%
-fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'g'], average_by='ROIs')
-fig.savefig('size-tuning-WT-GluN3-per-ROI.eps')
-fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'g'], average_by='sessions')
-fig.savefig('size-tuning-WT-GluN3-per-session.eps')
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['darkgreen', 'mediumseagreen'], average_by='ROIs')
+fig.savefig('size-tuning-WT-GluN3-per-ROI.svg')
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['darkgreen', 'mediumseagreen'], average_by='sessions')
+fig.savefig('size-tuning-WT-GluN3-per-session.svg')
 
 # %%
 fig = plot_summary(SUMMARY, ['GluN1', 'GluN3'], ['tab:blue', 'g'], average_by='ROIs')
@@ -303,11 +300,6 @@ for roi_to_neuropil_fluo_inclusion_factor in [1.05, 1.1, 1.15, 1.2, 1.25, 1.3]:
 
 # %% [markdown]
 # # Visualizing some evoked response in single ROI
-
-# %%
-data = Data(SUMMARY['WT']['FILES'][0])
-data.protocols
-data.get_protocol_id('size-tuning-protocol-loc')
 
 # %%
 import sys, os
@@ -339,13 +331,16 @@ def cell_tuning_example_fig(filename,
     
     data = Data(filename)
     
+    protocol_id = data.get_protocol_id('size-tuning-protocol-dep')
+    if protocol_id is None:
+        protocol_id = data.get_protocol_id('size-tuning-protocol-dep-long')
     EPISODES = EpisodeData(data,
                            quantities=['dFoF'],
-                           protocol_id=np.flatnonzero(['8orientation' in p for p in data.protocols]),
+                           protocol_id=protocol_id,
                            with_visual_stim=True,
                            verbose=True)
     
-    fig, AX = pt.plt.subplots(Nsamples, len(EPISODES.varied_parameters['angle']), 
+    fig, AX = pt.plt.subplots(Nsamples, len(EPISODES.varied_parameters['radius']), 
                           figsize=(7,7))
     plt.subplots_adjust(right=0.75, left=0.1, top=0.97, bottom=0.05, wspace=0.1, hspace=0.8)
     
@@ -358,10 +353,8 @@ def cell_tuning_example_fig(filename,
 
         # SHOW trial-average
         plot_trial_average(EPISODES,
-                           condition=(EPISODES.contrast==contrast),
-                           column_key='angle',
-                           #color_key='contrast',
-                           #color=['lightgrey', 'k'],
+                           condition=EPISODES.find_episode_cond(key='angle', value=0),
+                           column_key='radius',
                            quantity='dFoF',
                            ybar=1., ybarlabel='1dF/F',
                            xbar=1., xbarlabel='1s',
@@ -375,32 +368,31 @@ def cell_tuning_example_fig(filename,
         # SHOW summary angle dependence
         inset = pt.inset(AX[i][-1], (2.2, 0.2, 1.2, 0.8))
 
-        angles, y, sy, responsive_angles = [], [], [], []
+        radii, y, sy, responsive_radii = [], [], [], []
         responsive = False
 
-        for a, angle in enumerate(EPISODES.varied_parameters['angle']):
+        for a, radius in enumerate(EPISODES.varied_parameters['radius']):
 
             stats = EPISODES.stat_test_for_evoked_responses(episode_cond=\
-                                            EPISODES.find_episode_cond(key=['angle', 'contrast'],
-                                                                       value=[angle, contrast]),
+                                            EPISODES.find_episode_cond(key='radius',
+                                                                       value=radius),
                                                             response_args=dict(quantity='dFoF', roiIndex=r),
                                                             **stat_test_props)
 
-            angles.append(angle)
+            radii.append(radius)
             y.append(np.mean(stats.y-stats.x))    # means "post-pre"
             sy.append(np.std(stats.y-stats.x))    # std "post-pre"
 
             if stats.significant(threshold=response_significance_threshold):
                 responsive = True
-                responsive_angles.append(angle)
+                responsive_radii.append(radius)
 
-        pt.plot(angles, np.array(y), sy=np.array(sy), ax=inset)
-        inset.plot(angles, 0*np.array(angles), 'k:', lw=0.5)
+        pt.plot(radii, np.array(y), sy=0*np.array(sy), ax=inset)
+        inset.plot(radii, 0*np.array(radii), 'k:', lw=0.5)
         inset.set_ylabel('$\delta$ $\Delta$F/F     ', fontsize=7)
-        inset.set_xticks(angles)
-        inset.set_xticklabels(['%i'%a if (i%2==0) else '' for i, a in enumerate(angles)], fontsize=7)
+        inset.set_xticks([0,50,100])
         if i==(Nsamples-1):
-            inset.set_xlabel('angle ($^{o}$)', fontsize=7)
+            inset.set_xlabel('radius ($^{o}$)', fontsize=7)
 
         #SI = selectivity_index(angles, y)
         #inset.annotate('SI=%.2f ' % SI, (0, 1), ha='right', weight='bold', fontsize=8,
@@ -411,11 +403,19 @@ def cell_tuning_example_fig(filename,
         
     return fig
 
-fig = cell_tuning_example_fig('/home/yann/CURATED/SST-WT-NR1-GluN3-2023/2023_02_15-13-30-47.nwb',
+folder = os.path.join(os.path.expanduser('~'),
+                      'CURATED', 'SST-WT-NR1-GluN3-2023')
+fig = cell_tuning_example_fig(os.path.join(folder, '2023_04_20-16-02-15.nwb'),
+                              #os.path.join(folder, SUMMARY['WT']['FILES'][5]),
                              contrast=1)
+fig.savefig('size-tuning-WT-examples.svg')
 
 # %%
-fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][0])
+SUMMARY['WT']['FILES'][5]
+
+# %%
+fig = cell_tuning_example_fig(SUMMARY['GluN3']['FILES'][8])
+#fig.savefig('size-tuning-GluN3-examples.svg')
 
 # %% [markdown]
 # # Visualizing some raw population data
@@ -436,11 +436,11 @@ import plot_tools as pt
 import warnings
 warnings.filterwarnings("ignore") # disable the UserWarning from pynwb (arrays are not well oriented)
 
-data = Data('/home/yann/CURATED/SST-WT-NR1-GluN3-2023/2023_02_15-13-30-47.nwb',
+data = Data(os.path.join(folder, SUMMARY['WT']['FILES'][5]),
             with_visual_stim=True)
 data.init_visual_stim()
 
-tlim = [984,1100]
+tlim = [984,1080]
 
 settings = {'Locomotion': {'fig_fraction': 1, 'subsampling': 1, 'color': '#1f77b4'},
             'FaceMotion': {'fig_fraction': 1, 'subsampling': 1, 'color': 'purple'},
@@ -457,7 +457,8 @@ settings = {'Locomotion': {'fig_fraction': 1, 'subsampling': 1, 'color': '#1f77b
               'subquantity': 'dF/F'},
              'VisualStim': {'fig_fraction': 0.5, 'color': 'black', 'with_screen_inset':True}}
 
-plot_raw(data, tlim=tlim, settings=settings)
+fig, _ = plot_raw(data, tlim=tlim, settings=settings)
+#fig.savefig('raw-data-zoom.svg')
 
 # %%
 settings = {'Locomotion': {'fig_fraction': 1, 'subsampling': 2, 'color': '#1f77b4'},
@@ -475,11 +476,18 @@ settings = {'Locomotion': {'fig_fraction': 1, 'subsampling': 2, 'color': '#1f77b
               'subquantity': 'dF/F'}}
 
 tlim = [900, 1300]
-plot_raw(data, tlim=tlim, settings=settings)
+fig, _ = plot_raw(data, tlim=tlim, settings=settings)
+#fig.savefig('raw-data-unzoom.svg')
 
 # %%
 from physion.dataviz.imaging import show_CaImaging_FOV
-show_CaImaging_FOV(data, key='max_proj', NL=3, roiIndices='all')
+data = Data(os.path.join(folder, SUMMARY['WT']['FILES'][5]))
+fig, ax = pt.figure(figsize=(2,5))
+fig = show_CaImaging_FOV(data, key='meanImg', NL=3, ax=ax)#, roiIndices='all')
 
 # %%
-show_CaImaging_FOV(data, key='max_proj', NL=3)
+data = Data(os.path.join(folder, SUMMARY['GluN3']['FILES'][8]))
+fig, ax = pt.figure(figsize=(2,5))
+fig = show_CaImaging_FOV(data, key='meanImg', NL=2.5, ax=ax)#, roiIndices='all')
+
+# %%

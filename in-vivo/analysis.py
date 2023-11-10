@@ -38,10 +38,12 @@ def shift_orientation_according_to_pref(angle,
 
 def compute_tuning_response_per_cells(data,
                                       imaging_quantity='dFoF',
+                                      prestim_duration=None,
                                       stat_test_props=stat_test_props,
                                       response_significance_threshold = response_significance_threshold,
                                       contrast=1,
                                       protocol_name='ff-gratings-8orientation-2contrasts-10repeats',
+                                      return_significant_waveforms=False,
                                       verbose=True):
 
     RESPONSES = []
@@ -51,11 +53,13 @@ def compute_tuning_response_per_cells(data,
     EPISODES = EpisodeData(data,
                            quantities=[imaging_quantity],
                            protocol_id=protocol_id,
+                           prestim_duration=prestim_duration,
                            verbose=verbose)
 
     shifted_angle = EPISODES.varied_parameters['angle']-\
                             EPISODES.varied_parameters['angle'][1]
 
+    significant_waveforms= []
     for roi in np.arange(data.nROIs):
 
         cell_resp = EPISODES.compute_summary_data(stat_test_props,
@@ -66,6 +70,7 @@ def compute_tuning_response_per_cells(data,
 
         # if significant in at least one orientation
         if np.sum(cell_resp['significant'][condition]):
+
 
             ipref = np.argmax(cell_resp['value'][condition])
             prefered_angle = cell_resp['angle'][condition][ipref]
@@ -83,4 +88,13 @@ def compute_tuning_response_per_cells(data,
 
                 RESPONSES[-1][iangle] = value
 
-    return RESPONSES, len(RESPONSES)/data.nROIs, shifted_angle
+            if return_significant_waveforms:
+                full_cond = EPISODES.find_episode_cond(\
+                        key=['contrast', 'angle'],
+                        value=[contrast, prefered_angle])
+                significant_waveforms.append(getattr(EPISODES, imaging_quantity)[full_cond,roi,:].mean(axis=0))
+
+    if return_significant_waveforms:
+        return EPISODES.t, significant_waveforms
+    else:
+        return RESPONSES, len(RESPONSES)/data.nROIs, shifted_angle

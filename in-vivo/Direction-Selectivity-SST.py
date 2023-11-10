@@ -503,11 +503,11 @@ def cell_tuning_example_fig(filename,
 folder = os.path.join(os.path.expanduser('~'), 'CURATED','SST-WT-NR1-GluN3-2023')
 fig = cell_tuning_example_fig(os.path.join(folder, '2023_02_15-13-30-47.nwb'),
                              contrast=1, seed=21)
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %%
 fig = cell_tuning_example_fig(SUMMARY['GluN1']['FILES'][2], seed=3)
-fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
+#fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'poster-material', '1.svg'))
 
 # %% [markdown]
 # # Visualizing some raw population data
