@@ -185,18 +185,36 @@ SUMMARY = np.load('../data/in-vivo/%s-ff-gratings-waveforms.npy' % quantity,
                  allow_pickle=True).item()
 
 fig, AX = pt.figure(axes=(2,1), right=10)
+peak_time = {}
 for i, key, color in zip(range(2), ['WT', 'GluN1'], ['tab:orange', 'tab:purple']):
 
-    mean = np.mean(SUMMARY[key]['responses'], axis=0)
-    pt.plot(SUMMARY['t'], mean, 
+    pt.plot(SUMMARY['t'], np.mean(SUMMARY[key]['responses'], axis=0),
             sy = sem(SUMMARY[key]['responses'], axis=0), color=color,
             ax=AX[0], no_set=True)
-    normed = (mean-np.min(mean))/(np.max(mean)-np.min(mean))
-    pt.plot(SUMMARY['t'], normed,
-            ax=AX[1], no_set=True)
+    
+    normed = [(resp-np.min(resp))/(np.max(resp)-np.min(resp))\
+                  for resp in SUMMARY[key]['responses']]
+    cond = (SUMMARY['t']>0) & (SUMMARY['t']<4)
+    peak_time[key] = [SUMMARY['t'][cond][np.argmax(n[cond])] for n in normed]
+    pt.plot(SUMMARY['t'], np.mean(normed, axis=0), 
+            sy = np.std(normed, axis=0), 
+            color=color, ax=AX[1], no_set=True)
     pt.annotate(AX[1], i*'\n'+'%s, n=%i' % (key, len(SUMMARY[key]['responses'])), 
                 (1,1), va='top', color=color)
-pt.set_plot(AX[0], ylabel='$\Delta$V/F', ylabel='time (s)')
-pt.set_plot(AX[1], ylabel='norm. $\Delta$V/F', ylabel='time (s)')
+pt.set_plot(AX[0], ylabel='$\Delta$F/F', xlabel='time (s)')
+pt.set_plot(AX[1], ylabel='norm. $\Delta$F/F', xlabel='time (s)', yticks=[0,1])
+
+# %%
+from scipy.stats import ttest_ind
+fig, ax = pt.figure(figsize=(.8,1.2))
+pt.violin(peak_time['WT'], X=[0], ax=ax, COLORS=['tab:orange'])
+pt.violin(peak_time['GluN1'], X=[1], ax=ax, COLORS=['tab:purple'])
+ax.plot([0,1], ax.get_ylim()[1]*np.ones(2), 'k')
+pt.annotate(ax, pt.from_pval_to_star(\
+                ttest_ind(peak_time['WT'], peak_time['GluN1']).pvalue),
+            (0.5, ax.get_ylim()[1]), xycoords='data', ha='center')
+pt.set_plot(ax, ylabel='time (s)\nof peak resp.', 
+            xticks=[0,1], xticks_labels=['WT', 'GluN1'])
+#centers_of_mass['GluN1']], X=[0,1])
 
 # %%
