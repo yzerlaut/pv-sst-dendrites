@@ -2,6 +2,7 @@
 
 ## Passive Properties
 
+
 ### Basket Cell
 
 <!--| **leak conductance**       |                   |                 |                      |                        | N.B. x2.7 to match ~80-100MOhm input resistance         |-->
@@ -42,6 +43,7 @@
 |                            | proximal dendrite | `MC_dist_cm`    | 1.2                  | uF/cm<sup>2</sup>      |                                                         |
 
 
+N.B. to remove the axon from the morphology, use the scipt `neural_network_dynamics/nrn/morphologies/remove_axon_from_morpho.py`
 ## Active Mechanisms
 
 ### Library of Channels
