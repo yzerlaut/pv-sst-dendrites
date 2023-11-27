@@ -15,6 +15,7 @@ def run_sim(cellType='Basket',
             stimSeed=3,
             nCluster=[10],
             interspike=2,
+            interspike_from_width=None,
             t0=200,
             ISI=300,
             # bg stim
@@ -78,10 +79,15 @@ def run_sim(cellType='Basket',
             picked = np.random.choice(np.arange(len(synapses))[excitatory],
                                       nC, replace=False) # in excitatory only
             for i, syn in enumerate(picked):
+                if interspike_from_width is not None:
+                    Interspike = np.clip(np.random.randn(),-2.5,2.5)*\
+                            interspike_from_width
+                else:
+                    Interspike = i*interspike
                 TRAINS[syn].append(t0+\
                                    n*len(nCluster)*ISI+\
                                    c*ISI+\
-                                   i*interspike)
+                                   Interspike)
     # -- reordering spike trains
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
@@ -161,7 +167,7 @@ if __name__=='__main__':
                         default=np.arange(20)*5)
 
     # Branch number
-    parser.add_argument("--iBranch", type=int, default=0)
+    parser.add_argument("--iBranch", type=int, default=2)
     parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
@@ -175,6 +181,7 @@ if __name__=='__main__':
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
+    parser.add_argument("--nsyn_width_scan", action="store_true")
     parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
@@ -214,6 +221,24 @@ if __name__=='__main__':
                     bgStimFreq=[5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3],
                     bgFreqInhFactor=[0.25, 0.5, 1, 2, 4],
                     iBranch=np.arange(3))
+
+        sim.build(grid)
+
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}))
+
+        # run with the given params as a test
+        run_sim(**params)
+
+    elif args.nsyn_width_scan:
+    
+        sim = Parallel(\
+            filename='../../data/detailed_model/StimOnBg_NsynWidthScan.zip')
+
+        grid = dict(cellType=['Basket', 'Martinotti'],
+                    nCluster = [20, 50, 75, 100],
+                    interspike_from_width=[2, 10, 100, 500])
 
         sim.build(grid)
 
