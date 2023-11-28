@@ -2,12 +2,12 @@
 ########### dendro-somatic propagation ###################
 ##########################################################
 # Martinotti Cell
-python propag.py -c Martinotti --nCluster 1 --test_active --suffix Single
-python propag.py -c Martinotti --nCluster 4 --test_active --suffix Multi
-# Basket Cell
-python propag.py -c Basket --nCluster 1 --test_active --suffix Single
-python propag.py -c Basket --nCluster 4 --test_active --suffix Multi
-##########################################################
+#python propag.py -c Martinotti --nCluster 1 --test_active --suffix Single
+#python propag.py -c Martinotti --nCluster 4 --test_active --suffix Multi
+## Basket Cell
+#python propag.py -c Basket --nCluster 1 --test_active --suffix Single
+#python propag.py -c Basket --nCluster 4 --test_active --suffix Multi
+###########################################################
 ########### stimulation on top of background #############
 ##########################################################
 # Martinotti Cell

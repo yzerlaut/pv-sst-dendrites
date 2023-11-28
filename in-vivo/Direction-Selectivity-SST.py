@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -78,6 +78,10 @@ def init_summary(DATASET):
                 SUMMARY['WT']['subjects'].append(DATASET['subjects'][i])
                 
     return SUMMARY
+
+
+# %%
+SUMMARY
 
 
 # %% [markdown]

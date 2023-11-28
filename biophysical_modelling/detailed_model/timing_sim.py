@@ -11,10 +11,10 @@ def run_sim(cellType='Basket',
             iBranch=0,
             from_uniform=False,
             # stim props
+            width=5,
+            freq=5.,
             nStimRepeat=2,
             stimSeed=3,
-            nCluster=[10],
-            interspike=2,
             t0=200,
             ISI=300,
             # bg stim
@@ -29,6 +29,8 @@ def run_sim(cellType='Basket',
 
     from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+
+    h.dt = dt
 
     ######################################################
     ##   simulation preparation  #########################
@@ -52,7 +54,7 @@ def run_sim(cellType='Basket',
     else:
         synapses = cell.set_of_synapses[iBranch]                      
 
-    tstop=t0+nStimRepeat*ISI*len(nCluster)
+    tstop=t0+nStimRepeat*ISI
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
@@ -73,15 +75,12 @@ def run_sim(cellType='Basket',
 
     # -- stim evoked activity 
     np.random.seed(stimSeed)
-    for n in range(nStimRepeat):
-        for c, nC in enumerate(nCluster):
-            picked = np.random.choice(np.arange(len(synapses))[excitatory],
-                                      nC, replace=False) # in excitatory only
-            for i, syn in enumerate(picked):
-                TRAINS[syn].append(t0+\
-                                   n*len(nCluster)*ISI+\
-                                   c*ISI+\
-                                   i*interspike)
+    for i, syn in enumerate(np.arange(len(synapses))[excitatory]):
+        for n in range(nStimRepeat):
+            rdms = np.random.uniform(0, 1, int(ISI/dt))
+            spikes = dt*np.arange(int(ISI/dt))[rdms<(freq*dt)]
+            TRAINS[syn]+= list(t0+n*ISI+spikes)
+
     # -- reordering spike trains
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
@@ -118,10 +117,10 @@ def run_sim(cellType='Basket',
     output = {'output_rate': float(apc.n*1e3/tstop),
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'nCluster':nCluster,
+              'freq':freq,
+              'width':width,
               'nStimRepeat':nStimRepeat,
               'dt': dt, 't0':t0, 'ISI':ISI,
-              'interspike':interspike,
               'synapses':synapses,
               'tstop':tstop}
 
@@ -155,10 +154,9 @@ if __name__=='__main__':
 
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=2)
-    parser.add_argument("--interspike", type=float, default=0.1)
+    parser.add_argument("--freq", type=float, default=0.1)
+    parser.add_argument("--width", type=float, default=10.)
     parser.add_argument("--ISI", type=float, default=200)
-    parser.add_argument("--nCluster", type=int, nargs='*', 
-                        default=np.arange(20)*5)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -175,6 +173,7 @@ if __name__=='__main__':
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
     parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
+    parser.add_argument("--nsyn_width_scan", action="store_true")
     parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
@@ -189,8 +188,8 @@ if __name__=='__main__':
                   bgStimFreq=args.bgStimFreq,
                   bgStimSeed=args.bgStimSeed,
                   nStimRepeat=args.nStimRepeat,
-                  nCluster=args.nCluster,
-                  interspike=args.interspike,
+                  freq=args.freq,
+                  width=args.width,
                   with_presynaptic_spikes=args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   dt=args.dt)
@@ -201,36 +200,13 @@ if __name__=='__main__':
         print('running test simulation [...]')
         run_sim(**params)
 
-    elif args.background_calibration:
-    
-        sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_BgCalib.zip')
-
-        params['ISI'] = 1000
-        params['nCluster'] = [30,60]
-        params['nStimRepeat'] = 4
-
-        grid = dict(cellType=['Basket', 'Martinotti'],
-                    bgStimFreq=[5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3],
-                    bgFreqInhFactor=[0.25, 0.5, 1, 2, 4],
-                    iBranch=np.arange(3))
-
-        sim.build(grid)
-
-        sim.run(run_sim,
-                single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}))
-
-        # run with the given params as a test
-        run_sim(**params)
-
     else:
    
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_sim%s_%s.zip' % (args.suffix,
-                                                                          args.cellType))
+            filename='../../data/detailed_model/TimingStim_sim%s_%s.zip' % (args.suffix,
+                                                                            args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch))
 
