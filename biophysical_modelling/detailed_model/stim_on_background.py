@@ -233,13 +233,13 @@ if __name__=='__main__':
 
     elif args.nsyn_width_scan:
     
-        params['ISI'] = 1000
-        params['nCluster'] = np.arange(6)*20
+        params['ISI'] = 1500
 
         sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_NsynWidthScan.zip')
+            filename='../../data/detailed_model/StimOnBg_NsynWidthScan%s_%s.zip' % (args.suffix,
+                                                                                    args.cellType))
 
-        grid = dict(cellType=['Basket', 'Martinotti'],
+        grid = dict(iBranch=np.arange(3),
                     interspike_from_width=[2, 10, 100, 250])
 
         sim.build(grid)
