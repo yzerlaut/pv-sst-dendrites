@@ -12,10 +12,10 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # stim props
             width=5,
-            freq=5.,
+            freq=5e-4,
             nStimRepeat=2,
             stimSeed=3,
-            t0=200,
+            t0=400,
             ISI=300,
             # bg stim
             bgStimFreq=1e-3,
@@ -77,8 +77,8 @@ def run_sim(cellType='Basket',
     np.random.seed(stimSeed)
     for i, syn in enumerate(np.arange(len(synapses))[excitatory]):
         for n in range(nStimRepeat):
-            rdms = np.random.uniform(0, 1, int(ISI/dt))
-            spikes = dt*np.arange(int(ISI/dt))[rdms<(freq*dt)]
+            rdms = np.random.uniform(0, 1, int(width/dt))
+            spikes = dt*np.arange(int(width/dt))[rdms<(freq*dt)]
             TRAINS[syn]+= list(t0+n*ISI+spikes)
 
     # -- reordering spike trains
@@ -153,10 +153,10 @@ if __name__=='__main__':
     parser.add_argument("--bgStimSeed", type=float, default=1)
 
     # stim props
-    parser.add_argument("--nStimRepeat", type=int, default=2)
-    parser.add_argument("--freq", type=float, default=0.1)
+    parser.add_argument("--nStimRepeat", type=int, default=4)
+    parser.add_argument("--freq", type=float, default=1e-5)
     parser.add_argument("--width", type=float, default=10.)
-    parser.add_argument("--ISI", type=float, default=200)
+    parser.add_argument("--ISI", type=float, default=500)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -167,6 +167,7 @@ if __name__=='__main__':
     parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
+    parser.add_argument("--from_uniform", action="store_true")
 
     parser.add_argument("--suffix", help="suffix for saving", default='')
     parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
@@ -177,6 +178,7 @@ if __name__=='__main__':
     parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
+    parser.add_argument("--filename", default='single_sim.npy')
 
     args = parser.parse_args()
 
@@ -192,12 +194,14 @@ if __name__=='__main__':
                   width=args.width,
                   with_presynaptic_spikes=args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
+                  from_uniform=args.from_uniform,
                   dt=args.dt)
 
     if args.test:
 
         # run with the given params as a test
         print('running test simulation [...]')
+        params['filename'] = args.filename
         run_sim(**params)
 
     else:
