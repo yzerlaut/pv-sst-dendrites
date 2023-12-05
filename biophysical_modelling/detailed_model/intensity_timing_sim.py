@@ -215,8 +215,8 @@ if __name__=='__main__':
         grid = dict(iBranch=np.arange(args.nBranch),
                     # width=[5, 10, 20, 50, 100, 200],
                     # freq=[2e-3, 5e-3, 1e-2, 2e-2, 5e-2])
-                    width=[10, 25, 50, 100],
-                    freq=[5e-3, 1e-2])
+                    width=[12.5, 25, 50, 100],
+                    freq=[5e-3, 1e-2, 2e-2])
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)

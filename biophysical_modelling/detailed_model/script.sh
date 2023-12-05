@@ -20,16 +20,40 @@
 ##########################################################
 # # --- demo data --- # #
 # Basket cell
-#python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 10 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-10ms.npy &
+#for w in 6.25 12.5 25 50 100
+#do
+    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width $w --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-w${w}ms-f10mHz.npy &
+#done
+# Martinotti cell
+#for w in 6.25 12.5 25 50 100
+#do
+    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-w${w}ms-f10mHz.npy --iBranch 1 & 
+#done
+#for factor in 1 2 4 8 16
+#do
+    #w=$(echo "6.25 * $factor" | bc -l)
+    #f=$(echo "20 / $factor" | bc -l)
+    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-w${w}ms-f${f}mHz.npy --iBranch 1 & 
+    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --filename ../../data/detailed_model/IT-Martinotti-NO-NMDA-w${w}ms-f${f}mHz.npy --iBranch 1 & 
+#done
+# ---------- 
+#python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 10 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-w10ms-f10mHz.npy &
 #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-100ms.npy &
 # Martinotti cell
 #python timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 10 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-10ms.npy --iBranch 1 & 
 #python timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-100ms.npy --iBranch 1
 # # --- full data --- # #
 # Basket cell
-python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 5 --suffix Dual #--fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 10 --suffix Dual #--fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 10 --suffix Dual --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 10 --suffix Dual --fix_missing_only
 # Martinotti cell
-python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 5 --suffix Dual # --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual # --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual --fix_missing_only
+python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nStimRepeat 10 --suffix Dual --fix_missing_only
 
 ##########################################################
 ########### clustered input simulations ##################
