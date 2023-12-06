@@ -154,13 +154,13 @@ if __name__=='__main__':
 
     # stim props
     parser.add_argument("--nStimRepeat", type=int, default=4)
-    parser.add_argument("--freq", type=float, default=1e-5)
-    parser.add_argument("--width", type=float, default=10.)
+    parser.add_argument("--freq", type=float, nargs='*', default=[1e-5])
+    parser.add_argument("--width", type=float, nargs='*', default=[10.])
     parser.add_argument("--ISI", type=float, default=500)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
-    parser.add_argument("--nBranch", type=int, default=6)
+    parser.add_argument("--nBranch", type=int, default=0)
 
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
@@ -190,8 +190,8 @@ if __name__=='__main__':
                   bgStimFreq=args.bgStimFreq,
                   bgStimSeed=args.bgStimSeed,
                   nStimRepeat=args.nStimRepeat,
-                  freq=args.freq,
-                  width=args.width,
+                  freq=args.freq[0],
+                  width=args.width[0],
                   with_presynaptic_spikes=args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   from_uniform=args.from_uniform,
@@ -212,11 +212,12 @@ if __name__=='__main__':
             filename='../../data/detailed_model/TimingStim_sim%s_%s.zip' % (args.suffix,
                                                                             args.cellType))
 
-        grid = dict(iBranch=np.arange(args.nBranch),
-                    # width=[5, 10, 20, 50, 100, 200],
-                    # freq=[2e-3, 5e-3, 1e-2, 2e-2, 5e-2])
-                    width=[12.5, 25, 50, 100],
-                    freq=[5e-3, 1e-2, 2e-2])
+        grid = dict(width=args.width,
+                    freq=args.freq)
+        if args.nBranch>0:
+            grid['iBranch'] = np.arange(args.nBranch)
+        else:
+            grid['iBranch'] = [args.iBranch]
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
