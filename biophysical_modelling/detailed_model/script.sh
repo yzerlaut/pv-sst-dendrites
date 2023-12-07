@@ -79,16 +79,16 @@ fi
 if [[ $1 == 'all' || $1 == 'window-dep-full' ]]
 then
     # Basket
-    python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
     for i in 1 2 3 4 5 
     do
-        python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
+        python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
     done
     # Martinotti
-    python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
     for i in 1 2 3 4 5 
     do
-        python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
+        python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
     done
 
 fi
