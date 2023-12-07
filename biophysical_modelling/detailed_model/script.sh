@@ -1,8 +1,8 @@
+##########################################################
+########### dendro-somatic propagation ###################
+##########################################################
 if [[ $1 == 'all' || $1 == 'dendro-somatic-propag' ]]
 then
-    ##########################################################
-    ########### dendro-somatic propagation ###################
-    ##########################################################
     # Martinotti Cell
     python propag.py -c Martinotti --nCluster 1 --test_active --suffix Single
     python propag.py -c Martinotti --nCluster 4 --test_active --suffix Multi
@@ -14,11 +14,20 @@ fi
 ###########################################################
 ########### stimulation on top of background #############
 ##########################################################
-# Martinotti Cell
-#python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 40 45 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 100 --test_NMDA --suffix Full --ISI 400
-#python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 100 --test_uniform --suffix TestUniform --ISI 400 --with_NMDA
-# Basket Cell
-#python stim_on_background.py -c Basket --nCluster 0 5 10 15 20 25 30 35 40 45 50 55 --bgStimFreq 2e-3 --bgFreqInhFactor 1 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400 
+# demo sim
+if [[ $1 == 'all' || $1 == 'demo-input-output' ]]
+then
+    echo '...'
+fi
+# full sim
+if [[ $1 == 'all' || $1 == 'full-input-output-curve' ]]
+then
+    # Martinotti Cell
+    python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 40 45 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 100 --test_NMDA --suffix Full --ISI 400
+    python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 100 --test_uniform --suffix TestUniform --ISI 400 --with_NMDA
+    # Basket Cell
+    python stim_on_background.py -c Basket --nCluster 0 5 10 15 20 25 30 35 40 45 50 55 --bgStimFreq 2e-3 --bgFreqInhFactor 1 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400 
+fi
 #
 #
 #
@@ -42,6 +51,19 @@ then
     done
 fi
 
+if [[ $1 == 'all' || $1 == 'timing-demo' ]]
+then
+    # # --- demo data --- # #
+    # Martinotti cell
+    for factor in 1 2 4 8 16
+    do
+        w=$(printf %.2f $(echo "6.25 * $factor" | bc -l))
+        f=$(printf %.2f $(echo "10.00 / $factor" | bc -l))
+        python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-w${w}ms-f${f}mHz.npy --iBranch 1 --nStimRepeat 10 & 
+        python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --filename ../../data/detailed_model/IT-Martinotti-NO-NMDA-w${w}ms-f${f}mHz.npy --iBranch 1 --nStimRepeat 10 & 
+    done
+fi
+
 if [[ $1 == 'all' || $1 == 'intensity-passive' ]]
 then
     python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --nStimRepeat 50 --ISI 800 --passive --suffix PassiveExample & 
@@ -54,20 +76,22 @@ then
     python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix ActiveExample
 fi
 
+if [[ $1 == 'all' || $1 == 'window-dep-full' ]]
+then
+    # Basket
+    python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
+    for i in 1 2 3 4 5 
+    do
+        python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
+    done
+    # Martinotti
+    python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full #--fix_missing_only
+    for i in 1 2 3 4 5 
+    do
+        python intensity_timing_sim.py --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
+    done
 
-#for factor in 1 2 4 8 16
-#do
-    #w=$(echo "6.25 * $factor" | bc -l)
-    #f=$(echo "20 / $factor" | bc -l)
-    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-w${w}ms-f${f}mHz.npy --iBranch 1 & 
-    #python intensity_timing_sim.py --test --with_presynaptic_spikes --freq ${f}e-3 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --filename ../../data/detailed_model/IT-Martinotti-NO-NMDA-w${w}ms-f${f}mHz.npy --iBranch 1 & 
-#done
-# ---------- 
-#python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 10 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-w10ms-f10mHz.npy &
-#python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-100ms.npy &
-# Martinotti cell
-#python timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 10 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-10ms.npy --iBranch 1 & 
-#python timing_sim.py --test --with_presynaptic_spikes --freq 2e-2 --width 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-100ms.npy --iBranch 1
+fi
 # # --- full data --- # #
 # Basket cell
 #python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 10 --suffix Dual #--fix_missing_only
