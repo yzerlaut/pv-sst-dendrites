@@ -13,6 +13,7 @@ def run_sim(cellType='Basket',
             # stim props
             width=5,
             freq=5e-4,
+            broadening=1.,
             nStimRepeat=2,
             stimSeed=3,
             t0=400,
@@ -31,6 +32,10 @@ def run_sim(cellType='Basket',
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
 
     h.dt = dt
+
+    # add the broadening feature
+    width *= broadening
+    freq /= broadening
 
     ######################################################
     ##   simulation preparation  #########################
@@ -156,6 +161,7 @@ if __name__=='__main__':
     parser.add_argument("--nStimRepeat", type=int, default=4)
     parser.add_argument("--freq", type=float, nargs='*', default=[1e-5])
     parser.add_argument("--width", type=float, nargs='*', default=[10.])
+    parser.add_argument("--broadening", type=float, nargs='*', default=[1])
     parser.add_argument("--ISI", type=float, default=500)
 
     # Branch number
@@ -192,6 +198,7 @@ if __name__=='__main__':
                   nStimRepeat=args.nStimRepeat,
                   freq=args.freq[0],
                   width=args.width[0],
+                  broadening=args.broadening[0],
                   with_presynaptic_spikes=args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   from_uniform=args.from_uniform,
@@ -213,7 +220,9 @@ if __name__=='__main__':
                                                                             args.cellType))
 
         grid = dict(width=args.width,
-                    freq=args.freq)
+                    freq=args.freq,
+                    broadening=args.broadening)
+
         if args.nBranch>0:
             grid['iBranch'] = np.arange(args.nBranch)
         else:

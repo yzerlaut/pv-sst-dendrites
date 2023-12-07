@@ -90,8 +90,19 @@ then
     do
         python intensity_timing_sim.py --freq 1e-2 --width 6.25 12.5 25 50 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nStimRepeat 30 --nBranch 6 --suffix Full --fix_missing_only
     done
-
 fi
+
+if [[ $1 == 'all' || $1 == 'broadening-demo' ]]
+then
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix BroadeningExample
+fi
+
+if [[ $1 == 'all' || $1 == 'broadening-full' ]]
+then
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nBranch 6 --nStimRepeat 50 --ISI 500 --suffix BroadeningExample
+fi
+
+
 # # --- full data --- # #
 # Basket cell
 #python intensity_timing_sim.py --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --nStimRepeat 10 --suffix Dual #--fix_missing_only
