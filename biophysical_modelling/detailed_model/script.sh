@@ -94,8 +94,8 @@ fi
 
 if [[ $1 == 'all' || $1 == 'broadening-demo' ]]
 then
-    python intensity_timing_sim.py --freq 2e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix BroadeningExampleNoNMDA
-    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix BroadeningExampleWithNMDA
+    python intensity_timing_sim.py --freq 2e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix BroadeningExampleNoNMDA
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --iBranch 1 --nStimRepeat 50 --ISI 500 --suffix BroadeningExampleWithNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'broadening-full' ]]
@@ -103,7 +103,7 @@ then
     # no nmda
     python intensity_timing_sim.py --freq 2e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --nBranch 6 --nStimRepeat 50 --ISI 500 --suffix BroadeningFullNoNMDA
     # with nmda
-    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --test_NMDA --nBranch 6 --nStimRepeat 50 --ISI 500 --suffix BroadeningFullWithNMDA
+    python intensity_timing_sim.py --freq 1e-2 --width 6.25 --broadening 1 2 4 8 16 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --nBranch 6 --nStimRepeat 50 --ISI 500 --suffix BroadeningFullWithNMDA
 fi
 
 
