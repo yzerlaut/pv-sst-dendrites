@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -265,12 +265,14 @@ def plot_summary(SUMMARY,
 
 SUMMARY = np.load('../data/in-vivo/size-tuning-dFoF-summary.npy', allow_pickle=True).item()
 fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='ROIs')
+fig.savefig('size-tuning-WT-GluN1-per-ROI.svg')
 fig = plot_summary(SUMMARY, ['WT', 'GluN1'], ['k', 'tab:blue'], average_by='sessions')
+fig.savefig('size-tuning-WT-GluN1-per-session.svg')
 
 # %%
-fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['darkgreen', 'mediumseagreen'], average_by='ROIs')
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'tab:green'], average_by='ROIs')
 fig.savefig('size-tuning-WT-GluN3-per-ROI.svg')
-fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['darkgreen', 'mediumseagreen'], average_by='sessions')
+fig = plot_summary(SUMMARY, ['WT', 'GluN3'], ['k', 'tab:green'], average_by='sessions')
 fig.savefig('size-tuning-WT-GluN3-per-session.svg')
 
 # %%
