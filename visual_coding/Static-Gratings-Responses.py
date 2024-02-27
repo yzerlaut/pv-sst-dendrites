@@ -117,7 +117,8 @@ analysis_metrics = cache.get_unit_analysis_metrics_by_session_type('brain_observ
 # %%
 def compute_orientation_spike_resp(unit, analysis_metrics,
                                    time_resolution = 1e-3,
-                                   t_pre = 50e-3, t_post = 50e-3):
+                                   t_pre = 50e-3,
+                                   t_post = 50e-3):
     """
     orientation response of a given unit
     at its preferred phase and preferred spatial frequency !
@@ -127,16 +128,17 @@ def compute_orientation_spike_resp(unit, analysis_metrics,
     # get the session for that unit
     session_id = analysis_metrics[unit_cond].ecephys_session_id.values[0]
     session = cache.get_session_data(session_id)
-    stim_table = session.get_stimulus_table()
 
     # get the spikes of that unit
     spike_times = session.spike_times[unit]
 
     # get the stimulus information
     stim_table = session.get_stimulus_table()
+    
     # pick static gratings at preferred freq and preferred phase !
     print('preferred phase:', analysis_metrics[unit_cond].pref_phase_sg.values[0])
     print('preferred spatial freq:', analysis_metrics[unit_cond].pref_sf_sg.values[0])
+    
     static_gratings = (stim_table.stimulus_name=='static_gratings') &\
                     (stim_table.orientation!='null') & \
                     (stim_table.spatial_frequency.values.astype('str')==str(analysis_metrics[unit_cond].pref_sf_sg.values[0])) &\
@@ -148,7 +150,7 @@ def compute_orientation_spike_resp(unit, analysis_metrics,
     time_resolution = np.mean(np.diff(bin_edges))
 
     spike_matrix = np.zeros( (np.sum(static_gratings),
-                              len(bin_edges)) )
+                              len(bin_edges)), dtype=bool)
 
     for trial_idx, trial_start in enumerate(stim_table[static_gratings].start_time.values):
 
@@ -156,7 +158,7 @@ def compute_orientation_spike_resp(unit, analysis_metrics,
                    (spike_times < (trial_start + bin_edges[-1]))
 
         binned_times = ((spike_times[in_range] - (trial_start + bin_edges[0])) / time_resolution).astype('int')
-        spike_matrix[trial_idx, binned_times] = 1
+        spike_matrix[trial_idx, binned_times] = True
 
     return xr.DataArray(
         name='spike_counts',
@@ -171,9 +173,126 @@ def compute_orientation_spike_resp(unit, analysis_metrics,
 
 Key = 'PV'
 positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
-i = np.argmax(RESP[Key])
+i = np.argmax(OSI[Key])
 spikes_matrix, orientations = \
         compute_orientation_spike_resp(positive_IDs[i], analysis_metrics)
+
+# %%
+unit = positive_IDs[0]
+unit_cond = analysis_metrics.index.values==unit
+# get the session for that unit
+session_id = analysis_metrics[unit_cond].ecephys_session_id.values[0]
+session = cache.get_session_data(session_id)
+
+# get the spikes of that unit
+spike_times = session.spike_times[unit]
+
+# get the stimulus information
+stim_table = session.get_stimulus_table()
+static_gratings = (stim_table.stimulus_name=='static_gratings') &\
+                  (stim_table.orientation!='null')
+
+
+# %%
+class spikingResponse:
+    
+    def __init__(self, stim_table, spike_times, t,
+                 filename=None):
+        
+        if filename is not None:
+            
+            self.load(filename)
+            
+        else:
+            
+            self.build(stim_table, spike_times, t)
+            
+        
+    def build(self, stim_table, spike_times, t):
+        
+        duration = np.mean(stim_table.duration) # find stim duration
+        self.t = t
+        
+        self.time_resolution = np.mean(np.diff(self.t))
+
+        self.spike_matrix = np.zeros( (stim_table.size,
+                                       len(self.t)) , dtype=bool)
+        self.keys = ['spike_matrix', 't']
+
+        for key in stim_table:
+            
+            setattr(self, key, np.array(getattr(stim_table, key)))
+            self.keys.append(key)
+
+        for trial_idx, trial_start in enumerate(stim_table.start_time.values):
+
+            in_range = (spike_times > (trial_start + self.t[0])) * \
+                       (spike_times < (trial_start + self.t[-1]))
+
+            binned_times = ((spike_times[in_range] -\
+                             (trial_start + self.t[0])) / self.time_resolution).astype('int')
+            self.spike_matrix[trial_idx, binned_times] = True       
+            
+    def get_rate(self,
+                 smoothing=2e-3):
+        
+        return gaussian_filter1d(self.spike_matrix[:,:].mean(axis=0) / self.time_resolution,
+                                int(smoothing/self.time_resolution))
+    
+    def save(self, filename):
+        D = {'time_resolution':self.time_resolution, 'keys':self.keys}
+        for key in self.keys:
+            D[key] = getattr(self, key)
+        np.save(filename, D)
+    
+    def load(self, filename):
+        D = np.load(filename, allow_pickle=True).item()
+        for key in D['keys']:
+            setattr(self, key, np.array(D[key]))
+        self.keys = D['keys']
+        self.time_resolution = D['time_resolution']
+        
+    def plot(self, 
+             smoothing=2, 
+             trial_subsampling=10,
+             color='k', ms=1):
+        
+        fig = plt.figure(figsize=(1.2,2))
+        plt.subplots_adjust(left=0.1, top=0.8, right=0.95)
+        ax1 = plt.subplot2grid((5, 1), (0, 0), rowspan=3)
+        ax2 = plt.subplot2grid((5, 1), (3, 0), rowspan=2)
+
+        for t in range(self.spike_matrix.shape[0])[::trial_subsampling]:
+            spike_cond = self.spike_matrix[t,:]==1
+            ax1.plot(1e3*self.t[spike_cond],
+                     self.spike_matrix[t,:][spike_cond]+t, '.', ms=ms, color=color)
+        ax2.fill_between(1e3*self.t, 0*self.t, self.get_rate(), color=color)
+        ax1.set_ylabel('trial #')
+        ax2.set_ylabel('rate (Hz)')
+        ax2.set_xlabel('time (s)')
+        pt.set_common_xlims([ax1,ax2])
+
+t = 1e-3*(-100+np.arange(400))
+spikeResp = spikingResponse(stim_table[static_gratings], spike_times, t)
+spikeResp.plot(trial_subsampling=20)
+
+# %%
+rate = gaussian_filter1d(spikeResp.spike_matrix[:,:].mean(axis=0) / spikeResp.time_resolution, 1)
+
+plt.plot(1e3*spikeResp.t, rate) 
+
+# %%
+spikeResp.save('../data/visual_coding/test.npy')
+
+# %%
+spikeResp = spikingResponse(None, None, None, '../data/visual_coding/test.npy')
+
+# %%
+np.unique(spikeResp.orientation)
+
+# %%
+plt.plot(1e3*spikeResp.t, spikeResp.spike_matrix.mean(axis=0))
+
 
 # %%
 
@@ -219,12 +338,11 @@ def show_single_unit_response(spikes_matrix, orientations,
     return fig
 
 fig = show_single_unit_response(spikes_matrix, orientations, ms=0.5, color='tab:red')
-fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], RESP[Key][i]), color='k')
+fig.suptitle('unit %i, OSI=%.2f \n \n' % (positive_IDs[i], OSI[Key][i]), color='k')
 #fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.png'))
 
 # %%
 # loop over all units
-
 for Key, color in zip(['PV', 'SST'], ['tab:red', 'tab:orange']):
     positive_IDs = np.concatenate(Optotagging[Key+'_positive_units'])
     for k, i in enumerate(np.argsort(OSI[Key])[::-1]):
