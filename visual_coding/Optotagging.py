@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -30,6 +30,10 @@ import fourier_for_real as fourier
 import matplotlib.pyplot as plt
 
 from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
+
+# just to disable the HDMF cache namespace warnings, REMOVE to see them
+import warnings
+warnings.filterwarnings("ignore")
 
 # %%
 data_directory = os.path.join(os.path.expanduser('~'), 'Downloads', 'ecephys_cache_dir')
@@ -57,20 +61,24 @@ SST_sessions = sessions[(sessions.full_genotype.str.find('Sst-IRES-Cre') > -1) &
                         #(sessions.session_type == 'functional_connectivity') & \
                         (['VISp' in acronyms for acronyms in sessions.ecephys_structure_acronyms])]
 
+# %%
+PV_sessions = sessions[sessions.full_genotype.str.find('Pvalb-IRES-Cre') > -1]
+SST_sessions = sessions[sessions.full_genotype.str.find('Sst-IRES-Cre') > -1]
+
+# %%
+Visual_Areas = [v for v in np.unique(np.concatenate([np.array(x, dtype=str)\
+                                for x in sessions.ecephys_structure_acronyms.values])) if 'VIS' in v]
+Visual_Areas
+
 # %% [markdown]
 # # 2) Identifying positive units
-
-# %%
-session = cache.get_session_data(PV_sessions.index.values[7])
-
-# %%
-session.optogenetic_stimulation_epochs
 
 # %%
 trials = session.optogenetic_stimulation_epochs[session.optogenetic_stimulation_epochs.stimulus_name=='pulse']
 trials = session.optogenetic_stimulation_epochs[(session.optogenetic_stimulation_epochs.duration > 0.009) & \
                                                 (session.optogenetic_stimulation_epochs.duration < 0.02)]
-units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+#units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
 
 def optotagging_spike_counts(session, trials, units,
                              time_resolution = 5e-4):
@@ -105,7 +113,7 @@ def optotagging_spike_counts(session, trials, units,
         dims=['trial_id', 'time_relative_to_stimulus_onset', 'unit_id']
     )
 
-spikes_matrix = optotagging_spike_counts(session, trials, units)
+#spikes_matrix = optotagging_spike_counts(session, trials, units)
 
 
 # %%
@@ -132,7 +140,7 @@ def plot_optotagging_response(spikes_matrix,
     cb = plt.colorbar(fraction=0.046, pad=0.04)
     cb.set_label('Mean firing rate (Hz)\n(n=%i trials)' % len(spikes_matrix.trial_id.values))
     
-plot_optotagging_response(spikes_matrix)
+#plot_optotagging_response(spikes_matrix)
 
 
 # %%
@@ -206,23 +214,20 @@ _ = analyze_optotagging_responses(session, trials, units, #spikes_matrix,
 # %%
 trials = session.optogenetic_stimulation_epochs[\
                 (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
-                (session.optogenetic_stimulation_epochs.duration > 0.003) &
-                (session.optogenetic_stimulation_epochs.duration < 0.009) & 
-                (session.optogenetic_stimulation_epochs.level>=2)]
-_ = analyze_optotagging_responses(session, trials, units, spikes_matrix,
+                (session.optogenetic_stimulation_epochs.duration > 2e-3) &
+                (session.optogenetic_stimulation_epochs.duration < 8e-3)]
+_ = analyze_optotagging_responses(session, trials, units, #spikes_matrix,
                                   label='5ms pulse', with_fig=True)
 
 # %%
 trials = session.optogenetic_stimulation_epochs[\
-        (session.optogenetic_stimulation_epochs.stimulus_name=='fast_pulses') & 
-        (session.optogenetic_stimulation_epochs.level>=2)]
+        (session.optogenetic_stimulation_epochs.stimulus_name=='fast_pulses')]
 _ = analyze_optotagging_responses(session, trials, units,
                                   label='2.5ms pulses\n  @ 10Hz', with_fig=True)
 
 # %%
 trials = session.optogenetic_stimulation_epochs[\
-        (session.optogenetic_stimulation_epochs.stimulus_name=='raised_cosine')& 
-        (session.optogenetic_stimulation_epochs.level>=2)]
+        (session.optogenetic_stimulation_epochs.stimulus_name=='raised_cosine')]
 _ = analyze_optotagging_responses(session, trials, units,
                                   inclusion_evoked_factor=2.,
                                   label='raised cosine', with_fig=True)
@@ -247,7 +252,8 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         session = cache.get_session_data(Sessions.index.values[iSession])
 
         # considering all units in the visual cortex
-        units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+        #units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+        units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
 
         # we use the 10ms pulse 
         trials = session.optogenetic_stimulation_epochs[\
@@ -260,7 +266,7 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
                                                        label='10ms pulse',
                                                        with_fig=True)
         fig.suptitle('%s : #%i\n' % (Key, iSession+1))
-        fig.savefig(os.path.join('..', 'figures', 'VisualCoding', 
+        fig.savefig(os.path.join('..', 'figures', 'visual_coding', 
                     'Optotagging', Key+'-%i.png' % (iSession+1)))
         plt.close(fig)
         
@@ -268,7 +274,7 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         Optotagging[Key.replace('sessions', 'positive_units')].append(positive_units)
 
         
-np.save(os.path.join('..', 'data', 'Optotagging-Results.npy'), Optotagging)
+np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), Optotagging)
 
 # %%
 Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
@@ -280,5 +286,3 @@ for Key in ['PV_sessions', 'SST_sessions']:
     print(Key, ' ---> %i units' % Ntot)
 
 # %%
-
-
