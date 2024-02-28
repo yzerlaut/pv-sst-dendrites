@@ -237,7 +237,6 @@ _ = analyze_optotagging_responses(session, trials, units,
 # ## Loop over sessions
 
 # %%
-    
 Optotagging = {}
 
 for Sessions, Key in zip([PV_sessions, SST_sessions],
@@ -245,14 +244,17 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
     
     Optotagging[Key] = []
     Optotagging[Key.replace('sessions', 'positive_units')] = []
+    Optotagging[Key.replace('sessions', 'negative_units')] = []
+    Optotagging[Key.replace('sessions', 'session_type')] = []
 
     for iSession in range(len(Sessions)):
         
         print(Key, '---> session #%i' % (iSession+1))
         session = cache.get_session_data(Sessions.index.values[iSession])
 
-        # considering all units in the visual cortex
+        # considering all units in V1
         #units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+        # considering all units in the visual cortex
         units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
 
         # we use the 10ms pulse 
@@ -265,6 +267,8 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         positive_units, fig = analyze_optotagging_responses(session, trials, units,
                                                        label='10ms pulse',
                                                        with_fig=True)
+        negative_units = [i for i in units.index if i not in positive_units]
+        
         fig.suptitle('%s : #%i\n' % (Key, iSession+1))
         fig.savefig(os.path.join('..', 'figures', 'visual_coding', 
                     'Optotagging', Key+'-%i.png' % (iSession+1)))
@@ -272,7 +276,8 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         
         Optotagging[Key].append(Sessions.index.values[iSession])
         Optotagging[Key.replace('sessions', 'positive_units')].append(positive_units)
-
+        Optotagging[Key.replace('sessions', 'negative_units')].append(negative_units)
+        Optotagging[Key.replace('sessions', 'session_type')].append(session.session_type)
         
 np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), Optotagging)
 
@@ -281,8 +286,6 @@ Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-R
                       allow_pickle=True).item()
 
 for Key in ['PV_sessions', 'SST_sessions']:
-
-    Ntot = np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]])
-    print(Key, ' ---> %i units' % Ntot)
-
-# %%
+    print('')
+    print(Key, ' ---> %i positive units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]]))
+    print(Key, ' ---> %i negative units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'negative_units')]]))

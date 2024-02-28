@@ -210,26 +210,44 @@ class spikingResponse:
 # # 3) Store all stimulus-evoked spikes
 
 # %%
-if False:
+all = True
+dt = 2e-3 # time bin
+
+if True:
     # turn True to re-run the analysis
     for key in ['PV', 'SST']:
         # loop over session
         count = 1
-        for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+
+        for sessionID, positive_units, negative_units in zip(Optotagging[key+'_sessions'],
+                                                             Optotagging[key+'_positive_units'],
+                                                             Optotagging[key+'_negative_units']):
+
+            if all:
+                units  = np.concatenate([positive_units, negative_units])
+            else:
+                units = positive_units
+            
             session = cache.get_session_data(sessionID)
             # stimulus infos for that session
             stim_table = session.get_stimulus_table()
             # fetch summary statistics 
             analysis_metrics = cache.get_unit_analysis_metrics_by_session_type(session.session_type)
+            
             for unit in units:
                 # get the spikes of that unit
                 spike_times = session.spike_times[unit]
                 for protocol in ['flashes', 'static_gratings', 'drifting_gratings',
-                                'drifting_gratings_75_repeats', 'drifting_gratings_contrast']:
+                                 'drifting_gratings_75_repeats', 'drifting_gratings_contrast',
+                                 'natural_movie_one', 'natural_movie_one_more_repeats',
+                                 'natural_movie_one_shuffled', 'natural_scenes']:
                     if protocol in np.unique(stim_table.stimulus_name):
                         cond = (stim_table.stimulus_name==protocol)
                         duration = int(1e3*np.mean(stim_table[cond].duration))
-                        t = 1e-3*np.linspace(-duration/4., 1.25*duration, 100)
+                        t0 = -duration/2.
+                        tstop = 1.5*duration
+                        t = t0+np.arange(int((tstop-t0)/dt))*dt
+                        #t = 1e-3*np.linspace(-duration/2., 1.5*duration, 100)
                         spikeResp = spikingResponse(stim_table[cond], spike_times, t)
                         spikeResp.save(os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit)))
 
@@ -267,6 +285,33 @@ print('number of repeats: ', np.sum(np.array([str(o) for o in spikeResp.orientat
 # %%
 from scipy.stats import sem
 
+window = [-0.01, 0.2]
+protocol = 'static_gratings'
+fig, AX = pt.figure(axes=(2,1), wspace=3.)
+for k, ax, key, color in zip(range(2), AX, ['PV', 'SST'], ['tab:red', 'tab:orange']):
+    RATES = []
+    for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+        sRATES = []
+        for unit in units:
+            filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
+            if os.path.isfile(filename):
+                spikeResp = spikingResponse(None, None, None, filename=filename)
+                tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
+                rate = spikeResp.get_rate(cond=spikeResp.contrast==0.8)
+                rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
+                sRATES.append(rate[tCond])
+        if len(sRATES)>0:
+            RATES.append(np.mean(sRATES, axis=0))
+    pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
+            sy=sem(RATES, axis=0),
+            #sy=np.std(RATES, axis=0),
+            color=color, ax=ax, no_set=True)
+    pt.annotate(ax, k*'\n'+'N=%i sessions' % len(RATES), (1,1), va='top', color=color)
+    pt.set_plot(ax, title=protocol, ylabel='$\delta$ rate (Hz)')
+
+# %%
+from scipy.stats import sem
+
 window = [-0.01, 0.15]
 protocol = 'static_gratings'
 fig, ax = pt.figure()
@@ -294,10 +339,11 @@ from scipy.stats import sem
 window = [-0.1, 0.24]
 
 protocol = 'flashes'
-fig, ax = pt.figure()
-for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
+fig, AX = pt.figure(axes=(2,1), wspace=3.)
+for k, ax, key, color in zip(range(2), AX, ['PV', 'SST'], ['tab:red', 'tab:orange']):
     RATES = []
     for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+        sRATES = []
         for unit in units:
             filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
             if os.path.isfile(filename):
@@ -305,13 +351,15 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
                 tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
                 rate = spikeResp.get_rate(cond=spikeResp.color==1.)
                 rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
-                RATES.append(rate[tCond])
+                sRATES.append(rate[tCond])
+        if len(sRATES)>0:
+            RATES.append(np.mean(sRATES, axis=0))
     pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
             sy=sem(RATES, axis=0),
             #sy=np.std(RATES, axis=0),
             color=color, ax=ax, no_set=True)
-    pt.annotate(ax, k*'\n'+'n=%i' % len(RATES), (1,1), va='top', color=color)
-pt.set_plot(ax, title=protocol, ylabel='$\delta$ rate (Hz)', xlabel='time (s)')
+    pt.annotate(ax, k*'\n'+'N=%i sessions' % len(RATES), (1,1), va='top', color=color)
+    pt.set_plot(ax, title=protocol, ylabel='$\delta$ rate (Hz)', xlabel='time (s)')
 
 # %%
 from scipy.stats import sem
@@ -339,6 +387,34 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
             color=color, ax=ax, no_set=True)
     pt.annotate(ax, k*'\n'+'n=%i' % len(RATES), (1,1), va='top', color=color)
 pt.set_plot(ax, title=protocol, ylabel='$\delta$ rate (Hz)', xticks=[0,1,2], xlabel='time (s)')
+
+# %%
+from scipy.stats import sem
+
+window = [-0.4, 2.4]
+
+protocol = 'drifting_gratings'
+fig, AX = pt.figure(axes=(2,1), wspace=3)
+for k, ax, key, color in zip(range(2), AX, ['PV', 'SST'], ['tab:red', 'tab:orange']):
+    RATES = []
+    for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+        sRATES = []
+        for unit in units:
+            filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
+            if os.path.isfile(filename):
+                spikeResp = spikingResponse(None, None, None, filename=filename)
+                tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
+                rate = spikeResp.get_rate(cond=spikeResp.contrast==0.8)
+                rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
+                sRATES.append(rate[tCond])
+        if len(sRATES)>0:
+            RATES.append(np.mean(sRATES, axis=0))
+    pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
+            sy=sem(RATES, axis=0),
+            #sy=np.std(RATES, axis=0),
+            color=color, ax=ax, no_set=True)
+    pt.annotate(ax, k*'\n'+'N=%i sessions' % len(RATES), (1,1), va='top', color=color)
+    pt.set_plot(ax, title=protocol, ylabel='$\delta$ rate (Hz)', xticks=[0,1,2], xlabel='time (s)')
 
 # %%
 from scipy.stats import sem
@@ -426,12 +502,13 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
                 spikeResp = spikingResponse(None, None, None, filename=filename)
                 tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
                 rate = spikeResp.get_rate(cond=spikeResp.color==1.)
-                rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
+                #rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
                 RATES.append(rate[tCond])
     pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
             sy=sem(RATES, axis=0),
             color=color, ax=AX[k][0], no_set=True)
-pt.draw_bar_scales(AX[0][0], Xbar=0.05, Xbar_label='50ms', Ybar=1e-12, loc='top-right')
+
+
 protocol = 'drifting_gratings'
 window = [-0.25, 2.25]
 
@@ -446,7 +523,7 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
             spikeResp = spikingResponse(None, None, None, filename=filename)
             tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
             rate = spikeResp.get_rate(cond=spikeResp.contrast==0.8)
-            rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
+            #rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
             RATES.append(rate[tCond])
     pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
             sy=sem(RATES, axis=0),
@@ -460,6 +537,7 @@ for i, ax in enumerate(AX[0]):
     pt.set_plot(ax, [] if i else ['left'], ylabel='' if i else '$\delta$ rate (Hz)', yticks_labels=[] if i else None)
 for i, ax in enumerate(AX[1]):
     pt.set_plot(ax, [] if i else ['left'], ylabel='' if i else '$\delta$ rate (Hz)', yticks_labels=[] if i else None)
+pt.draw_bar_scales(AX[0][0], Xbar=0.05, Xbar_label='50ms', Ybar=1e-12, loc='top-right')
 pt.draw_bar_scales(AX[0][1], Xbar=0.5, Xbar_label='500ms', Ybar=1e-12, loc='top-left')
 
 # %%
@@ -568,5 +646,57 @@ for i, ax in enumerate(AX):
 pt.draw_bar_scales(AX[1], Xbar=0.5, Xbar_label='500ms', Ybar=1e-12, loc='top-left')
 
 # %%
+from scipy.stats import sem
+
+window = [-0.1, 0.24]
+
+fig, AX = pt.figure(axes_extents=[[[3,1],[4,1]]], hspace=0.2, wspace=0.2,figsize=(.6,1.1))
+
+protocol = 'static_gratings'
+
+for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
+    RATES = []
+    for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+        for unit in units:
+            filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
+            if os.path.isfile(filename):
+                spikeResp = spikingResponse(None, None, None, filename=filename)
+                tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
+                rate = spikeResp.get_rate()
+                rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0.])
+                #rate /= np.max(rate[tCond][(spikeResp.t[tCond]>0.) & (spikeResp.t[tCond]<0.15)])
+                RATES.append(rate[tCond])
+    pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
+            sy=sem(RATES, axis=0),
+            color=color, ax=AX[0], no_set=True)
+pt.draw_bar_scales(AX[0], Xbar=0.05, Xbar_label='50ms', Ybar=1e-12, loc='top-right')
+
+protocol = 'drifting_gratings'
+window = [-0.25, 2.25]
+
+for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
+    RATES = []
+    for sessionID, units in zip(Optotagging[key+'_sessions'], Optotagging[key+'_positive_units']):
+        for unit in units:
+            filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % ('drifting_gratings', unit))
+            if os.path.isfile(filename):
+                spikeResp = spikingResponse(None, None, None, filename=filename)
+                tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
+                rate = spikeResp.get_rate(cond=spikeResp.contrast==0.8)
+                rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0.])
+                #rate /= np.max(rate[tCond][(spikeResp.t[tCond]>0.) & (spikeResp.t[tCond]<0.15)])
+                RATES.append(rate[tCond])
+    pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
+            sy=sem(RATES, axis=0),
+            color=color, ax=AX[1], no_set=True)
+    pt.annotate(AX[1], k*'\n'+'%s,n=%i ' % (key, len(RATES)), (1,1), va='top', ha='right', color=color, fontsize=6)
+pt.set_common_ylims(AX)
+for i, ax in enumerate(AX):
+    pt.set_plot(ax, [] if i else ['left'], ylabel='' if i else '$\delta$ rate (Hz)', 
+                yticks_labels=[] if i else None)
+pt.draw_bar_scales(AX[1], Xbar=0.5, Xbar_label='500ms', Ybar=1e-12, loc='top-left')
+AX[0].set_title('(short)\nstatic gratings\n')
+AX[1].set_title('(long)\ndrifting gratings\n')
+
 
 # %%
