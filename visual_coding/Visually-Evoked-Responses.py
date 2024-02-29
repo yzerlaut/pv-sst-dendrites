@@ -46,6 +46,12 @@ sessions = cache.get_session_table()
 #Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), allow_pickle=True).item()
 Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), allow_pickle=True).item()
 
+# subsample the negative units to 100 cells per session
+np.random.seed(1)
+for key in ['PV','SST']:
+    for n, nUnits in enumerate(Optotagging[key+'_negative_units']):
+        Optotagging[key+'_negative_units'][n] = np.random.choice(nUnits, 100, replace=False)
+
 # %%
 from scipy.stats import mannwhitneyu
 
@@ -211,7 +217,6 @@ class spikingResponse:
 
 # %%
 all = True
-dt = 2e-3 # time bin
 
 if True:
     # turn True to re-run the analysis
@@ -222,7 +227,6 @@ if True:
         for sessionID, positive_units, negative_units in zip(Optotagging[key+'_sessions'],
                                                              Optotagging[key+'_positive_units'],
                                                              Optotagging[key+'_negative_units']):
-
             if all:
                 units  = np.concatenate([positive_units, negative_units])
             else:
@@ -237,37 +241,43 @@ if True:
             for unit in units:
                 # get the spikes of that unit
                 spike_times = session.spike_times[unit]
-                for protocol in ['flashes', 'static_gratings', 'drifting_gratings',
-                                 'drifting_gratings_75_repeats', 'drifting_gratings_contrast',
-                                 'natural_movie_one', 'natural_movie_one_more_repeats',
-                                 'natural_movie_one_shuffled', 'natural_scenes']:
+                for protocol in [\
+                                 #'flashes', 'static_gratings', 'drifting_gratings',
+                                 #'drifting_gratings_75_repeats', 
+                                 #'drifting_gratings_contrast',
+                                 #'natural_movie_one_more_repeats',
+                                 #'natural_movie_one_shuffled', 
+                                 #'natural_movie_one',
+                                 'natural_scenes']:
                     if protocol in np.unique(stim_table.stimulus_name):
                         cond = (stim_table.stimulus_name==protocol)
                         duration = int(1e3*np.mean(stim_table[cond].duration))
-                        t0 = -duration/2.
-                        tstop = 1.5*duration
-                        t = t0+np.arange(int((tstop-t0)/dt))*dt
-                        #t = 1e-3*np.linspace(-duration/2., 1.5*duration, 100)
+                        if 'natural_movie_one' in protocol:
+                            t = np.linspace(0,1,2)*1e-3*duration # 2 points per frame
+                        else:
+                            t = 1e-3*np.linspace(-duration/2., 1.5*duration, 200) # 200 points covering pre and post
                         spikeResp = spikingResponse(stim_table[cond], spike_times, t)
                         spikeResp.save(os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit)))
+                        count += 1
 
 # %% [markdown]
 # # 4) Plot
 
 # %%
 key = 'PV'
-protocol = 'static_gratings'
+protocol = 'natural_movie_one'
 sessionID = 0
+unit = Optotagging[key+'_negative_units'][sessionID][0]
 #session = cache.get_session_data(Optotagging[key+'_sessions'][sessionID])
-unit = Optotagging[key+'_positive_units'][sessionID][0]
 #stim_table = session.get_stimulus_table()
+#spikeResp = spikingResponse(None, None, None, filename=filename)
 
 filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
 spikeResp = spikingResponse(None, None, None, filename=filename)
-spikeResp.plot(cond=spikeResp.contrast==0.8,
-               trial_subsampling=20,
-               color='tab:red')
-np.sum(spikeResp.contrast==0.8)
+spikeResp.plot(trial_subsampling=10, color='tab:purple')
+
+# %%
+np.max(spikeResp.duration)
 
 # %%
 X=1
@@ -281,6 +291,35 @@ for key in spikeResp.keys[5:]:
         pass
 print('\nnumber of condition : %i' % X)
 print('number of repeats: ', np.sum(np.array([str(o) for o in spikeResp.orientation])!='null')/X)
+
+# %%
+from scipy.stats import sem
+
+window = [-0.1, 0.3]
+protocol = 'natural_scenes'
+fig, AX = pt.figure(axes=(4,1), wspace=2.)
+for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red', 'tab:orange']):
+    pRATES, nRATES = [], []
+    for sessionID, pUnits, nUnits in zip(Optotagging[key+'_sessions'], 
+                                         Optotagging[key+'_positive_units'],
+                                         Optotagging[key+'_negative_units']):
+        for x, RATES, units in zip(['pos', 'neg'], [pRATES, nRATES], [pUnits, nUnits]):
+            for unit in units:
+                filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % (protocol, unit))
+                if os.path.isfile(filename):
+                    spikeResp = spikingResponse(None, None, None, filename=filename)
+                    tCond = (spikeResp.t>window[0]) & (spikeResp.t<window[1])
+                    rate = spikeResp.get_rate(spikeResp.frame==np.unique(spikeResp.frame)[7])
+                    rate -= np.mean(rate[tCond][spikeResp.t[tCond]<0])
+                    RATES.append(rate[tCond])
+                    print(x, len(spikeResp.t[tCond]), len(rate[tCond]))
+    for r, RATES, c in zip(range(2), [pRATES, nRATES], [color, 'tab:grey']):
+        pt.plot(spikeResp.t[tCond], np.mean(RATES, axis=0), 
+                sy=sem(RATES, axis=0),
+                #sy=np.std(RATES, axis=0),
+                color=c, ax=AX[2*k+r], no_set=True)
+        pt.annotate(AX[2*k+r], k*'\n'+'n=%i' % len(RATES), (1,1), va='top', color=c)
+        pt.set_plot(AX[2*k+r], title=protocol, ylabel='$\delta$ rate (Hz)')
 
 # %%
 from scipy.stats import sem
