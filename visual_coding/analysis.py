@@ -1,5 +1,10 @@
+import os, sys
 import numpy as np
 import matplotlib.pylab as plt
+from scipy.ndimage import gaussian_filter1d
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+import plot_tools as pt
 
 class spikingResponse:
     

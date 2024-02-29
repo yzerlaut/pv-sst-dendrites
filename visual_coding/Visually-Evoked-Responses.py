@@ -114,6 +114,8 @@ DSI = show_average_quantity(analysis_metrics, attr = 'g_dsi_dg', label = 'DSI')
 # # 2) Compute the PSTH
 
 # %%
+# now put in analysis.py
+
 class spikingResponse:
     
     def __init__(self, stim_table, spike_times, t,
@@ -245,15 +247,15 @@ if True:
                                  #'flashes', 'static_gratings', 'drifting_gratings',
                                  #'drifting_gratings_75_repeats', 
                                  #'drifting_gratings_contrast',
-                                 #'natural_movie_one_more_repeats',
-                                 #'natural_movie_one_shuffled', 
-                                 #'natural_movie_one',
-                                 'natural_scenes']:
+                                 'natural_movie_one_more_repeats',
+                                 #'natural_movie_one_shuffled',
+                                 #'natural_scenes', 
+                                 'natural_movie_one']:
                     if protocol in np.unique(stim_table.stimulus_name):
                         cond = (stim_table.stimulus_name==protocol)
                         duration = int(1e3*np.mean(stim_table[cond].duration))
                         if 'natural_movie_one' in protocol:
-                            t = np.linspace(0,1,2)*1e-3*duration # 2 points per frame
+                            t = np.linspace(0,1,10)*1e-3*duration # 2 points per frame
                         else:
                             t = 1e-3*np.linspace(-duration/2., 1.5*duration, 200) # 200 points covering pre and post
                         spikeResp = spikingResponse(stim_table[cond], spike_times, t)
@@ -264,10 +266,10 @@ if True:
 # # 4) Plot
 
 # %%
-key = 'PV'
-protocol = 'natural_movie_one'
+key = 'SST'
+protocol = 'natural_scenes'
 sessionID = 0
-unit = Optotagging[key+'_negative_units'][sessionID][0]
+unit = Optotagging[key+'_negative_units'][sessionID][1]
 #session = cache.get_session_data(Optotagging[key+'_sessions'][sessionID])
 #stim_table = session.get_stimulus_table()
 #spikeResp = spikingResponse(None, None, None, filename=filename)
