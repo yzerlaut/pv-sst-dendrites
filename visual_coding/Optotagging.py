@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -255,9 +255,9 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         session = cache.get_session_data(Sessions.index.values[iSession])
 
         # considering all units in V1
-        units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+        #units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
         # considering all units in the visual cortex
-        #units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+        units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
 
         # we use the 10ms pulse 
         trials = session.optogenetic_stimulation_epochs[\
@@ -281,10 +281,13 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         Optotagging[Key.replace('sessions', 'negative_units')].append(negative_units)
         Optotagging[Key.replace('sessions', 'session_type')].append(session.session_type)
         
-np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'), Optotagging)
+# considering all units in V1
+#np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'), Optotagging)
+# considering all units in the visual cortex
+np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), Optotagging)
 
 # %%
-Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'),
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
                       allow_pickle=True).item()
 
 for Key in ['PV_sessions', 'SST_sessions']:
