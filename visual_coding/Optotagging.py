@@ -74,12 +74,13 @@ Visual_Areas
 # # 2) Identifying positive units
 
 # %%
+"""
 trials = session.optogenetic_stimulation_epochs[session.optogenetic_stimulation_epochs.stimulus_name=='pulse']
 trials = session.optogenetic_stimulation_epochs[(session.optogenetic_stimulation_epochs.duration > 0.009) & \
                                                 (session.optogenetic_stimulation_epochs.duration < 0.02)]
-#units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
-units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
-
+units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+#units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+"""
 def optotagging_spike_counts(session, trials, units,
                              time_resolution = 5e-4):
     
@@ -198,9 +199,10 @@ def analyze_optotagging_responses(session, trials, units,
         fig = None
         
     return cre_pos_units, fig
-    
+"""
 _ = analyze_optotagging_responses(session, trials, units,# spikes_matrix,
                                   with_fig=True)
+"""
 
 # %%
 trials = session.optogenetic_stimulation_epochs[\
@@ -253,9 +255,9 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         session = cache.get_session_data(Sessions.index.values[iSession])
 
         # considering all units in V1
-        #units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+        units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
         # considering all units in the visual cortex
-        units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+        #units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
 
         # we use the 10ms pulse 
         trials = session.optogenetic_stimulation_epochs[\
@@ -279,13 +281,15 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
         Optotagging[Key.replace('sessions', 'negative_units')].append(negative_units)
         Optotagging[Key.replace('sessions', 'session_type')].append(session.session_type)
         
-np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), Optotagging)
+np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'), Optotagging)
 
 # %%
-Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'),
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'),
                       allow_pickle=True).item()
 
 for Key in ['PV_sessions', 'SST_sessions']:
     print('')
     print(Key, ' ---> %i positive units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]]))
     print(Key, ' ---> %i negative units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'negative_units')]]))
+
+# %%

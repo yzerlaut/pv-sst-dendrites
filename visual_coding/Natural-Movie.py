@@ -19,14 +19,13 @@ import shutil
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from scipy.ndimage import gaussian_filter1d
 from scipy import stats
 
-from analysis import spikingResponse # custom object of trial-aligned spiking reponse
-
 import sys
-sys.path.append('..')
-import plot_tools as pt
+
+from analysis import spikingResponse # custom object of trial-aligned spiking reponse
+from analysis import pt, crosscorrel # plot_tools and CC-function
+
 import matplotlib.pyplot as plt
 
 from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
@@ -34,12 +33,6 @@ from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProj
 # just to disable the HDMF cache namespace warnings, REMOVE to see them
 import warnings
 warnings.filterwarnings("ignore")
-
-# %%
-data_directory = os.path.join(os.path.expanduser('~'), 'Downloads', 'ecephys_cache_dir')
-manifest_path = os.path.join(data_directory, "manifest.json")
-cache = EcephysProjectCache.from_warehouse(manifest=manifest_path)
-sessions = cache.get_session_table()
 
 # %% [markdown]
 # # 1) Loading the Optotagging results
@@ -55,6 +48,68 @@ for key in ['PV','SST']:
         Optotagging[key+'_negative_units'][n] = np.random.choice(nUnits, 100, replace=False)
 
 # %% [markdown]
+# # 2) Preprocess the stimulus-evoked spikes
+
+# %%
+all = True
+
+tstart, tstop, dt = -1, 301, 1e-3
+t = tstart+dt*np.arange(int((tstop-tstart)/dt))
+
+if True:
+    # turn True to re-run the analysis
+    
+    # load data from API
+    data_directory = os.path.join(os.path.expanduser('~'), 'Downloads', 'ecephys_cache_dir')
+    manifest_path = os.path.join(data_directory, "manifest.json")
+    cache = EcephysProjectCache.from_warehouse(manifest=manifest_path)
+    sessions = cache.get_session_table()
+    
+    for key in ['PV', 'SST']:
+        # loop over session
+
+        for sessionID, positive_units, negative_units in zip(Optotagging[key+'_sessions'],
+                                                             Optotagging[key+'_positive_units'],
+                                                             Optotagging[key+'_negative_units']):
+            if all:
+                units  = np.concatenate([positive_units, negative_units])
+            else:
+                units = positive_units
+            
+            session = cache.get_session_data(sessionID)
+            # stimulus infos for that session
+            stim_table = session.get_stimulus_table()
+            # fetch summary statistics 
+            analysis_metrics = cache.get_unit_analysis_metrics_by_session_type(session.session_type)
+            
+            for protocol in ['natural_movie_one_more_repeats',
+                             'natural_movie_one']:
+                if protocol in np.unique(stim_table.stimulus_name):
+                    cond = (stim_table.stimulus_name==protocol)
+                    # get the number of repeats
+                    blocks = np.unique(stim_table[cond].stimulus_block)
+                    for unit in units:
+                        spike_matrix = np.zeros((len(blocks),len(t)), dtype=bool)
+                        # get the spikes of that unit
+                        spike_times = session.spike_times[unit]
+                        # then just iterate over stimulus block:
+                        for trial_idx, b in enumerate(blocks):
+                            bCond = cond & (stim_table.stimulus_block==b)
+                            trial_start = np.min(stim_table[bCond].start_time)
+                            #tstop = np.max(stim_table[bCond].stop_time)
+                            in_range = (spike_times > (trial_start + t[0])) * \
+                                       (spike_times < (trial_start + t[-1]))
+                            binned_times = ((spike_times[in_range] -\
+                                             (trial_start + t[0])) / dt).astype('int')
+                            spike_matrix[trial_idx, binned_times] = True      
+                        Data = {'time_resolution':dt, 
+                                'spike_matrix':spike_matrix,
+                                't':t, 'keys':['t', 'spike_matrix']}
+                        np.save(os.path.join('..', 'data', 'visual_coding', key,
+                                             '%s_unit_%i.npy' % ('natural_movie_one', unit)),
+                                Data)
+
+# %% [markdown]
 # # 2) Compute the PSTH
 
 # %%
@@ -68,62 +123,35 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
                                [Optotagging[key+'_positive_units'][sessionID], Optotagging[key+'_negative_units'][sessionID]],
                                [color, 'tab:grey']):
             for unit in units:
-                filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % ('natural_movie_one_more_repeats', unit))
-                if not os.path.isfile(filename):
-                    filename = os.path.join('..', 'data', 'visual_coding', key, '%s_unit_%i.npy' % ('natural_movie_one', unit))
+                filename = os.path.join('..', 'data', 'visual_coding', key, 
+                                        '%s_unit_%i.npy' % ('natural_movie_one', unit))
                 if os.path.isfile(filename):
                     spikeResp = spikingResponse(None, None, None, filename=filename)
-                    rate = np.zeros(len(np.unique(spikeResp.frame)))
-                    for i, frame in enumerate(np.unique(spikeResp.frame)):
-                        rate[i] = spikeResp.get_rate(cond=spikeResp.frame==frame)[0]
-                    rates.append(rate)               
+                    rates.append(spikeResp.get_rate(smoothing=2e-3))
+time = spikeResp.t
 
 # %% [markdown]
 # # 3) Plot
 
 # %%
-duration = np.mean(spikeResp.duration)
-time = np.arange(len(np.unique(spikeResp.frame)))*duration
+time = spikeResp.t
 
 fig, AX = pt.figure(axes=(2,2), hspace=0.1, figsize=(1.3,1))
 
 for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
     for u, rates, c in zip(range(2), 
-                                  [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
-                                  [color, 'tab:grey']):            
+                           [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
+                           [color, 'tab:grey']):            
         pt.plot(time, np.mean(rates, axis=0), sy=0.*np.std(rates, axis=0), ax=AX[u][k], color=c)
         pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
         pt.set_plot(AX[u][k], ['left','bottom'] if u else ['left'], 
-                    ylabel='rate (Hz)', xlabel='time (s)' if u else '') 
+                    ylabel='rate (Hz)', xlabel='time (s)' if u else '')
+
+for ax in pt.flatten(AX):
+    ax.set_xlim([-1,100])
 
 
 # %%
-def crosscorrel(Signal1, Signal2, tmax, dt):
-    """
-    argument : Signal1 (np.array()), Signal2 (np.array())
-    returns : np.array()
-    take two Signals, and returns their crosscorrelation function 
-
-    CONVENTION:
-    --------------------------------------------------------------
-    when the peak is in the past (negative t_shift)
-    it means that Signal2 is delayed with respect to Signal 1
-    --------------------------------------------------------------
-    """
-    if len(Signal1)!=len(Signal2):
-        print('Need two arrays of the same size !!')
-        
-    steps = int(tmax/dt) # number of steps to sum on
-    time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1], np.arange(steps)])
-    CCF = np.zeros(len(time_shift))
-    for i in np.arange(steps):
-        ccf = np.corrcoef(Signal1[:len(Signal1)-i], Signal2[i:])
-        CCF[steps-1+i] = ccf[0,1]
-    for i in np.arange(steps):
-        ccf = np.corrcoef(Signal2[:len(Signal1)-i], Signal1[i:])
-        CCF[steps-1-i] = ccf[0,1]
-    return CCF, time_shift
-
 fig, ax = plt.subplots(1) # pt.figure()
 ax.set_xlabel('$\delta$ time (s)')
 CCF, time_shift = crosscorrel(np.mean(RATES['PV_negUnits'], axis=0),
@@ -134,17 +162,14 @@ ax.plot(time_shift, CCF, color='tab:red')
 CCF, time_shift = crosscorrel(np.mean(RATES['SST_negUnits'], axis=0),
                               np.mean(RATES['SST_posUnits'], axis=0),
                               2, time[1]-time[0])
-ax2 = ax.twinx()
-ax2.plot(time_shift, CCF, color='tab:orange')
-for x in [ax,ax2]:
-    x.set_xlim([-2,2])
-fig.suptitle('cross-correl. "+" vs "-" units')
+#ax2 = ax.twinx()
+ax.plot(time_shift, CCF, color='tab:orange')
+ax.set_xlim([-1.5,1.5])
+fig.suptitle('cross-correl. "-" vs "+" units')
 
 
 
 # %%
-from scipy import stats
-
 fig, ax = plt.subplots(1) # pt.figure()
 ax2 = ax.twinx()
 
@@ -162,6 +187,6 @@ for k, key, color, x in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange'], [
             sy=stats.sem(CCs, axis=0), color=color, ax=x)
 
 ax.set_xlim([-3,3])
-fig.suptitle('cross-correl. "+" vs "-" units')
+fig.suptitle('cross-correl. "-" vs "+" units')
 
 # %%

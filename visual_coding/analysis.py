@@ -102,3 +102,41 @@ class spikingResponse:
         pt.set_common_xlims([ax1,ax2])
 
         return fig, [ax1, ax2]
+
+
+def crosscorrel(Signal1, Signal2, tmax, dt):
+    """
+    argument : Signal1 (np.array()), Signal2 (np.array())
+    returns : np.array()
+    take two Signals, and returns their crosscorrelation function 
+
+    CONVENTION:
+    --------------------------------------------------------------
+    when the peak is in the future (positive t_shift)
+    it means that Signal2 is delayed with respect to Signal 1
+    check with:
+    ```
+    t = np.linspace(0,1,200)
+    Signal1, Signal2 = 0*t, 0*t
+    Signal1[(t>0.4) & (t<0.6)] = 1. # first
+    Signal2[(t>0.5) & (t<0.7)] = 1. # second
+    # compute
+    CCF, time_shift = crosscorrel(Signal1, Signal2, 1, t[1]-t[0])
+    # plot
+    plt.plot(time_shift, CCF, color='tab:red')
+    ```
+    --------------------------------------------------------------
+    """
+    if len(Signal1)!=len(Signal2):
+        print('Need two arrays of the same size !!')
+        
+    steps = int(tmax/dt) # number of steps to sum on
+    time_shift = dt*np.concatenate([-np.arange(1, steps)[::-1], np.arange(steps)])
+    CCF = np.zeros(len(time_shift))
+    for i in np.arange(steps):
+        ccf = np.corrcoef(Signal1[:len(Signal1)-i], Signal2[i:])
+        CCF[steps-1+i] = ccf[0,1]
+    for i in np.arange(steps):
+        ccf = np.corrcoef(Signal2[:len(Signal1)-i], Signal1[i:])
+        CCF[steps-1-i] = ccf[0,1]
+    return CCF, time_shift
