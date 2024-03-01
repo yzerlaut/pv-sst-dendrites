@@ -166,25 +166,27 @@ ax.plot(time_shift, CCF, color='tab:orange')
 ax.set_xlim([-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
 
+# %% [markdown]
+# ## Cross-correlation per cell
+
 # %%
-fig, ax = plt.subplots(1) # pt.figure()
-ax2 = ax.twinx()
-
-ax.set_xlabel('$\delta$ time (s)')
-
+CCs = {}
 for k, key, color, x in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange'], [ax,ax2]):
-    for rates, c in zip([RATES['%s_posUnits' % key], RATES['%s_negUnits' % key]], [color, 'tab:grey']):
-        CCs = []
-        for rate in rates:
-            CCF, time_shift = crosscorrel(np.mean(RATES['%s_negUnits' % key], axis=0),
-                                          rate,
+    popRate = np.mean(RATES['%s_negUnits' % key], axis=0)
+    for u, c in zip(['pos', 'neg'], [color, 'tab:grey']):
+        CCs[key+u] = []
+        for rate in RATES['%s_%sUnits' % (key,u)][:20]:
+            CCF, time_shift = crosscorrel(popRate, rate,
                                           1.5, time[1]-time[0])
-            CCs.append(CCF)
-
-        pt.plot(time_shift, np.mean(CCs, axis=0), 
-                sy=stats.sem(CCs, axis=0), color=color, ax=x)
-
-ax.set_xlim([-1.5,1.5])
-fig.suptitle('cross-correl. "-" vs "+" units')
+            CCs[key+u].append(CCF)
 
 # %%
+fig, ax = plt.subplots(1)
+
+for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+    for u, c in zip(['pos', 'neg'], [color, 'tab:grey']):
+        pt.plot(time_shift, np.mean(CCs, axis=0), 
+                sy=stats.sem(CCs, axis=0), color=color, ax=ax)
+
+pt.set_plot(ax, xlabel='$\delta$ time (s)', xlim=[-1.5,1.5])
+fig.suptitle('cross-correl. "-" vs "+" units')
