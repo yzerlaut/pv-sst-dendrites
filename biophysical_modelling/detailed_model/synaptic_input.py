@@ -2,15 +2,28 @@ from neuron import h
 import numpy as np
 
 def PoissonSpikeTrain(freq,
+                      dt=None,
                       tstop=1.):
     """
     Poisson spike train from a given frequency (homogeneous process)
     """
 
-    spikes = np.cumsum(\
-            np.random.exponential(1./freq, int(2.*tstop*freq)+10))
+    if dt is not None and (type(freq) in [np.ndarray, np.array, list]):
+        spikes = []
+        rdms = np.random.uniform(0, 1, size=len(freq))
+        for i, rdm in enumerate(rdms):
+            if rdm<(freq[i]*dt):
+                spikes.append(i*dt)
+        return spikes
 
-    return spikes[spikes<tstop]
+    elif type(freq) in [float]:
+        spikes = np.cumsum(\
+                np.random.exponential(1./freq, int(2.*tstop*freq)+10))
+        return spikes[spikes<tstop]
+
+    else:
+        print('\n missing input --> no spikes generated ! \n')
+
 
 def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
@@ -74,4 +87,17 @@ def add_synaptic_input(cell, synapses,
     return AMPAS, NMDAS, GABAS,\
             ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
             STIMS, VECSTIMS, excitatory
+
+if __name__=='__main__':
+
+    train = PoissonSpikeTrain(10., tstop=10.)
+    print(1./np.mean(np.diff(train)))
+
+    dt = 1e-3
+    tstop = 10.
+    t = np.arange(int(tstop/dt))*dt
+    train = PoissonSpikeTrain(0*t+10., tstop=tstop, dt=dt)
+    print(1./np.mean(np.diff(train)))
+
+
 
