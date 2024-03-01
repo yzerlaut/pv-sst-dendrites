@@ -28,8 +28,6 @@ from analysis import pt, crosscorrel # plot_tools and CC-function
 
 import matplotlib.pyplot as plt
 
-from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
-
 # just to disable the HDMF cache namespace warnings, REMOVE to see them
 import warnings
 warnings.filterwarnings("ignore")
@@ -60,6 +58,7 @@ if True:
     # turn True to re-run the analysis
     
     # load data from API
+    from allensdk.brain_observatory.ecephys.ecephys_project_cache import EcephysProjectCache
     data_directory = os.path.join(os.path.expanduser('~'), 'Downloads', 'ecephys_cache_dir')
     manifest_path = os.path.join(data_directory, "manifest.json")
     cache = EcephysProjectCache.from_warehouse(manifest=manifest_path)
@@ -177,10 +176,10 @@ ax.set_xlabel('$\delta$ time (s)')
 
 for k, key, color, x in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange'], [ax,ax2]):
     CCs = []
-    for rate in RATES['%s_posUnits' % key]:
+    for rate in RATES['%s_posUnits' % key][:10]:
         CCF, time_shift = crosscorrel(np.mean(RATES['%s_negUnits' % key], axis=0),
                                       rate,
-                                      time[-1]/2., time[1]-time[0])
+                                      2., time[1]-time[0])
         CCs.append(CCF)
         
     pt.plot(time_shift, np.mean(CCs, axis=0), 
