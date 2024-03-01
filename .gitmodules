@@ -7,3 +7,6 @@
 [submodule "physion"]
 	path = physion
 	url = https://github.com/yzerlaut/physion
+[submodule "analyz"]
+	path = analyz
+	url = https://github.com/yzerlaut/analyz

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.14.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -126,7 +126,7 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
                                         '%s_unit_%i.npy' % ('natural_movie_one', unit))
                 if os.path.isfile(filename):
                     spikeResp = spikingResponse(None, None, None, filename=filename)
-                    rates.append(spikeResp.get_rate(smoothing=2e-3))
+                    rates.append(spikeResp.get_rate(smoothing=5e-3))
 time = spikeResp.t
 
 # %% [markdown]
@@ -147,7 +147,7 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
                     ylabel='rate (Hz)', xlabel='time (s)' if u else '')
 
 for ax in pt.flatten(AX):
-    ax.set_xlim([-1,100])
+    ax.set_xlim([-1,10])
 
 
 # %%
@@ -155,18 +155,16 @@ fig, ax = plt.subplots(1) # pt.figure()
 ax.set_xlabel('$\delta$ time (s)')
 CCF, time_shift = crosscorrel(np.mean(RATES['PV_negUnits'], axis=0),
                               np.mean(RATES['PV_posUnits'], axis=0),
-                              2, time[1]-time[0])
+                              1.5, time[1]-time[0])
 ax.plot(time_shift, CCF, color='tab:red')
 
 CCF, time_shift = crosscorrel(np.mean(RATES['SST_negUnits'], axis=0),
                               np.mean(RATES['SST_posUnits'], axis=0),
-                              2, time[1]-time[0])
+                              1.5, time[1]-time[0])
 #ax2 = ax.twinx()
 ax.plot(time_shift, CCF, color='tab:orange')
 ax.set_xlim([-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
-
-
 
 # %%
 fig, ax = plt.subplots(1) # pt.figure()
@@ -175,17 +173,18 @@ ax2 = ax.twinx()
 ax.set_xlabel('$\delta$ time (s)')
 
 for k, key, color, x in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange'], [ax,ax2]):
-    CCs = []
-    for rate in RATES['%s_posUnits' % key][:10]:
-        CCF, time_shift = crosscorrel(np.mean(RATES['%s_negUnits' % key], axis=0),
-                                      rate,
-                                      2., time[1]-time[0])
-        CCs.append(CCF)
-        
-    pt.plot(time_shift, np.mean(CCs, axis=0), 
-            sy=stats.sem(CCs, axis=0), color=color, ax=x)
+    for rates, c in zip([RATES['%s_posUnits' % key], RATES['%s_negUnits' % key]], [color, 'tab:grey']):
+        CCs = []
+        for rate in rates:
+            CCF, time_shift = crosscorrel(np.mean(RATES['%s_negUnits' % key], axis=0),
+                                          rate,
+                                          1.5, time[1]-time[0])
+            CCs.append(CCF)
 
-ax.set_xlim([-3,3])
+        pt.plot(time_shift, np.mean(CCs, axis=0), 
+                sy=stats.sem(CCs, axis=0), color=color, ax=x)
+
+ax.set_xlim([-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
 
 # %%
