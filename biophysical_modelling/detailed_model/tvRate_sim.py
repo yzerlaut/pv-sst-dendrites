@@ -19,11 +19,14 @@ def run_sim(cellType='Basket',
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
-            stimSeed=1,
+            stochProcSeed=1,
+            spikeSeed=2,
             # biophysical props
             with_NMDA=False,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
+            no_Vm=False,
+            spike_threshold=0.,
             tstop=1000.,
             dt= 0.01):
 
@@ -57,9 +60,10 @@ def run_sim(cellType='Basket',
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
-                                                         with_NMDA=with_NMDA)
+                                                       with_NMDA=with_NMDA)
 
     # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
+    np.random.seed(stochProcSeed)
     OU = np.clip(OrnsteinUhlenbeck_Process(meanStim,
                                            stdStim, 
                                            tauStim,
@@ -67,7 +71,7 @@ def run_sim(cellType='Basket',
 
     # prepare presynaptic spike trains
     # -- background activity 
-    np.random.seed(10+8**stimSeed)
+    np.random.seed(spikeSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
         if excitatory[i]:
@@ -83,18 +87,16 @@ def run_sim(cellType='Basket',
     for i, syn in enumerate(synapses):
         TRAINS[i] = np.sort(TRAINS[i])
 
-
     # -- link events to synapses
     for i, syn in enumerate(synapses):
 
         STIMS.append(h.Vector(TRAINS[i]))
         VECSTIMS[i].play(STIMS[-1])
 
-    Vm_soma, Vm_dend = h.Vector(), h.Vector()
+    Vm_soma = h.Vector()
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
-    Vm_dend.record(cell.SEGMENTS['NEURON_section'][synapses[-1]](0.5)._ref_v)
 
     # spike count
     apc = h.APCount(cell.soma[0](0.5))
@@ -112,11 +114,17 @@ def run_sim(cellType='Basket',
     STIMS, VECSTIMS = None, None
 
     # save the output
-    output = {'Vm_soma': np.array(Vm_soma),
-              'OU':OU,
+    Vm = np.array(Vm_soma)
+    output = {'OU':OU,
+              'spikes':dt*\
+                np.argwhere((Vm[1:]>spike_threshold) &\
+                                    (Vm[:-1]<=spike_threshold)),
               'dt': dt, 
               'synapses':synapses,
               'tstop':tstop}
+
+    if not no_Vm:
+        output['Vm_soma'] = Vm
 
     if with_presynaptic_spikes:
         output['presynaptic_exc_events'] = [TRAINS[i]\
@@ -132,7 +140,8 @@ if __name__=='__main__':
     import argparse
     # First a nice documentation 
     parser=argparse.ArgumentParser(description="script description",
-                                   formatter_class=argparse.RawTextHelpFormatter)
+                                   formatter_class=\
+                                           argparse.RawTextHelpFormatter)
 
     parser.add_argument('-c', "--cellType",\
                         help="""
@@ -144,7 +153,7 @@ if __name__=='__main__':
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
-    parser.add_argument("--stimSeed", type=float, default=1)
+    parser.add_argument("--stochProcSeed", type=float, default=1)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -156,27 +165,35 @@ if __name__=='__main__':
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
 
+    parser.add_argument("--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
-    parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
+    parser.add_argument('-fmo', "--fix_missing_only",
+                        help="in scan", action="store_true")
 
-    parser.add_argument("-t", "--test", help="test func", action="store_true")
-    parser.add_argument("-bg_valig", "--background_calibration", action="store_true")
-    parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
+    parser.add_argument("-t", "--test", help="test func",
+                        action="store_true")
+    parser.add_argument("-bg_valig", "--background_calibration", 
+                        action="store_true")
+    parser.add_argument("-wps", "--with_presynaptic_spikes", 
+                        action="store_true")
+    parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
     parser.add_argument("--tstop", type=float, default=20000.)
 
     args = parser.parse_args()
-
+     
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
-                  stimSeed=args.stimSeed,
+                  stochProcSeed=args.stochProcSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
+                  no_Vm=args.no_Vm,
+                  filename=args.filename,
                   tstop=args.tstop,
                   dt=args.dt)
 
@@ -191,14 +208,16 @@ if __name__=='__main__':
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' % (args.suffix,
-                                                                            args.cellType))
+            filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' %\
+                            (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
-                    stimSeed=np.arange(10))
+                    stochProcSeed=np.arange(10),
+                    spikeSeed=np.arange(20))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
+
         if args.test_NMDA:
             grid = dict(with_NMDA=[False, True], **grid)
 

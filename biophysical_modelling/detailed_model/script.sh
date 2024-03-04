@@ -1,4 +1,22 @@
 ##########################################################
+########### time-varying rate Stochastic Inputs ##########
+##########################################################
+if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
+then
+    # Martinotti Cell
+    python tvRate_sim.py --test -c Martinotti --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Martinotti.npy --stimFreq 2e-2 --bgFreqInhFactor 0.5
+    ## Basket Cell
+    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 1e-2 --bgFreqInhFactor 1.0
+fi
+if [[ $1 == 'all' || $1 == 'tvRate' ]]
+then
+    # Martinotti Cell
+    python tvRate_sim.py -c Martinotti --stimFreq 2e-2 --bgFreqInhFactor 0.5
+    ## Basket Cell
+    python tvRate_sim.py --test -c Basket --stimFreq 1e-2 --bgFreqInhFactor 1.0
+fi
+
+##########################################################
 ########### dendro-somatic propagation ###################
 ##########################################################
 if [[ $1 == 'all' || $1 == 'dendro-somatic-propag' ]]
