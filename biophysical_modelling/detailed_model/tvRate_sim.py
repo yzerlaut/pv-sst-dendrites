@@ -4,6 +4,8 @@ from parallel import Parallel
 import sys
 sys.path.append('../..')
 import plot_tools as pt
+sys.path.append('../../analyz')
+from analyz.signal_library.stochastic_processes import OrnsteinUhlenbeck_Process
 import matplotlib.pylab as plt
 
 def run_sim(cellType='Basket', 
@@ -13,16 +15,16 @@ def run_sim(cellType='Basket',
             # stim props
             meanStim=1.,
             stdStim=1.,
-            tauStim=0.25,
-            tstop=2e3,
+            tauStim=250,
             # bg stim
-            bgStimFreq=1e-3,
+            stimFreq=1e-3,
             bgFreqInhFactor=4.,
-            bgStimSeed=1,
+            stimSeed=1,
             # biophysical props
             with_NMDA=False,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
+            tstop=1000.,
             dt= 0.01):
 
     from cell_template import Cell, h, np
@@ -57,15 +59,24 @@ def run_sim(cellType='Basket',
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                                          with_NMDA=with_NMDA)
 
+    # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
+    OU = np.clip(OrnsteinUhlenbeck_Process(meanStim,
+                                           stdStim, 
+                                           tauStim,
+                                           dt, tstop), 0, np.inf)
+
     # prepare presynaptic spike trains
     # -- background activity 
-    np.random.seed(10+8**bgStimSeed)
+    np.random.seed(10+8**stimSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(PoissonSpikeTrain(bgStimFreq, tstop=tstop)))
+            TRAINS.append(list(PoissonSpikeTrain(stimFreq*OU, 
+                                                 dt=dt,
+                                                 tstop=tstop)))
         else:
-            TRAINS.append(list(PoissonSpikeTrain(bgFreqInhFactor*bgStimFreq,
+            TRAINS.append(list(PoissonSpikeTrain(bgFreqInhFactor*stimFreq*OU,
+                                                 dt=dt,
                                                  tstop=tstop)))
 
     # -- reordering spike trains
@@ -102,7 +113,7 @@ def run_sim(cellType='Basket',
 
     # save the output
     output = {'Vm_soma': np.array(Vm_soma),
-              'Vm_dend': np.array(Vm_dend),
+              'OU':OU,
               'dt': dt, 
               'synapses':synapses,
               'tstop':tstop}
@@ -130,17 +141,10 @@ if __name__=='__main__':
                         - Martinotti
                         """, default='Basket')
     
-    # bg props
-    parser.add_argument("--bgStimFreq", type=float, default=1e-3)
-    parser.add_argument("--bgFreqInhFactor", type=float, default=2.)
-    parser.add_argument("--bgStimSeed", type=float, default=1)
-
-    # stim props
-    parser.add_argument("--nStimRepeat", type=int, default=2)
-    parser.add_argument("--interspike", type=float, default=0.1)
-    parser.add_argument("--ISI", type=float, default=200)
-    parser.add_argument("--nCluster", type=int, nargs='*', 
-                        default=np.arange(20)*5)
+    # bg stim props
+    parser.add_argument("--stimFreq", type=float, default=1e-2)
+    parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
+    parser.add_argument("--stimSeed", type=float, default=1)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -160,16 +164,20 @@ if __name__=='__main__':
     parser.add_argument("-wps", "--with_presynaptic_spikes", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
+    parser.add_argument("--tstop", type=float, default=20000.)
 
     args = parser.parse_args()
 
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
+                  stimSeed=args.stimSeed,
+                  stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
+                  tstop=args.tstop,
                   dt=args.dt)
 
     if args.test:
@@ -183,10 +191,11 @@ if __name__=='__main__':
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_sim%s_%s.zip' % (args.suffix,
-                                                                          args.cellType))
+            filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' % (args.suffix,
+                                                                            args.cellType))
 
-        grid = dict(iBranch=np.arange(args.nBranch))
+        grid = dict(iBranch=np.arange(args.nBranch),
+                    stimSeed=np.arange(10))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
