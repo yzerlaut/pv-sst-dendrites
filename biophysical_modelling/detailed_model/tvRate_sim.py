@@ -67,11 +67,11 @@ def run_sim(cellType='Basket',
                                                        with_NMDA=with_NMDA)
 
     # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
-    np.random.seed(stochProcSeed)
     OU = np.clip(OrnsteinUhlenbeck_Process(meanStim,
                                            stdStim, 
                                            tauStim,
-                                           dt, tstop), 0, np.inf)
+                                           dt, tstop,
+                                           seed=stochProcSeed), 0, np.inf)
 
     # prepare presynaptic spike trains
     # -- background activity 
@@ -216,8 +216,8 @@ if __name__=='__main__':
                             (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
-                    stochProcSeed=np.arange(3),
-                    spikeSeed=np.arange(10))
+                    stochProcSeed=np.arange(2),
+                    spikeSeed=np.arange(5))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
