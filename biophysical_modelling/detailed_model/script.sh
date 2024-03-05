@@ -11,9 +11,9 @@ fi
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
 then
     # Martinotti Cell
-    #python tvRate_sim.py -c Martinotti --stimFreq 2e-2 --bgFreqInhFactor 0.5
+    python tvRate_sim.py -c Martinotti --stimFreq 2e-2 --bgFreqInhFactor 0.5 --no_Vm
     ## Basket Cell
-    python tvRate_sim.py -c Basket --stimFreq 1e-2 --bgFreqInhFactor 1.0
+    python tvRate_sim.py -c Basket --stimFreq 1e-2 --bgFreqInhFactor 1.0 --no_Vm
 fi
 
 ##########################################################

@@ -215,7 +215,7 @@ if __name__=='__main__':
             filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' %\
                             (args.suffix, args.cellType))
 
-        grid = dict(iBranch=np.arange(args.nBranch),
+        grid = dict(iBranch=np.arange(4),#args.nBranch),
                     stochProcSeed=np.arange(2),
                     spikeSeed=np.arange(5))
 
