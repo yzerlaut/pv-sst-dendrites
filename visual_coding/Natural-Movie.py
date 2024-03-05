@@ -81,10 +81,11 @@ if True:
             # fetch summary statistics 
             analysis_metrics = cache.get_unit_analysis_metrics_by_session_type(session.session_type)
             
-            for protocol in ['natural_movie_one_more_repeats',
+            for protocol in [\
+                             #'natural_movie_one_more_repeats',
                              'natural_movie_two',
-                             #'natural_movie_three',
-                             'natural_movie_one']:
+                             #'natural_movie_one',
+                             'natural_movie_three']:
                 if protocol in np.unique(stim_table.stimulus_name):
                     cond = (stim_table.stimulus_name==protocol)
                     # get the number of repeats
@@ -135,10 +136,55 @@ RATES['time'] = spikeResp.t
 np.save(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'), RATES)
 
 # %% [markdown]
+# ## 2') Compute the PSTH per session
+
+# %%
+# loop over frames to build the time course
+PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
+             'natural_movie_one':['natural_movie_one', 'natural_movie_one_more_repeats']}
+
+for p in PROTOCOLS:
+    
+    protocols = PROTOCOLS[p]
+    
+    RATES = {}
+    for k, key, color in zip(range(2),
+                             ['PV', 'SST'],
+                             ['tab:red','tab:orange']):
+
+        RATES['%s_posUnits' % key] = []
+        RATES['%s_negUnits' % key] = []
+
+        for sessionID in range(len(Optotagging[key+'_sessions'])):
+
+            posUnits = Optotagging[key+'_positive_units'][sessionID]
+            negUnits = Optotagging[key+'_negative_units'][sessionID]
+            posRates, negRates = [], []
+
+            for protocol in protocols:
+
+                for units, rates in zip([negUnits, posUnits], [negRates, posRates]):
+                    for unit in units:
+                        filename = os.path.join('..', 'data', 'visual_coding', key, 
+                                                '%s_unit_%i.npy' % (protocol, unit))
+                        if os.path.isfile(filename):
+                            spikeResp = spikingResponse(None, None, None, filename=filename)
+                            rates.append(spikeResp.get_rate(smoothing=5e-3))
+
+            if (len(posRates)>1):
+                # only if more than one positive units
+                RATES['%s_posUnits' % key].append(np.mean(posRates, axis=0))
+                RATES['%s_negUnits' % key].append(np.mean(negRates, axis=0))
+
+    RATES['time'] = spikeResp.t
+    np.save(os.path.join('..', 'data', 'visual_coding',
+                         'RATES_per_session_%s.npy' % p), RATES)
+
+# %% [markdown]
 # # 3) Plot
 
 # %%
-RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_natural_movie_three.npy'),
                 allow_pickle=True).item()
 
 fig, AX = pt.figure(axes=(2,2), hspace=0.1, figsize=(1.3,1))
@@ -148,13 +194,14 @@ tCond = RATES['time']<4
 for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
     for u, rates, c in zip(range(2), 
                            [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
-                           [color, 'tab:grey']):            
-        pt.plot(RATES['time'][tCond], np.mean(rates, axis=0)[tCond],
-                #sy=0.*np.std(rates, axis=0)[tCond],
-                ax=AX[u][k], color=c)
-        pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
-        pt.set_plot(AX[u][k], ['left','bottom'] if u else ['left'], 
-                    ylabel='rate (Hz)', xlabel='time (s)' if u else '')
+                           [color, 'tab:grey']):  
+        if len(rates)>1:
+            pt.plot(RATES['time'][tCond], np.mean(rates, axis=0)[tCond],
+                    #sy=0.*np.std(rates, axis=0)[tCond],
+                    ax=AX[u][k], color=c)
+            pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
+            pt.set_plot(AX[u][k], ['left','bottom'] if u else ['left'], 
+                        ylabel='rate (Hz)', xlabel='time (s)' if u else '')
 
 
 
@@ -175,28 +222,114 @@ ax.set_xlim([-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
 
 # %% [markdown]
+# ## Cross-correlation per session
+
+# %%
+CCs = {'dt':RATES['time'][1]-RATES['time'][0],
+       'extent':1.5}
+
+for key in ['PV', 'SST']:
+    for u in ['pos', 'neg']:
+        CCs[key+'_%sUnits' % u] = []
+
+for p in PROTOCOLS:
+    
+    RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_%s.npy' % p),
+                    allow_pickle=True).item()
+
+    for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+
+        for u in ['pos', 'neg']:
+            
+            for negRate, rate in zip(RATES['%s_negUnits' % key], RATES['%s_%sUnits' % (key,u)]):
+                CCs[key+'_%sUnits' % u].append(\
+                                crosscorrel(negRate, rate, CCs['extent'], CCs['dt'])[0])
+                
+# just to get the time shift
+_, CCs['time_shift'] = crosscorrel(0*RATES['time'], 0*RATES['time'], CCs['extent'], CCs['dt'])
+
+np.save(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natural_movies.npy'), CCs)
+
+# %%
+from scipy import stats
+
+CCs = np.load(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natural_movies.npy'),
+              allow_pickle=True).item()
+
+Windows = [[-0.05, 0.05],
+           [0.1, 0.3]]
+
+fig, [ax1, ax2,ax3] = pt.figure(axes_extents=[[[2,1],[3,1],[3,1]]],
+                            figsize=(.2,1.2), wspace=4.)
+
+for w, window in enumerate(Windows):
+    mX, sX = [], []
+    tCond = (CCs['time_shift']>window[0]) & (CCs['time_shift']<window[1])
+    for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+        mX = np.mean([np.mean(cc[tCond]) for cc in CCs[key+'_posUnits']])        
+        sX = stats.sem([np.mean(cc[tCond]) for cc in CCs[key+'_posUnits']])
+        ax1.bar([3*w+k], [mX], yerr=[sX], color=color)
+
+for k, key, color1, color2 in zip(range(2),
+                                  ['PV', 'SST'],
+                                  ['tab:red','tab:orange'],
+                                  ['tab:grey', 'lightgray']):
+    mean = np.mean(CCs[key+'_posUnits'], axis=0)
+    pt.plot(CCs['time_shift'], mean/np.max(mean),
+            sy=stats.sem(CCs[key+'_negUnits'], axis=0)/np.max(mean),
+            color=color1, ax=ax2)
+    mean = np.mean(CCs[key+'_negUnits'], axis=0)
+    pt.plot(CCs['time_shift'], mean/np.max(mean), 
+            sy=stats.sem(CCs[key+'_negUnits'], axis=0)/np.max(mean),
+            color=color2, lw=0.5, ax=ax3)
+    pt.plot(CCs['time_shift'], np.mean(CCs[key+'_posUnits'], axis=0), 
+            sy=stats.sem(CCs[key+'_posUnits'], axis=0)/np.max(mean),
+            color=color1, ax=ax3)
+    
+pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
+            title='"-" vs "+" units', ylabel='norm. corr.',
+            xlim=[-1.5,1.5], yticks=[0,1])
+pt.set_plot(ax3, xlabel='jitter (s) of "+" units ', 
+            title='"-" vs "+" units', ylabel='corr. coefs',
+            xlim=[-1.5,1.5], yticks=[0,1])
+#pt.set_plot(ax, xlabel='jitter (s)', xlim=[-0.3,0.3])
+
+#fig.suptitle('cross-correl. "-" vs "+" units')
+
+# %%
+X
+
+# %% [markdown]
 # ## Cross-correlation per cell
 
 # %%
-CCs = {}
+from scipy import signal
+
+window = [-1.5, 1.5]
+
+CCs = {'dt':RATES['time'][1]-RATES['time'][0],
+       'extent':1.5}
+
 for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+    
     popRate = np.mean(RATES['%s_negUnits' % key], axis=0)
+
+    # positive units
+    CCs[key+'_posUnits'], CCs['time_shift'] = crosscorrel(popRate, popRate, CCs['extent'], CCs['dt'])
+    
+    # loop over negative units
     CCs[key+'_negUnits'] = []
-    for u, c in zip(['pos', 'neg'], [color, 'tab:grey']):
-        for rate in RATES['%s_negUnits' % key]:
-            CCF, time_shift = crosscorrel(popRate, rate,
-                                          1.5, RATES['time'][1]-RATES['time'][0])
-            CCs[key+'_negUnits'].append(CCF)
-    CCs[key+'_posUnits'] = crosscorrel(popRate, popRate,
-                                       1.5, RATES['time'][1]-RATES['time'][0])[0]
-CCs['time_shift'] = time_shift
+    for rate in RATES['%s_negUnits' % key]:
+        CCs[key+'_negUnits'].append(\
+                        crosscorrel(popRate, rate, CCs['extent'], CCs['dt'])[0])
+        
 np.save(os.path.join('..', 'data', 'visual_coding', 'CC_natural_movie_one.npy'), CCs)
 
 # %%
 CCs = np.load(os.path.join('..', 'data', 'visual_coding', 'CC_natural_movie_one.npy'),
               allow_pickle=True).item()
 
-fig, ax = plt.subplots(1)
+fig, ax = plt.subplots(1, figsize=(3,3))
 ax2 = ax.twinx()
 
 for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
@@ -204,8 +337,8 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
             sy=stats.sem(CCs[key+'_negUnits'], axis=0), color=color, ax=ax)
     pt.plot(CCs['time_shift'], CCs[key+'_posUnits'], 
             color='tab:grey', lw=0.5, ax=ax2)
-
-pt.set_plot(ax, xlabel='$\delta$ time (s)', xlim=[-1.5,1.5])
+    
+#pt.set_plot(ax, xlabel='$\delta$ time (s)', xlim=[-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
 
 # %%

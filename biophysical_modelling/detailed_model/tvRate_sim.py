@@ -52,9 +52,11 @@ def run_sim(cellType='Basket',
                 params_key=params_key)
 
     if from_uniform:
-        synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+        synapses = [cell.set_of_synapses_spatially_uniform[iBranch]\
+                        for iBranch in range(6)]
     else:
-        synapses = cell.set_of_synapses[iBranch]                      
+        synapses = [cell.set_of_synapses[iBranch]\
+                        for iBranch in range(6)]
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
@@ -188,12 +190,11 @@ if __name__=='__main__':
                   stochProcSeed=args.stochProcSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
-                  iBranch=args.iBranch,
+                  # iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   no_Vm=args.no_Vm,
-                  filename=args.filename,
                   tstop=args.tstop,
                   dt=args.dt)
 
@@ -201,6 +202,7 @@ if __name__=='__main__':
 
         # run with the given params as a test
         print('running test simulation [...]')
+        params['filename']=args.filename
         run_sim(**params)
 
     else:
@@ -212,8 +214,8 @@ if __name__=='__main__':
                             (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
-                    stochProcSeed=np.arange(10),
-                    spikeSeed=np.arange(20))
+                    stochProcSeed=np.arange(5),
+                    spikeSeed=np.arange(10))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
