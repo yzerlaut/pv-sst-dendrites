@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -54,7 +54,7 @@ all = True
 tstart, tstop, dt = -1, 301, 1e-3
 t = tstart+dt*np.arange(int((tstop-tstart)/dt))
 
-if True:
+if False:
     # turn True to re-run the analysis
     
     # load data from API
@@ -113,27 +113,104 @@ if True:
                                 Data)
 
 # %% [markdown]
-# # 2) Compute the PSTH
+# # 1) Showing an example session response
+
+# %%
+examples = {'PV':{'sessionID':0, 'positive_color':'tab:red', 'negative_color':'dimgrey'},
+            'SST':{'sessionID':2, 'positive_color':'tab:orange', 'negative_color':'silver'}}
+
+tmax = 3
+
+
+for c, cellType in enumerate(examples.keys()):
+
+    fig, AX = pt.figure(axes_extents=[[[1,1]],[[1,2]],[[1,1]],[[1,2]]], hspace=0.1, figsize=(1.6,.55))
+    sessionID = examples[cellType]['sessionID']
+    fig.suptitle('session %i\n' % Optotagging['%s_sessions' % cellType][sessionID], fontsize=6)
+    print(cellType, ' -> sessionID: ', Optotagging['%s_sessions' % cellType][sessionID])
+
+    for k, key in enumerate(['positive', 'negative']):
+        rates = []
+        for u, unit in enumerate(Optotagging['%s_%s_units' % (cellType, key)][sessionID]):
+            for protocol in ['natural_movie_one', 'natural_movie_one_more_repeats']:
+                filename = os.path.join('..', 'data', 'visual_coding', cellType, 
+                                        '%s_unit_%i.npy' % (protocol, unit))
+                if os.path.isfile(filename):
+                    spikeResp = spikingResponse(None, None, None, filename=filename)
+                    cond = spikeResp.t<tmax
+                    rates.append(spikeResp.get_rate(smoothing=5e-3)[cond])
+
+                    # showing spikes on the first repeat only
+                    sCond = spikeResp.spike_matrix[0,:] & cond
+                    AX[2*k].scatter(spikeResp.t[sCond], u+0*spikeResp.t[sCond], 
+                                    s=0.05,
+                                    color=examples[cellType]['%s_color'%key])
+
+        AX[2*k+1].fill_between(spikeResp.t[cond], 0*spikeResp.t[cond], np.mean(rates, axis=0),
+                               alpha=.7, lw=0,
+                               color=examples[cellType]['%s_color'%key])
+        pt.annotate(AX[2*k], '%i units' % len(rates), (1,0.5),
+                               color=examples[cellType]['%s_color'%key])
+    for ax in AX:
+        ax.axis('off')
+    for ax in [AX[1], AX[3]]:
+        pt.draw_bar_scales(ax, Xbar=0.2, Xbar_label='200ms', Ybar=10, Ybar_label='10Hz')
+    pt.set_common_xlims(AX)
+    fig.savefig('../figures/%s-session-natural-movie.svg' % cellType)
+
+# %% [markdown]
+# # 2) Compute the time-varying rate response
 
 # %%
 # loop over frames to build the time course
-RATES = {}
+
+rate_smoothing = 5e-3
+
+PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
+             'natural_movie_one':['natural_movie_one', 'natural_movie_one_more_repeats']}
+
+for p in PROTOCOLS:
+    
+    protocols = PROTOCOLS[p]
+
+    RATES = {}
+    for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+        RATES[key+'_posUnits'] = []
+        RATES[key+'_negUnits'] = []
+        for sessionID in range(len(Optotagging[key+'_sessions'])):
+            for u, rates, units, c in zip(range(2), [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
+                                   [Optotagging[key+'_positive_units'][sessionID], Optotagging[key+'_negative_units'][sessionID]],
+                                   [color, 'tab:grey']):
+                for unit in units:
+                    for protocol in ['natural_movie_one', 'natural_movie_one_more_repeats']:
+                        filename = os.path.join('..', 'data', 'visual_coding', key, 
+                                                '%s_unit_%i.npy' % (protocol, unit))
+                        if os.path.isfile(filename):
+                            spikeResp = spikingResponse(None, None, None, filename=filename)
+                            rates.append(spikeResp.get_rate(smoothing=5e-3))
+                            
+    RATES['time'] = spikeResp.t
+    np.save(os.path.join('..', 'data', 'visual_coding', 'RATES_%s.npy' % p), RATES)
+
+# %%
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_natural_movie_three.npy'),
+                allow_pickle=True).item()
+
+fig, AX = pt.figure(axes=(2,2), hspace=0.1, figsize=(1.3,1))
+
+tCond = RATES['time']<4
+
 for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
-    RATES[key+'_posUnits'] = []
-    RATES[key+'_negUnits'] = []
-    for sessionID in range(len(Optotagging[key+'_sessions'])):
-        for u, rates, units, c in zip(range(2), [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
-                               [Optotagging[key+'_positive_units'][sessionID], Optotagging[key+'_negative_units'][sessionID]],
-                               [color, 'tab:grey']):
-            for unit in units:
-                for protocol in ['natural_movie_one', 'natural_movie_one_more_repeats']:
-                    filename = os.path.join('..', 'data', 'visual_coding', key, 
-                                            '%s_unit_%i.npy' % (protocol, unit))
-                    if os.path.isfile(filename):
-                        spikeResp = spikingResponse(None, None, None, filename=filename)
-                        rates.append(spikeResp.get_rate(smoothing=5e-3))
-RATES['time'] = spikeResp.t
-np.save(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'), RATES)
+    for u, rates, c in zip(range(2), 
+                           [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
+                           [color, 'tab:grey']):  
+        if len(rates)>1:
+            pt.plot(RATES['time'][tCond], np.mean(rates, axis=0)[tCond],
+                    #sy=0.*np.std(rates, axis=0)[tCond],
+                    ax=AX[u][k], color=c)
+            pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
+            pt.set_plot(AX[u][k], ['left','bottom'] if u else ['left'], 
+                        ylabel='rate (Hz)', xlabel='time (s)' if u else '')
 
 # %% [markdown]
 # ## 2') Compute the PSTH per session
@@ -184,26 +261,6 @@ for p in PROTOCOLS:
 # # 3) Plot
 
 # %%
-RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_natural_movie_three.npy'),
-                allow_pickle=True).item()
-
-fig, AX = pt.figure(axes=(2,2), hspace=0.1, figsize=(1.3,1))
-
-tCond = RATES['time']<4
-
-for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
-    for u, rates, c in zip(range(2), 
-                           [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
-                           [color, 'tab:grey']):  
-        if len(rates)>1:
-            pt.plot(RATES['time'][tCond], np.mean(rates, axis=0)[tCond],
-                    #sy=0.*np.std(rates, axis=0)[tCond],
-                    ax=AX[u][k], color=c)
-            pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
-            pt.set_plot(AX[u][k], ['left','bottom'] if u else ['left'], 
-                        ylabel='rate (Hz)', xlabel='time (s)' if u else '')
-
-
 
 # %%
 fig, ax = plt.subplots(1) # pt.figure()

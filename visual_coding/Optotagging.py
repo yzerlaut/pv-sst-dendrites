@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -70,17 +70,11 @@ Visual_Areas = [v for v in np.unique(np.concatenate([np.array(x, dtype=str)\
                                 for x in sessions.ecephys_structure_acronyms.values])) if 'VIS' in v]
 Visual_Areas
 
+
 # %% [markdown]
 # # 2) Identifying positive units
 
 # %%
-"""
-trials = session.optogenetic_stimulation_epochs[session.optogenetic_stimulation_epochs.stimulus_name=='pulse']
-trials = session.optogenetic_stimulation_epochs[(session.optogenetic_stimulation_epochs.duration > 0.009) & \
-                                                (session.optogenetic_stimulation_epochs.duration < 0.02)]
-units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
-#units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
-"""
 def optotagging_spike_counts(session, trials, units,
                              time_resolution = 5e-4):
     
@@ -118,37 +112,16 @@ def optotagging_spike_counts(session, trials, units,
 
 
 # %%
-def plot_optotagging_response(spikes_matrix,
-                              duration=None):
-
-    time_resolution = np.mean(np.diff(spikes_matrix.time_relative_to_stimulus_onset))
-    
-    Rates = spikes_matrix.mean(dim='trial_id').T / time_resolution
-    plt.imshow(Rates, 
-               extent=[1e3*np.min(spikes_matrix.time_relative_to_stimulus_onset.values),
-                       1e3*np.max(spikes_matrix.time_relative_to_stimulus_onset.values),
-                       0, spikes_matrix.shape[2]],
-               aspect='auto', vmin=0, vmax=np.min([100, 1.2*np.max(Rates)]))
-
-    if duration is not None:
-        for bound in [0, duration]:
-            plt.plot([1e3*bound, 1e3*bound],[0, spikes_matrix.shape[2]], ':', color='white', linewidth=1.0)
-        plt.xticks([0, 1e3*duration])
-        
-    plt.xlabel('time (ms)')
-    plt.ylabel('Unit #')
-
-    cb = plt.colorbar(fraction=0.046, pad=0.04)
-    cb.set_label('Mean firing rate (Hz)\n(n=%i trials)' % len(spikes_matrix.trial_id.values))
-    
+   
 #plot_optotagging_response(spikes_matrix)
-
 
 # %%
 def analyze_optotagging_responses(session, trials, units,
                                   spikes_matrix=None,
                                   inclusion_evoked_factor=3.,
                                   inclusion_min_evoked=20.,
+                                  pos_color='tab:red',
+                                  neg_color='dimgrey',
                                   label='',
                                   with_fig=False):
     
@@ -169,19 +142,43 @@ def analyze_optotagging_responses(session, trials, units,
     cre_pos_units = (spikes_matrix.unit_id[inclusion_cond].values) 
 
     if with_fig:
-        fig = plt.figure(figsize=(6, 2))
+
+        fig = plt.figure(figsize=(1.5, 3))
+        AX = []
         plt.subplots_adjust(left=0.2, wspace=1)
 
-        plt.subplot2grid((6,6), (0,0), colspan=3, rowspan=6)
+        #plt.subplot2grid((6,6), (0,0), colspan=3, rowspan=6)
+        AX.append(fig.add_subplot(211))
         
         pt.annotate(fig, label, (0., 0.5))
             
-        plot_optotagging_response(spikes_matrix, duration=duration)
+        time_resolution = np.mean(np.diff(spikes_matrix.time_relative_to_stimulus_onset))
         
-        plt.subplot2grid((6,6), (1,4), colspan=2, rowspan=4)
+        Rates = spikes_matrix.mean(dim='trial_id').T / time_resolution
+        plt.imshow(Rates, 
+                   extent=[1e3*np.min(spikes_matrix.time_relative_to_stimulus_onset.values),
+                           1e3*np.max(spikes_matrix.time_relative_to_stimulus_onset.values),
+                           0, spikes_matrix.shape[2]],
+                   aspect='auto', vmin=0, vmax=np.min([100, 1.2*np.max(Rates)]))
     
-        plt.scatter(baseline_rate, evoked_rate, s=1)
-        plt.scatter(baseline_rate[inclusion_cond], evoked_rate[inclusion_cond], s=2, color='r')
+        if duration is not None:
+            for bound in [0, duration]:
+                plt.plot([1e3*bound, 1e3*bound],[0, spikes_matrix.shape[2]], ':', color='white', linewidth=1.0)
+            plt.xticks([0, 1e3*duration])
+            
+        pt.annotate(AX[0], 'unit ID', (0,0.5), ha='right', va='center', rotation=90)
+    
+        cb = plt.colorbar(fraction=0.046, pad=0.04)
+        cb.set_label('rate (Hz)')
+        AX[0].set_title('n=%i trials' % len(spikes_matrix.trial_id.values))
+        AX[0].set_xticks([])
+        AX[0].set_yticks([0,len(inclusion_cond)], ['1', '%i' % (len(inclusion_cond)+1)])
+        
+        pt.draw_bar_scales(AX[0], loc='bottom-right', Xbar=5, Xbar_label='5ms', color='w', Ybar=1e-12)
+
+        AX.append(fig.add_subplot(212))
+        plt.scatter(baseline_rate[~inclusion_cond], evoked_rate[~inclusion_cond], s=1, color=neg_color)
+        plt.scatter(baseline_rate[inclusion_cond], evoked_rate[inclusion_cond], s=2, color=pos_color)
 
         axis_limit = 1.2*np.max(evoked_rate)
         plt.plot([0,axis_limit],[0,axis_limit], ':k')
@@ -189,20 +186,79 @@ def analyze_optotagging_responses(session, trials, units,
         plt.xlim([0,axis_limit])
         plt.ylim([0,axis_limit])
 
-        plt.title('%i/%i Cre-positive (%.1f%%)' % (np.sum(inclusion_cond), len(inclusion_cond),
-                                                   100.*np.sum(inclusion_cond)/len(inclusion_cond)))
-        plt.xlabel('Baseline rate (Hz)')
-        plt.ylabel('Evoked rate (Hz)')
+        pt.annotate(AX[1], '"+" units\n(n=%i)\n\n' % np.sum(inclusion_cond), (0.8,0), ha='center', color=pos_color)
+        pt.annotate(AX[1], '"-" units\n(n=%i)' % (len(inclusion_cond)-np.sum(inclusion_cond)), 
+                    (0.8,0), ha='center', color=neg_color)
+        plt.xlabel('baseline rate (Hz)')
+        plt.ylabel('evoked rate (Hz)')
         
         
     else:
-        fig = None
+        fig, AX = None, None
         
-    return cre_pos_units, fig
-"""
-_ = analyze_optotagging_responses(session, trials, units,# spikes_matrix,
-                                  with_fig=True)
-"""
+    return cre_pos_units, fig, AX
+
+# %% [markdown]
+# ## Example SST-Cre session
+
+# %%
+session = cache.get_session_data(756029989)
+
+# units in the visual system
+units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+# we use the 10ms pulse 
+trials = session.optogenetic_stimulation_epochs[\
+                (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
+                (session.optogenetic_stimulation_epochs.duration > 0.009) &
+                (session.optogenetic_stimulation_epochs.duration < 0.02)]
+
+# %%
+positive_units, fig, AX = analyze_optotagging_responses(session, trials, units,
+                                                        pos_color='tab:orange',
+                                                        neg_color='silver',
+                                                        with_fig=True)
+fig.savefig('../figures/SST-session-phototagging.svg')
+
+# %% [markdown]
+# ## Example PV-Cre session
+
+# %%
+session = cache.get_session_data(721123822)
+
+# units in the visual system
+units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+# we use the 10ms pulse 
+trials = session.optogenetic_stimulation_epochs[\
+                (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
+                (session.optogenetic_stimulation_epochs.duration > 0.009) &
+                (session.optogenetic_stimulation_epochs.duration < 0.02)]
+
+# %%
+positive_units, fig, AX = analyze_optotagging_responses(session, trials, units,
+                                                        pos_color='tab:red',
+                                                        neg_color='dimgrey',
+                                                        with_fig=True)
+fig.savefig('../figures/PV-session-phototagging.svg')
+
+# %%
+session = cache.get_session_data(756029989)
+#session = cache.get_session_data(721123822)
+
+# considering all units in V1
+#units = session.units[session.units.ecephys_structure_acronym.str.match('VISp')]
+# considering all units in the visual cortex
+units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+
+# we use the 10ms pulse 
+trials = session.optogenetic_stimulation_epochs[\
+                (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
+                (session.optogenetic_stimulation_epochs.duration > 0.009) &
+                (session.optogenetic_stimulation_epochs.duration < 0.02)]
+
+# final units
+positive_units, fig = analyze_optotagging_responses(session, trials, units,
+                                                    label='10ms pulse',
+                                                    with_fig=True)
 
 # %%
 trials = session.optogenetic_stimulation_epochs[\
