@@ -192,7 +192,7 @@ if __name__=='__main__':
                   stochProcSeed=args.stochProcSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
-                  # iBranch=args.iBranch,
+                  iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
@@ -216,7 +216,7 @@ if __name__=='__main__':
                             (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
-                    stochProcSeed=np.arange(5),
+                    stochProcSeed=np.arange(3),
                     spikeSeed=np.arange(10))
 
         if args.test_uniform:
