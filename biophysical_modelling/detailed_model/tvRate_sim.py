@@ -52,11 +52,13 @@ def run_sim(cellType='Basket',
                 params_key=params_key)
 
     if from_uniform:
-        synapses = np.concatenate([cell.set_of_synapses_spatially_uniform[iBranch]\
-                                    for iBranch in range(6)])
+        synapses = cell.set_of_synapses_spatially_uniform[iBranch]
+        # synapses = np.concatenate([cell.set_of_synapses_spatially_uniform[iBranch]\
+                        # for iBranch in range(6)])
     else:
-        synapses = np.concatenate([cell.set_of_synapses[iBranch]\
-                                    for iBranch in range(6)])
+        synapses = cell.set_of_synapses[iBranch]
+        # synapses = [cell.set_of_synapses[iBranch]\
+                        # for iBranch in range(6)]
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
