@@ -4,18 +4,17 @@ from parallel import Parallel
 import sys
 sys.path.append('../..')
 import plot_tools as pt
-sys.path.append('../../analyz')
-from analyz.signal_library.stochastic_processes import OrnsteinUhlenbeck_Process
 import matplotlib.pylab as plt
+
 
 def run_sim(cellType='Basket', 
             passive_only=False,
             iBranch=0,
             from_uniform=False,
             # stim props
-            meanStim=1.,
-            stdStim=1.,
-            tauStim=250,
+            meanStim=2.,
+            stdStim=0.75,
+            tauStim=50,
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
@@ -32,6 +31,18 @@ def run_sim(cellType='Basket',
 
     from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+
+    def OrnsteinUhlenbeck_Process(mu, sigma, tau, 
+                                  dt=0.1, tstop=100):
+        """ taken from github.com/yzerlaut/analyz """
+        diffcoef = 2*sigma**2/tau
+        y0, n_steps= mu, int(tstop/dt)
+        A = np.sqrt(diffcoef*tau/2.*(1-np.exp(-2*dt/tau)))
+        noise, y = np.random.randn(n_steps), np.zeros(n_steps)
+        y[0] = y0
+        for i in range(n_steps-1):
+            y[i+1] = y0 + (y[i]-y0)*np.exp(-dt/tau)+A*noise[i]
+        return y
 
     ######################################################
     ##   simulation preparation  #########################
@@ -67,13 +78,14 @@ def run_sim(cellType='Basket',
                                                        with_NMDA=with_NMDA)
 
     # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
-    OU = np.clip(OrnsteinUhlenbeck_Process(meanStim,
-                                           stdStim, 
-                                           tauStim,
-                                           dt, tstop,
-                                           seed=stochProcSeed), 0, np.inf)
+    np.random.seed(stochProcSeed)
+    OU = np.clip(\
+            OrnsteinUhlenbeck_Process(meanStim,
+                                      stdStim, 
+                                      tauStim,
+                                      dt, tstop),
+                0, np.inf)
 
-    # prepare presynaptic spike trains
     # -- background activity 
     np.random.seed(spikeSeed)
     TRAINS = []
@@ -83,7 +95,8 @@ def run_sim(cellType='Basket',
                                                  dt=dt,
                                                  tstop=tstop)))
         else:
-            TRAINS.append(list(PoissonSpikeTrain(bgFreqInhFactor*stimFreq*OU,
+            TRAINS.append(list(PoissonSpikeTrain(\
+                                    bgFreqInhFactor*stimFreq*OU,
                                                  dt=dt,
                                                  tstop=tstop)))
 
@@ -101,9 +114,6 @@ def run_sim(cellType='Basket',
 
     # Vm rec
     Vm_soma.record(cell.soma[0](0.5)._ref_v)
-
-    # spike count
-    apc = h.APCount(cell.soma[0](0.5))
 
     ######################################################
     ##   simulation run   ################################
@@ -125,6 +135,8 @@ def run_sim(cellType='Basket',
                                     (Vm[:-1]<=spike_threshold)),
               'dt': dt, 
               'synapses':synapses,
+              'stimFreq':stimFreq,
+              'bgFreqInhFactor':bgFreqInhFactor,
               'tstop':tstop}
 
     if not no_Vm:
@@ -157,7 +169,8 @@ if __name__=='__main__':
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
-    parser.add_argument("--stochProcSeed", type=float, default=1)
+    parser.add_argument("--stochProcSeed", type=int, default=1)
+    parser.add_argument("--spikeSeed", type=int, default=1)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -176,6 +189,8 @@ if __name__=='__main__':
 
     parser.add_argument("-t", "--test", help="test func",
                         action="store_true")
+    parser.add_argument("--test_with_repeats", help="test func",
+                        action="store_true")
     parser.add_argument("-bg_valig", "--background_calibration", 
                         action="store_true")
     parser.add_argument("-wps", "--with_presynaptic_spikes", 
@@ -183,13 +198,14 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
-    parser.add_argument("--tstop", type=float, default=20000.)
+    parser.add_argument("--tstop", type=float, default=5000.)
 
     args = parser.parse_args()
      
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
                   stochProcSeed=args.stochProcSeed,
+                  spikeSeed=args.spikeSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
@@ -206,6 +222,27 @@ if __name__=='__main__':
         print('running test simulation [...]')
         params['filename']=args.filename
         run_sim(**params)
+
+    elif args.test_with_repeats:
+
+        sim = Parallel(\
+            filename='../../data/detailed_model/tvRateStim_demo_%s.zip' %\
+                                    args.cellType)
+
+        grid = dict(spikeSeed=np.arange(24))
+
+        if args.test_uniform:
+            grid = dict(from_uniform=[False, True], **grid)
+
+        if args.test_NMDA:
+            grid = dict(with_NMDA=[False, True], **grid)
+
+        sim.build(grid)
+
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)
 
     else:
    

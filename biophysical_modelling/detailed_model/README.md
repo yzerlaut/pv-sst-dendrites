@@ -91,7 +91,7 @@ N.B. to remove the axon from the morphology, use the scipt `neural_network_dynam
 | **soma** |     |     |     |          |
 |          | Fast Sodium current                           | `MC_soma_gNafx`    | 7.00 10<sup>-1</sup> | original 1.35e-1 |
 |          | Delayed rectifier Potassium current           | `MC_soma_gKdrin`   | 4.00 10<sup>-1</sup> | original 3.60e-2 |
-|          | M-type current                                | `MC_soma_gM`       | 2.00 10<sup>-2</sup> |                  |
+|          | M-type current                                | `MC_soma_gM`       | 2.00 10<sup>-3</sup> | 2e-2             |
 | **proximal dendrites** | ($\leq$ 100 um from soma) |     |     |     |
 |          | Fast Sodium current                           | `MC_prox_gNafx`    | 0.00 10<sup>-2</sup> |
 |          | Delayed rectifier Potassium current           | `MC_prox_gKdrin`   | 0.00 10<sup>-4</sup> |

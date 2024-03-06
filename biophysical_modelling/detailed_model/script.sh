@@ -1,13 +1,23 @@
 ##########################################################
 ########### time-varying rate Stochastic Inputs ##########
 ##########################################################
+#
 if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
 then
-    # Martinotti Cell
-    python tvRate_sim.py --test -c Martinotti --with_NMDA --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Martinotti.npy --stimFreq 2e-2 --bgFreqInhFactor 0.5 --iBranch 1
     ## Basket Cell
-    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 1e-2 --bgFreqInhFactor 1.0 --iBranch 1
+    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 7e-3 --bgFreqInhFactor 1.0 --iBranch 1 &
+    # Martinotti Cell
+    python tvRate_sim.py --test -c Martinotti --with_NMDA --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Martinotti.npy --stimFreq 1.2e-4 --bgFreqInhFactor 1.0 --iBranch 1 &
 fi
+
+if [[ $1 == 'all' || $1 == 'demo-tvRate-repeated' ]]
+then
+    ## Basket Cell
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
+    # Martinotti Cell
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
+fi
+
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
 then
     # Martinotti Cell
@@ -64,17 +74,16 @@ fi
 # 
 if [[ $1 == 'all' || $1 == 'width-demo' ]]
 then
-    # # --- demo data --- # #
+    # # --- narrow width --- # #
     # Basket cell
-    for w in 6.25 12.5 25 50 100
-    do
-        python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width $w --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --from_uniform --iBranch 1 --filename ../../data/detailed_model/IT-Basket-w${w}ms-f10mHz.npy &
-    done
+    python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 25 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --iBranch 1 --filename ../../data/detailed_model/narrow-width-Basket.npy &
     # Martinotti cell
-    for w in 6.25 12.5 25 50 100
-    do
-        python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width $w --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/IT-Martinotti-w${w}ms-f10mHz.npy --iBranch 1 & 
-    done
+    python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 25 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/narrow-width-Martinotti.npy --iBranch 1 & 
+    # # --- large width --- # #
+    # Basket cell
+    python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 100 --bgStimFreq 2e-3 --bgFreqInhFactor 1 -c Basket --iBranch 1 --filename ../../data/detailed_model/narrow-width-Basket.npy &
+    # Martinotti cell
+    python intensity_timing_sim.py --test --with_presynaptic_spikes --freq 1e-2 --width 100 --bgStimFreq 5e-4 --bgFreqInhFactor 4 -c Martinotti --with_NMDA --filename ../../data/detailed_model/narrow-width-Martinotti.npy --iBranch 1 & 
 fi
 
 # 
