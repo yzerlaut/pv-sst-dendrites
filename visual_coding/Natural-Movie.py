@@ -119,6 +119,7 @@ if False:
 examples = {'PV':{'sessionID':0, 'positive_color':'tab:red', 'negative_color':'dimgrey'},
             'SST':{'sessionID':2, 'positive_color':'tab:orange', 'negative_color':'silver'}}
 
+rate_smoothing = 10e-3
 tmax = 3
 
 
@@ -138,7 +139,7 @@ for c, cellType in enumerate(examples.keys()):
                 if os.path.isfile(filename):
                     spikeResp = spikingResponse(None, None, None, filename=filename)
                     cond = spikeResp.t<tmax
-                    rates.append(spikeResp.get_rate(smoothing=5e-3)[cond])
+                    rates.append(spikeResp.get_rate(smoothing=rate_smoothing)[cond])
 
                     # showing spikes on the first repeat only
                     sCond = spikeResp.spike_matrix[0,:] & cond
@@ -164,10 +165,11 @@ for c, cellType in enumerate(examples.keys()):
 # %%
 # loop over frames to build the time course
 
-rate_smoothing = 5e-3
+rate_smoothing = 10e-3
 
 PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
-             'natural_movie_one':['natural_movie_one', 'natural_movie_one_more_repeats']}
+             'natural_movie_one':['natural_movie_one',
+                                  'natural_movie_one_more_repeats']}
 
 for p in PROTOCOLS:
     
@@ -178,16 +180,21 @@ for p in PROTOCOLS:
         RATES[key+'_posUnits'] = []
         RATES[key+'_negUnits'] = []
         for sessionID in range(len(Optotagging[key+'_sessions'])):
-            for u, rates, units, c in zip(range(2), [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
-                                   [Optotagging[key+'_positive_units'][sessionID], Optotagging[key+'_negative_units'][sessionID]],
-                                   [color, 'tab:grey']):
-                for unit in units:
-                    for protocol in protocols:
-                        filename = os.path.join('..', 'data', 'visual_coding', key, 
-                                                '%s_unit_%i.npy' % (protocol, unit))
-                        if os.path.isfile(filename):
-                            spikeResp = spikingResponse(None, None, None, filename=filename)
-                            rates.append(spikeResp.get_rate(smoothing=5e-3))
+            
+            if len(Optotagging[key+'_positive_units'][sessionID])>1:
+                # only sessions with phototagged units
+                
+                for u, rates, units, c in zip(range(2), [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
+                                       [Optotagging[key+'_positive_units'][sessionID], Optotagging[key+'_negative_units'][sessionID]],
+                                       [color, 'tab:grey']):
+                    
+                    for unit in units:
+                        for protocol in protocols:
+                            filename = os.path.join('..', 'data', 'visual_coding', key, 
+                                                    '%s_unit_%i.npy' % (protocol, unit))
+                            if os.path.isfile(filename):
+                                spikeResp = spikingResponse(None, None, None, filename=filename)
+                                rates.append(spikeResp.get_rate(smoothing=rate_smoothing))
                             
     RATES['time'] = spikeResp.t
     np.save(os.path.join('..', 'data', 'visual_coding', 'RATES_%s.npy' % p), RATES)
@@ -205,7 +212,7 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
     for u, rates, c in zip(range(2), 
                            [RATES[key+'_posUnits'], RATES[key+'_negUnits']],
                            [color, 'tab:grey']):  
-        if len(rates)>1:
+        if len(rates)>0:
             pt.plot(RATES['time'][tCond], np.mean(rates, axis=0)[tCond],
                     #sy=0.*np.std(rates, axis=0)[tCond],
                     ax=AX[u][k], color=c)
@@ -230,11 +237,14 @@ def fit_exponential_decay(shift, array,
                    bounds=[[min_time, max_time]], method='L-BFGS-B')
     return res.x[0]
 
+"""
 ts, ccf = time_shift[int(len(time_shift)/2):], CCF[int(len(time_shift)/2):]/CCF[int(len(time_shift)/2)]
 tau = fit_exponential_decay(ts, ccf)
 plt.plot(ts, ccf, label='data')
 plt.plot(ts, np.exp(-ts/tau), '--', label='exp. fit')
 plt.legend()
+"""
+
 
 # %%
 
@@ -312,24 +322,24 @@ for p in PROTOCOLS:
     protocols = PROTOCOLS[p]
     
     RATES = {}
-    for k, key, color in zip(range(2),
+    for k, cellType, color in zip(range(2),
                              ['PV', 'SST'],
                              ['tab:red','tab:orange']):
 
-        RATES['%s_posUnits' % key] = []
-        RATES['%s_negUnits' % key] = []
+        RATES['%s_posUnits' % cellType] = []
+        RATES['%s_negUnits' % cellType] = []
 
-        for sessionID in range(len(Optotagging[key+'_sessions'])):
+        for sessionID in range(len(Optotagging[cellType+'_sessions'])):
 
-            posUnits = Optotagging[key+'_positive_units'][sessionID]
-            negUnits = Optotagging[key+'_negative_units'][sessionID]
+            posUnits = Optotagging[cellType+'_positive_units'][sessionID]
+            negUnits = Optotagging[cellType+'_negative_units'][sessionID]
             posRates, negRates = [], []
 
             for protocol in protocols:
 
                 for units, rates in zip([negUnits, posUnits], [negRates, posRates]):
                     for unit in units:
-                        filename = os.path.join('..', 'data', 'visual_coding', key, 
+                        filename = os.path.join('..', 'data', 'visual_coding', cellType, 
                                                 '%s_unit_%i.npy' % (protocol, unit))
                         if os.path.isfile(filename):
                             spikeResp = spikingResponse(None, None, None, filename=filename)
@@ -337,8 +347,10 @@ for p in PROTOCOLS:
 
             if (len(posRates)>1):
                 # only if more than one positive units
-                RATES['%s_posUnits' % key].append(np.mean(posRates, axis=0))
-                RATES['%s_negUnits' % key].append(np.mean(negRates, axis=0))
+                RATES['%s_posUnits' % cellType].append(np.mean(posRates, axis=0))
+                RATES['%s_negUnits' % cellType].append(np.mean(negRates, axis=0))
+            else:
+                print('session %i no ' % sessionID, cellType, p)
 
     RATES['time'] = spikeResp.t
     np.save(os.path.join('..', 'data', 'visual_coding',
