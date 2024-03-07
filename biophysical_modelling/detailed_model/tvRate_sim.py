@@ -14,7 +14,7 @@ def run_sim(cellType='Basket',
             # stim props
             meanStim=2.,
             stdStim=0.75,
-            tauStim=150,
+            tauStim=100,
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
@@ -226,8 +226,8 @@ if __name__=='__main__':
     elif args.test_with_repeats:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/tvRateStim_demo_%s.zip' %\
-                                    args.cellType)
+            filename='../../data/detailed_model/tvRateStim_demo_%s%s.zip' %\
+                                    (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(24))
 
