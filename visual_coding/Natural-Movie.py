@@ -146,6 +146,7 @@ for c, cellType in enumerate(examples.keys()):
                     AX[2*k].scatter(spikeResp.t[sCond], u+0*spikeResp.t[sCond], 
                                     s=0.05,
                                     color=examples[cellType]['%s_color'%key])
+        print('number of repeats:', spikeResp.spike_matrix.shape[0], '  ', key, cellType)
 
         AX[2*k+1].fill_between(spikeResp.t[cond], 0*spikeResp.t[cond], np.mean(rates, axis=0),
                                alpha=.7, lw=0,
@@ -154,10 +155,10 @@ for c, cellType in enumerate(examples.keys()):
                                color=examples[cellType]['%s_color'%key])
     for ax in AX:
         ax.axis('off')
-    for ax in [AX[1], AX[3]]:
-        pt.draw_bar_scales(ax, Xbar=0.2, Xbar_label='200ms', Ybar=10, Ybar_label='10Hz')
+    pt.draw_bar_scales(AX[1], Xbar=0.2, Xbar_label='200ms', Ybar=10, Ybar_label='10Hz')
+    pt.draw_bar_scales(AX[3], Xbar=0.2, Xbar_label='200ms', Ybar=5, Ybar_label='5Hz')
     pt.set_common_xlims(AX)
-    fig.savefig('../figures/%s-session-natural-movie.svg' % cellType)
+    fig.savefig('../figures/visual_coding/%s-session-natural-movie.svg' % cellType)
 
 # %% [markdown]
 # # 4) Compute the time-varying rate of the "+" and "-" units 
@@ -227,23 +228,40 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 # Exponential fit to quantify the decay
 
 from scipy.optimize import minimize
-
+"""
 def fit_exponential_decay(shift, array,
                           min_time=100e-3,
                           max_time=1300e-3):
     def func(X):
-        return np.sum(np.abs(np.exp(-shift/X[0])-array))
-    res = minimize(func, [min_time],
+        return np.sum(np.abs((1-X[1])*np.exp(-shift/X[0])+X[1]-array))
+    res = minimize(func, [min_time,1],
                    bounds=[[min_time, max_time]], method='L-BFGS-B')
-    return res.x[0]
-
-"""
+    return res.x
 ts, ccf = time_shift[int(len(time_shift)/2):], CCF[int(len(time_shift)/2):]/CCF[int(len(time_shift)/2)]
-tau = fit_exponential_decay(ts, ccf)
+tau, C = fit_exponential_decay(ts, ccf)
 plt.plot(ts, ccf, label='data')
-plt.plot(ts, np.exp(-ts/tau), '--', label='exp. fit')
-plt.legend()
+plt.plot(ts, (1-C)*np.exp(-ts/tau)+C, '--', label='exp. fit')
 """
+
+def gaussian(t, X):
+    return (1-X[2])*np.exp(-(t-X[1])**2/2/X[0]**2)+X[2]
+                 
+def fit_gaussian_width(shift, array,
+                       min_time=100e-3,
+                       max_time=1300e-3):
+    def func(X):
+        return np.sum(np.abs(gaussian(shift, X)-array))
+    res = minimize(func, [3*min_time,0,1],
+                   bounds=[[min_time, max_time],
+                           [-max_time, max_time],
+                           [0,1]], method='L-BFGS-B')
+    return res.x
+
+plt.plot(time_shift, CCF/np.max(CCF), label='data')
+plt.plot(time_shift, gaussian(time_shift, fit_gaussian_width(time_shift, CCF/np.max(CCF))), label='fit')
+
+#plt.plot(ts, (1-C)*np.exp(-ts/tau)+C, '--', label='exp. fit')
+plt.legend()
 
 
 # %%
@@ -254,7 +272,7 @@ RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie
 fig1, [ax11, ax12, ax13] = plt.subplots(1, 3, figsize=(2.5,0.8))
 fig1.subplots_adjust(wspace=2)
 fig1.suptitle('movie #1, all units pooled')
-fig2, ax2 = plt.subplots(1, figsize=(1.3, 0.8))
+fig2, ax2 = pt.figure(figsize=(1.1,0.85))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
 
 
@@ -270,41 +288,42 @@ for k, key, pos_color, neg_color in zip(range(2),
     pt.annotate(ax3, k*'\n'+'n=%iunits' % len(RATES['%s_negUnits' % key]), (1,1),
                 va='top', ha='right', color=neg_color, fontsize=6)
     
-    CCF, time_shift = crosscorrel(neg_rates, neg_rates,
+    CCF, time_shift = crosscorrel(neg_rates-np.mean(neg_rates), neg_rates-np.mean(neg_rates),
                                   1.5, RATES['time'][1]-RATES['time'][0])
     ax3.plot(time_shift, CCF/np.max(CCF), color=neg_color)
-    # exp fit for decay
-    ts, ccf = time_shift[int(len(time_shift)/2):], CCF[int(len(time_shift)/2):]/CCF[int(len(time_shift)/2)]
-    tau0 = fit_exponential_decay(ts, ccf)
+    
+    # gaussian fit for width
+    tau0 = fit_gaussian_width(time_shift, CCF/np.max(CCF))[0]
     ax12.bar([2*k+1], [1e3*tau0], color=neg_color)
 
     ax11.bar([k], [CCF[int(len(time_shift)/2)]], color=pos_color)
 
-    CCF, time_shift = crosscorrel(neg_rates, pos_rates,
+    CCF, time_shift = crosscorrel(neg_rates-np.mean(neg_rates), pos_rates-np.mean(pos_rates),
                                   1.5, RATES['time'][1]-RATES['time'][0])
     ax2.plot(time_shift, CCF, color=pos_color)
     ax3.plot(time_shift, CCF/np.max(CCF), color=pos_color)
     
-    # exp fit for decay
-    ts, ccf = time_shift[int(len(time_shift)/2):], CCF[int(len(time_shift)/2):]/CCF[int(len(time_shift)/2)]
-    tau = fit_exponential_decay(ts, ccf)
+    # gaussian fit for width
+    tau = fit_gaussian_width(time_shift, CCF/np.max(CCF))[0]
     ax12.bar([2*k], [1e3*tau], color=pos_color)
     ax13.bar([k], [1e3*(tau-tau0)], color=pos_color)
     
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
 pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='decay (ms)')
+            ylabel='width (s)')
 pt.set_plot(ax13, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='$\delta$ decay (ms)')
-pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
-            title='"-" vs "+" units', ylabel='corr. coefs',
+            ylabel='$\delta$ width (ms)')
+pt.set_plot(ax2, xlabel='jitter (s)', 
+            #title='"-" vs "+" units', 
+            ylabel='corr. coef.',
+            yticks=[0.2,0.5,0.8],
             xlim=[-1.5,1.5])
-pt.set_plot(ax3, xlabel='jitter (s) of "+" units ', 
+pt.set_plot(ax3, xlabel='jitter (s)', 
             ylabel='norm. corr.',
             xlim=[-1.5,1.5], yticks=[0,1])
 
-#fig.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
+fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
 
 # %% [markdown]
 # # 6) Same but analyzing per session
@@ -328,6 +347,7 @@ for p in PROTOCOLS:
 
         RATES['%s_posUnits' % cellType] = []
         RATES['%s_negUnits' % cellType] = []
+        RATES['%s_n_per_session' % cellType] = []
 
         for sessionID in range(len(Optotagging[cellType+'_sessions'])):
 
@@ -349,9 +369,11 @@ for p in PROTOCOLS:
                 # only if more than one positive units
                 RATES['%s_posUnits' % cellType].append(np.mean(posRates, axis=0))
                 RATES['%s_negUnits' % cellType].append(np.mean(negRates, axis=0))
+                RATES['%s_n_per_session' % cellType].append(len(posRates))
             else:
-                print('session %i no ' % sessionID, cellType, p)
-
+                #print('session %i no ' % sessionID, cellType, p)
+                pass
+                
     RATES['time'] = spikeResp.t
     np.save(os.path.join('..', 'data', 'visual_coding',
                          'RATES_per_session_%s.npy' % p), RATES)
@@ -363,22 +385,26 @@ for p in PROTOCOLS:
 CCs = {'dt':RATES['time'][1]-RATES['time'][0],
        'extent':1.5}
 
-for key in ['PV', 'SST']:
+for cellType in ['PV', 'SST']:
     for u in ['pos', 'neg']:
-        CCs[key+'_%sUnits' % u] = []
-
+        CCs[cellType+'_%sUnits' % u] = []
+    CCs['%s_n_per_session' % cellType] = []
+    
 for p in PROTOCOLS:
     
     RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_%s.npy' % p),
                     allow_pickle=True).item()
 
-    for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+    for k, cellType, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 
         for u in ['pos', 'neg']:
             
-            for negRate, rate in zip(RATES['%s_negUnits' % key], RATES['%s_%sUnits' % (key,u)]):
-                CCs[key+'_%sUnits' % u].append(\
-                                crosscorrel(negRate, rate, CCs['extent'], CCs['dt'])[0])
+            for negRate, rate, n_per_session in zip(RATES['%s_negUnits' % cellType],
+                                                    RATES['%s_%sUnits' % (cellType,u)],
+                                                    RATES['%s_n_per_session' % cellType]):
+                CCs[cellType+'_%sUnits' % u].append(\
+                            crosscorrel(negRate, rate, CCs['extent'], CCs['dt'])[0])
+                CCs['%s_n_per_session' % cellType].append(n_per_session)
                 
 # just to get the time shift
 _, CCs['time_shift'] = crosscorrel(0*RATES['time'], 0*RATES['time'], CCs['extent'], CCs['dt'])
@@ -396,81 +422,75 @@ CCs = np.load(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natura
 
 
 fig11, ax11 = pt.figure(figsize=(.6,1.))
-fig12, ax12 = pt.figure(figsize=(.9,1.))
+fig12, ax12 = pt.figure(figsize=(0.95,0.85))
 fig13, ax13 = pt.figure(figsize=(.6,1.))
 fig2, ax2 = plt.subplots(1, figsize=(1.3, 0.8))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
 
-
 i0 = int(len(CCs['time_shift'])/2) # index of 0-lag correl
 
-
-for k, key, color1, color2 in zip(range(2),
+for k, cellType, color1, color2 in zip(range(2),
                                   ['PV', 'SST'],
                                   ['tab:red','tab:orange'],
                                   ['tab:grey', 'lightgray']):
-
-    pt.annotate(ax11, 'N=%i session' % len(CCs['%s_%sUnits' % (key, pn)])+ k*'\n', (1,1), color=color1)
     
     for i, pn, color in zip(range(2), ['pos', 'neg'], [color1, color2]):
 
         # 0-lag correl
-        CCs['%s_%s0CC' % (key,pn)] = np.array([cc[i0] for cc in CCs['%s_%sUnits' % (key, pn)]])
+        CCs['%s_%s0CC' % (cellType,pn)] = np.array([cc[i0] for cc in CCs['%s_%sUnits' % (cellType, pn)]])
         if not i:
-            ax11.bar([k], [np.mean(CCs['%s_%s0CC' % (key,pn)])], 
-                      yerr=[stats.sem(CCs['%s_%s0CC' % (key,pn)])],
+            ax11.bar([k], [np.mean(CCs['%s_%s0CC' % (cellType,pn)])], 
+                      yerr=[stats.sem(CCs['%s_%s0CC' % (cellType,pn)])],
                       color=color)
-        
-        # correl decays
-        CCs['%s_%sDecays' % (key,pn)] = np.array([fit_exponential_decay(CCs['time_shift'][i0:], CCF[i0:]/CCF[i0])\
-                                                        for CCF in CCs['%s_%sUnits' % (key, pn)]])
-        ax12.bar([k+2*i], [np.mean(CCs['%s_%sDecays' % (key,pn)])], 
-                  yerr=[stats.sem(CCs['%s_%sDecays' % (key,pn)])],
+
+        # gaussian fit for width
+        CCs['%s_%sWidths' % (cellType,pn)] = np.array([fit_gaussian_width(CCs['time_shift'], CCF/np.max(CCF))[0]\
+                                                        for CCF in CCs['%s_%sUnits' % (cellType, pn)]])
+        ax12.bar([k+2*i], [np.mean(CCs['%s_%sWidths' % (cellType,pn)])], 
+                  yerr=[stats.sem(CCs['%s_%sWidths' % (cellType,pn)])],
                   color=color)
-        
-    CCs['%s_deltaDecays' % key] = CCs['%s_posDecays' % key ]-CCs['%s_negDecays' % key]
-    ax13.bar([k], [np.mean(CCs['%s_deltaDecays' % key])], 
-              yerr=[stats.sem(CCs['%s_deltaDecays' % key])],
-              color=color1)
-    
-    mean = np.mean(CCs[key+'_posUnits'], axis=0)
+            
+    mean = np.mean(CCs[cellType+'_posUnits'], axis=0)
     pt.plot(CCs['time_shift'], mean/np.max(mean),
-            sy=stats.sem(CCs[key+'_negUnits'], axis=0)/np.max(mean),
+            sy=stats.sem(CCs[cellType+'_negUnits'], axis=0)/np.max(mean),
             color=color1, ax=ax3)
     
-    mean = np.mean(CCs[key+'_negUnits'], axis=0)
+    mean = np.mean(CCs[cellType+'_negUnits'], axis=0)
     pt.plot(CCs['time_shift'], mean/np.max(mean), 
-            sy=stats.sem(CCs[key+'_negUnits'], axis=0)/np.max(mean),
+            sy=stats.sem(CCs[cellType+'_negUnits'], axis=0)/np.max(mean),
             color=color2, lw=0.5, ax=ax2)
-    pt.plot(CCs['time_shift'], np.mean(CCs[key+'_posUnits'], axis=0), 
-            sy=stats.sem(CCs[key+'_posUnits'], axis=0)/np.max(mean),
+    pt.plot(CCs['time_shift'], np.mean(CCs[cellType+'_posUnits'], axis=0), 
+            sy=stats.sem(CCs[cellType+'_posUnits'], axis=0)/np.max(mean),
             color=color1, ax=ax2)
 
 # statistic
-
-pt.annotate(ax11, 'p=%.1e' % stats.ttest_ind(CCs['PV_pos0CC'], CCs['SST_pos0CC']).pvalue,
+pt.annotate(ax11, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_pos0CC'], CCs['SST_pos0CC']).pvalue,
             (0.5, 1.), ha='center', fontsize=6)
 
-pt.annotate(ax12, 'p=%.1e' % stats.ttest_ind(CCs['PV_posDecays'], CCs['SST_posDecays']).pvalue,
-            (0.1, 1.), ha='center', fontsize=6)
-pt.annotate(ax12, 'p=%.1e' % stats.ttest_ind(CCs['PV_negDecays'], CCs['SST_negDecays']).pvalue,
+pt.annotate(ax12, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_negWidths'], CCs['SST_negWidths']).pvalue,
             (0.9, 1.), ha='center', fontsize=6)
-
-pt.annotate(ax13, 'p=%.2e' % stats.ttest_ind(CCs['PV_deltaDecays'], CCs['SST_deltaDecays']).pvalue,
-            (0.5, 1.), ha='center', fontsize=6)
+pt.annotate(ax12, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_posWidths'], CCs['SST_posWidths']).pvalue,
+            (0.1, 1.), ha='center', fontsize=6)
+pt.annotate(ax12, 'p=%.1e\n' % stats.mannwhitneyu(CCs['PV_posWidths'], CCs['PV_negWidths']).pvalue,
+            (0.2, 1.), ha='center', fontsize=6)
+pt.annotate(ax12, 'p=%.1e\n' % stats.mannwhitneyu(CCs['SST_posWidths'], CCs['SST_negWidths']).pvalue,
+            (0.8, 1.), ha='center', fontsize=6)
 
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
-pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='decay (ms)')
-pt.set_plot(ax13, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='$\delta$ decay (ms)')
+pt.set_plot(ax12, ['left'], #yticks=[0,0.4,0.8],
+            ylabel='width (s)')
 pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
             ylabel='corr. coefs',
             xlim=[-1.5,1.5])
 pt.set_plot(ax3, xlabel='jitter (s) of "+" units ', 
             ylabel='norm. corr.',
             xlim=[-1.5,1.5], yticks=[0,1])
+
+fig12.savefig('../figures/visual_coding/decays_per_session.svg')
+
+# %%
+stats.mannwhitneyu
 
 # %% [markdown]
 # ## Cross-correlation per cell 

@@ -112,7 +112,6 @@ def optotagging_spike_counts(session, trials, units,
 
 
 # %%
-   
 #plot_optotagging_response(spikes_matrix)
 
 # %%
@@ -143,7 +142,7 @@ def analyze_optotagging_responses(session, trials, units,
 
     if with_fig:
 
-        fig = plt.figure(figsize=(1.5, 3))
+        fig = plt.figure(figsize=(1., 2))
         AX = []
         plt.subplots_adjust(left=0.2, wspace=1)
 
@@ -159,7 +158,9 @@ def analyze_optotagging_responses(session, trials, units,
                    extent=[1e3*np.min(spikes_matrix.time_relative_to_stimulus_onset.values),
                            1e3*np.max(spikes_matrix.time_relative_to_stimulus_onset.values),
                            0, spikes_matrix.shape[2]],
-                   aspect='auto', vmin=0, vmax=np.min([100, 1.2*np.max(Rates)]))
+                   aspect='auto', 
+                   cmap=plt.cm.binary,
+                   vmin=0, vmax=np.min([100, 1.2*np.max(Rates)]))
     
         if duration is not None:
             for bound in [0, duration]:
@@ -174,7 +175,7 @@ def analyze_optotagging_responses(session, trials, units,
         AX[0].set_xticks([])
         AX[0].set_yticks([0,len(inclusion_cond)], ['1', '%i' % (len(inclusion_cond)+1)])
         
-        pt.draw_bar_scales(AX[0], loc='bottom-right', Xbar=5, Xbar_label='5ms', color='w', Ybar=1e-12)
+        pt.draw_bar_scales(AX[0], loc='bottom-right', Xbar=5, Xbar_label='5ms', color='k', Ybar=1e-12)
 
         AX.append(fig.add_subplot(212))
         plt.scatter(baseline_rate[~inclusion_cond], evoked_rate[~inclusion_cond], s=1, color=neg_color)
@@ -189,9 +190,8 @@ def analyze_optotagging_responses(session, trials, units,
         pt.annotate(AX[1], '"+" units\n(n=%i)\n\n' % np.sum(inclusion_cond), (0.8,0), ha='center', color=pos_color)
         pt.annotate(AX[1], '"-" units\n(n=%i)' % (len(inclusion_cond)-np.sum(inclusion_cond)), 
                     (0.8,0), ha='center', color=neg_color)
-        plt.xlabel('baseline rate (Hz)')
-        plt.ylabel('evoked rate (Hz)')
-        
+        plt.xlabel('baseline (Hz)')
+        plt.ylabel('evoked (Hz)')
         
     else:
         fig, AX = None, None
@@ -206,6 +206,7 @@ session = cache.get_session_data(756029989)
 
 # units in the visual system
 units = session.units[session.units.ecephys_structure_acronym.str.match('VIS')]
+
 # we use the 10ms pulse 
 trials = session.optogenetic_stimulation_epochs[\
                 (session.optogenetic_stimulation_epochs.stimulus_name=='pulse') & 
@@ -217,7 +218,7 @@ positive_units, fig, AX = analyze_optotagging_responses(session, trials, units,
                                                         pos_color='tab:orange',
                                                         neg_color='silver',
                                                         with_fig=True)
-fig.savefig('../figures/SST-session-phototagging.svg')
+fig.savefig('../figures/visual_coding/SST-session-phototagging.svg')
 
 # %% [markdown]
 # ## Example PV-Cre session
@@ -238,7 +239,7 @@ positive_units, fig, AX = analyze_optotagging_responses(session, trials, units,
                                                         pos_color='tab:red',
                                                         neg_color='dimgrey',
                                                         with_fig=True)
-fig.savefig('../figures/PV-session-phototagging.svg')
+fig.savefig('../figures/visual_coding/PV-session-phototagging.svg')
 
 # %%
 session = cache.get_session_data(756029989)
