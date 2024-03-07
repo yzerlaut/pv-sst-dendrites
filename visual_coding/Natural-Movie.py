@@ -223,7 +223,7 @@ from scipy.optimize import minimize
 
 def fit_exponential_decay(shift, array,
                           min_time=100e-3,
-                          max_time=1400e-3):
+                          max_time=1300e-3):
     def func(X):
         return np.sum(np.abs(np.exp(-shift/X[0])-array))
     res = minimize(func, [min_time],
@@ -436,12 +436,12 @@ for k, key, color1, color2 in zip(range(2),
 
 # statistic
 
-pt.annotate(ax11, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_pos0CC'], CCs['SST_pos0CC']).pvalue,
+pt.annotate(ax11, 'p=%.1e' % stats.ttest_ind(CCs['PV_pos0CC'], CCs['SST_pos0CC']).pvalue,
             (0.5, 1.), ha='center', fontsize=6)
 
-pt.annotate(ax12, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_posDecays'], CCs['SST_posDecays']).pvalue,
+pt.annotate(ax12, 'p=%.1e' % stats.ttest_ind(CCs['PV_posDecays'], CCs['SST_posDecays']).pvalue,
             (0.1, 1.), ha='center', fontsize=6)
-pt.annotate(ax12, 'p=%.1e' % stats.mannwhitneyu(CCs['PV_negDecays'], CCs['SST_negDecays']).pvalue,
+pt.annotate(ax12, 'p=%.1e' % stats.ttest_ind(CCs['PV_negDecays'], CCs['SST_negDecays']).pvalue,
             (0.9, 1.), ha='center', fontsize=6)
 
 pt.annotate(ax13, 'p=%.2e' % stats.ttest_ind(CCs['PV_deltaDecays'], CCs['SST_deltaDecays']).pvalue,

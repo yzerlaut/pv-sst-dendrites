@@ -253,8 +253,8 @@ if __name__=='__main__':
                             (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
-                    stochProcSeed=np.arange(3)+10,
-                    spikeSeed=np.arange(5))
+                    stochProcSeed=np.arange(5),
+                    spikeSeed=np.arange(24))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)

@@ -20,18 +20,10 @@ fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
 then
-    # Martinotti Cell
-    python tvRate_sim.py -c Martinotti --stimFreq 0.5e-2 --bgFreqInhFactor 0.5 --no_Vm --suffix V05
-    python tvRate_sim.py -c Martinotti --stimFreq 1.0e-2 --bgFreqInhFactor 0.5 --no_Vm --suffix V10
-    python tvRate_sim.py -c Martinotti --stimFreq 1.5e-2 --bgFreqInhFactor 0.5 --no_Vm --suffix V15
-    python tvRate_sim.py -c Martinotti --stimFreq 2.0e-2 --bgFreqInhFactor 0.5 --no_Vm --suffix V20
-    python tvRate_sim.py -c Martinotti --stimFreq 2.5e-2 --bgFreqInhFactor 0.5 --no_Vm --suffix V25
     ## Basket Cell
-    python tvRate_sim.py -c Basket --stimFreq 0.5e-2 --bgFreqInhFactor 1.0 --no_Vm --suffix V05
-    python tvRate_sim.py -c Basket --stimFreq 1.0e-2 --bgFreqInhFactor 1.0 --no_Vm --suffix V10
-    python tvRate_sim.py -c Basket --stimFreq 1.5e-2 --bgFreqInhFactor 1.0 --no_Vm --suffix V15
-    python tvRate_sim.py -c Basket --stimFreq 2.0e-2 --bgFreqInhFactor 1.0 --no_Vm --suffix V20
-    python tvRate_sim.py -c Basket --stimFreq 2.5e-2 --bgFreqInhFactor 1.0 --no_Vm --suffix V25
+    python tvRate_sim.py -c Basket --stimFreq 7e-3 --bgFreqInhFactor 1 --no_Vm
+    # Martinotti Cell
+    python tvRate_sim.py -c Martinotti --with_NMDA --stimFreq 1.2e-4 --bgFreqInhFactor 1 --no_Vm
 fi
 
 ##########################################################
