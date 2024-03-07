@@ -248,7 +248,7 @@ def gaussian(t, X):
                  
 def fit_gaussian_width(shift, array,
                        min_time=100e-3,
-                       max_time=1300e-3):
+                       max_time=1000e-3):
     def func(X):
         return np.sum(np.abs(gaussian(shift, X)-array))
     res = minimize(func, [3*min_time,0,1],
@@ -306,12 +306,12 @@ for k, key, pos_color, neg_color in zip(range(2),
     # gaussian fit for width
     tau = fit_gaussian_width(time_shift, CCF/np.max(CCF))[0]
     ax12.bar([2*k], [1e3*tau], color=pos_color)
-    ax13.bar([k], [1e3*(tau-tau0)], color=pos_color)
+    #ax13.bar([k], [1e3*(tau-tau0)], color=pos_color)
     
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
 pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='width (s)')
+            ylabel='width (ms)')
 pt.set_plot(ax13, ['left'], #yticks=[0,0.2,0.4],
             ylabel='$\delta$ width (ms)')
 pt.set_plot(ax2, xlabel='jitter (s)', 
@@ -446,8 +446,8 @@ for k, cellType, color1, color2 in zip(range(2),
         # gaussian fit for width
         CCs['%s_%sWidths' % (cellType,pn)] = np.array([fit_gaussian_width(CCs['time_shift'], CCF/np.max(CCF))[0]\
                                                         for CCF in CCs['%s_%sUnits' % (cellType, pn)]])
-        ax12.bar([k+2*i], [np.mean(CCs['%s_%sWidths' % (cellType,pn)])], 
-                  yerr=[stats.sem(CCs['%s_%sWidths' % (cellType,pn)])],
+        ax12.bar([k+2*i], [1e3*np.mean(CCs['%s_%sWidths' % (cellType,pn)])], 
+                  yerr=[1e3*stats.sem(CCs['%s_%sWidths' % (cellType,pn)])],
                   color=color)
             
     mean = np.mean(CCs[cellType+'_posUnits'], axis=0)
@@ -478,7 +478,7 @@ pt.annotate(ax12, 'p=%.1e\n' % stats.mannwhitneyu(CCs['SST_posWidths'], CCs['SST
 
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
-pt.set_plot(ax12, ['left'], #yticks=[0,0.4,0.8],
+pt.set_plot(ax12, ['left'], yticks=[0,200,400],
             ylabel='width (s)')
 pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
             ylabel='corr. coefs',
