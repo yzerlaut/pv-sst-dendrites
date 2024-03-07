@@ -14,7 +14,7 @@ def run_sim(cellType='Basket',
             # stim props
             meanStim=2.,
             stdStim=0.75,
-            tauStim=50,
+            tauStim=150,
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
@@ -198,7 +198,7 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
-    parser.add_argument("--tstop", type=float, default=5000.)
+    parser.add_argument("--tstop", type=float, default=10000.)
 
     args = parser.parse_args()
      
