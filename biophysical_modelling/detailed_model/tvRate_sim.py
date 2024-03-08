@@ -14,7 +14,7 @@ def run_sim(cellType='Basket',
             # stim props
             meanStim=2.,
             stdStim=0.75,
-            tauStim=100,
+            tauStim=50,
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
@@ -198,7 +198,7 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
-    parser.add_argument("--tstop", type=float, default=10000.)
+    parser.add_argument("--tstop", type=float, default=5000.)
 
     args = parser.parse_args()
      
@@ -254,7 +254,7 @@ if __name__=='__main__':
 
         grid = dict(iBranch=np.arange(args.nBranch),
                     stochProcSeed=np.arange(5),
-                    spikeSeed=np.arange(24))
+                    spikeSeed=np.arange(5))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)

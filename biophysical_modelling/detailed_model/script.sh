@@ -14,10 +14,9 @@ if [[ $1 == 'all' || $1 == 'demo-tvRate-repeated' ]]
 then
     ## Basket Cell
     python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
-    #python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
     # Martinotti Cell
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1 --Suffix noNMDA
+    #python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1 --suffix noNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
