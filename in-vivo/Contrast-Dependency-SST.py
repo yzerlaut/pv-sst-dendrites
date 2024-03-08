@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -508,7 +508,8 @@ def generate_comparison_figs(SUMMARY,
         res = minimize(to_minimize,
                        [0.8, 10, 0.2])
         x = np.linspace(-30, 180-30, 100)
-        ax.plot(x, func(x, res.x), lw=2, alpha=.5, color=colors[i])
+        ax.plot(x, func(x, res.x),
+                lw=2, alpha=.5, color=colors[i])
 
         try:
             if average_by=='sessions':
