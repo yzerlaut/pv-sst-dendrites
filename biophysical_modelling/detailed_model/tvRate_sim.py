@@ -231,7 +231,7 @@ if __name__=='__main__':
             filename='../../data/detailed_model/tvRateStim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
-        grid = dict(spikeSeed=np.arange(24))
+        grid = dict(spikeSeed=np.arange(48))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
