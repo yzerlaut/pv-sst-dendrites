@@ -248,23 +248,27 @@ if __name__=='__main__':
    
         # run the simulation with parameter variations
 
-        sim = Parallel(\
-            filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' %\
-                            (args.suffix, args.cellType))
+        for i in range(args.nBranch):
 
-        grid = dict(iBranch=np.arange(args.nBranch),
-                    stochProcSeed=np.arange(5),
-                    spikeSeed=np.arange(5))
+            args.suffix += 'Branch%i'%i
+            params['iBranch'] = i
+            
+            sim = Parallel(\
+                filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' %\
+                                (args.suffix, args.cellType))
 
-        if args.test_uniform:
-            grid = dict(from_uniform=[False, True], **grid)
+            grid = dict(stochProcSeed=np.arange(5),
+                        spikeSeed=np.arange(20))
 
-        if args.test_NMDA:
-            grid = dict(with_NMDA=[False, True], **grid)
+            if args.test_uniform:
+                grid = dict(from_uniform=[False, True], **grid)
 
-        sim.build(grid)
+            if args.test_NMDA:
+                grid = dict(with_NMDA=[False, True], **grid)
 
-        sim.run(run_sim,
-                single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}),
-                fix_missing_only=args.fix_missing_only)
+            sim.build(grid)
+
+            sim.run(run_sim,
+                    single_run_args=\
+                        dict({k:v for k,v in params.items() if k not in grid}),
+                    fix_missing_only=args.fix_missing_only)
