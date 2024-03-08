@@ -181,6 +181,7 @@ if __name__=='__main__':
     parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
+    parser.add_argument("--from_uniform", action="store_true")
 
     parser.add_argument("--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
@@ -212,6 +213,7 @@ if __name__=='__main__':
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
+                  from_uniform=args.from_uniform,
                   no_Vm=args.no_Vm,
                   tstop=args.tstop,
                   dt=args.dt)
@@ -248,16 +250,16 @@ if __name__=='__main__':
    
         # run the simulation with parameter variations
 
-        for i in range(args.nBranch):
+        for b in range(args.nBranch):
 
-            args.suffix += 'Branch%i'%i
-            params['iBranch'] = i
+            params['iBranch'] = b
+            args.suffix = 'Branch%i'%b
             
             sim = Parallel(\
                 filename='../../data/detailed_model/tvRateStim_sim%s_%s.zip' %\
                                 (args.suffix, args.cellType))
 
-            grid = dict(stochProcSeed=np.arange(5),
+            grid = dict(stochProcSeed=np.arange(4),
                         spikeSeed=np.arange(20))
 
             if args.test_uniform:

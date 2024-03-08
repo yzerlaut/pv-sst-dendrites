@@ -228,20 +228,6 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 # Exponential fit to quantify the decay
 
 from scipy.optimize import minimize
-"""
-def fit_exponential_decay(shift, array,
-                          min_time=100e-3,
-                          max_time=1300e-3):
-    def func(X):
-        return np.sum(np.abs((1-X[1])*np.exp(-shift/X[0])+X[1]-array))
-    res = minimize(func, [min_time,1],
-                   bounds=[[min_time, max_time]], method='L-BFGS-B')
-    return res.x
-ts, ccf = time_shift[int(len(time_shift)/2):], CCF[int(len(time_shift)/2):]/CCF[int(len(time_shift)/2)]
-tau, C = fit_exponential_decay(ts, ccf)
-plt.plot(ts, ccf, label='data')
-plt.plot(ts, (1-C)*np.exp(-ts/tau)+C, '--', label='exp. fit')
-"""
 
 def gaussian(t, X):
     return (1-X[2])*np.exp(-(t-X[1])**2/2/X[0]**2)+X[2]
@@ -272,7 +258,7 @@ RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie
 fig1, [ax11, ax12, ax13] = plt.subplots(1, 3, figsize=(2.5,0.8))
 fig1.subplots_adjust(wspace=2)
 fig1.suptitle('movie #1, all units pooled')
-fig2, ax2 = pt.figure(figsize=(1.1,0.85))
+fig2, ax2 = pt.figure(figsize=(1.,0.85))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
 
 
@@ -289,7 +275,7 @@ for k, key, pos_color, neg_color in zip(range(2),
                 va='top', ha='right', color=neg_color, fontsize=6)
     
     CCF, time_shift = crosscorrel(neg_rates-np.mean(neg_rates), neg_rates-np.mean(neg_rates),
-                                  1.5, RATES['time'][1]-RATES['time'][0])
+                                  1.4, RATES['time'][1]-RATES['time'][0])
     ax3.plot(time_shift, CCF/np.max(CCF), color=neg_color)
     
     # gaussian fit for width
@@ -299,7 +285,7 @@ for k, key, pos_color, neg_color in zip(range(2),
     ax11.bar([k], [CCF[int(len(time_shift)/2)]], color=pos_color)
 
     CCF, time_shift = crosscorrel(neg_rates-np.mean(neg_rates), pos_rates-np.mean(pos_rates),
-                                  1.5, RATES['time'][1]-RATES['time'][0])
+                                  1.4, RATES['time'][1]-RATES['time'][0])
     ax2.plot(time_shift, CCF, color=pos_color)
     ax3.plot(time_shift, CCF/np.max(CCF), color=pos_color)
     
@@ -311,14 +297,14 @@ for k, key, pos_color, neg_color in zip(range(2),
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
 pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
-            ylabel='width (ms)')
+            ylabel=u'\u00bd' + ' width (ms)')
 pt.set_plot(ax13, ['left'], #yticks=[0,0.2,0.4],
             ylabel='$\delta$ width (ms)')
 pt.set_plot(ax2, xlabel='jitter (s)', 
             #title='"-" vs "+" units', 
             ylabel='corr. coef.',
             yticks=[0.2,0.5,0.8],
-            xlim=[-1.5,1.5])
+            xlim=[-1.5,1.5], xticks=[-0.9,0,0.9])
 pt.set_plot(ax3, xlabel='jitter (s)', 
             ylabel='norm. corr.',
             xlim=[-1.5,1.5], yticks=[0,1])
@@ -422,7 +408,7 @@ CCs = np.load(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natura
 
 
 fig11, ax11 = pt.figure(figsize=(.6,1.))
-fig12, ax12 = pt.figure(figsize=(0.95,0.85))
+fig12, ax12 = pt.figure(figsize=(0.85,0.85))
 fig13, ax13 = pt.figure(figsize=(.6,1.))
 fig2, ax2 = plt.subplots(1, figsize=(1.3, 0.8))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
@@ -479,7 +465,7 @@ pt.annotate(ax12, 'p=%.1e\n' % stats.mannwhitneyu(CCs['SST_posWidths'], CCs['SST
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
 pt.set_plot(ax12, ['left'], yticks=[0,200,400],
-            ylabel='width (s)')
+            ylabel=u'\u00bd' + ' width\n(ms)')
 pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
             ylabel='corr. coefs',
             xlim=[-1.5,1.5])

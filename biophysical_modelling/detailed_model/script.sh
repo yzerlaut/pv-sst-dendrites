@@ -1,3 +1,15 @@
+################################
+########### step rate ##########
+################################
+#
+if [[ $1 == 'all' || $1 == 'demo-step' ]]
+then
+    ## Basket Cell
+    python step_stim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
+    # Martinotti Cell
+    python step_stim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
+fi
+
 ##########################################################
 ########### time-varying rate Stochastic Inputs ##########
 ##########################################################
@@ -14,9 +26,10 @@ if [[ $1 == 'all' || $1 == 'demo-tvRate-repeated' ]]
 then
     ## Basket Cell
     #python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
+    #python tvRate_sim.py --test_with_repeats -c Basket --from_uniform --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix Uniform
     # Martinotti Cell
-    #python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1 --suffix noNMDA
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
+    #python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 4e-4 --bgFreqInhFactor 1 --iBranch 1 --suffix noNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
