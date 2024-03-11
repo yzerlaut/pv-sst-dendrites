@@ -255,8 +255,8 @@ if __name__=='__main__':
             params['iBranch'] = b
             
             sim = Parallel(\
-                filename='../../data/detailed_model/tvRateStim_sim%sBranch%i_%s.zip' %\
-                                (args.suffix, b, args.cellType))
+                filename='../../data/detailed_model/tvRateStim_simBranch%i_%s.zip' %\
+                                (b, args.cellType+args.suffix))
 
             grid = dict(stochProcSeed=np.arange(4),
                         spikeSeed=np.arange(20))
