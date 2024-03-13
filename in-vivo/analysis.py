@@ -60,6 +60,8 @@ def compute_tuning_response_per_cells(data,
                             EPISODES.varied_parameters['angle'][1]
 
     significant_waveforms= []
+    significant = np.zeros(data.nROIs, dtype=bool)
+
     for roi in np.arange(data.nROIs):
 
         cell_resp = EPISODES.compute_summary_data(stat_test_props,
@@ -71,6 +73,7 @@ def compute_tuning_response_per_cells(data,
         # if significant in at least one orientation
         if np.sum(cell_resp['significant'][condition]):
 
+            significant[roi] = True
 
             ipref = np.argmax(cell_resp['value'][condition])
             prefered_angle = cell_resp['angle'][condition][ipref]
@@ -97,4 +100,4 @@ def compute_tuning_response_per_cells(data,
     if return_significant_waveforms:
         return EPISODES.t, significant_waveforms
     else:
-        return RESPONSES, len(RESPONSES)/data.nROIs, shifted_angle
+        return RESPONSES, significant, shifted_angle
