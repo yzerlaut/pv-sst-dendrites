@@ -29,15 +29,16 @@ then
     #python tvRate_sim.py --test_with_repeats -c Basket --from_uniform --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix Uniform
     # Martinotti Cell
     #python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 1 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 8e-4 --bgFreqInhFactor 1 --iBranch 1 --suffix noNMDA
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 1e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix noNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
 then
     ## Basket Cell
-    python tvRate_sim.py -c Basket --stimFreq 7e-3 --bgFreqInhFactor 1 --no_Vm
+    python tvRate_sim.py -c Basket --stimFreq 8e-3 --bgFreqInhFactor 1 --no_Vm
     # Martinotti Cell
-    python tvRate_sim.py -c Martinotti --with_NMDA --stimFreq 1.2e-4 --bgFreqInhFactor 1 --no_Vm
+    python tvRate_sim.py -c Martinotti --with_NMDA --stimFreq 1.6e-4 --bgFreqInhFactor 1 --no_Vm
+    python tvRate_sim.py -c Martinotti --stimFreq 1.5e-3 --bgFreqInhFactor 1 --with_presynaptic_spikes --no_Vm --suffix noNMDA
 fi
 
 ##########################################################
