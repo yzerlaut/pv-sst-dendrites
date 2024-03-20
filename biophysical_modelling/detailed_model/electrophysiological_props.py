@@ -1,5 +1,7 @@
 import sys, pathlib, os
 
+from scipy.optimize import minimize
+
 from neuron import h
 from neuron.units import ms
 import numpy as np
@@ -56,17 +58,34 @@ def FIcurve_sim(cell,
                 RATES=RATES, V0=V0)
 
 
+def exp_func(t, Tau, A, B):
+    return A*(1-np.exp(-t/Tau))+B
+    
+
 def FIcurve_plot(results, Vbar=10):
 
     fig, ax = plt.subplots(figsize=(9,3))
 
     t = np.arange(len(results['Vm']))*results['dt']
+    
+    tCond = (t>results['duration']) & (t<2*results['duration'])
+    def to_minimize(X):
+        return np.abs(\
+            exp_func(t[tCond]-results['duration'], *X)-\
+                results['Vm'][tCond]).sum()
+
+    
     ax.plot(t[(t>100)], results['Vm'][(t>100)], color='tab:grey')
+
+    res = minimize(to_minimize, [20, 2, results['Vm'][0]])
+    ax.plot(t[tCond], exp_func(t[tCond]-results['duration'], *res.x), 'r:', lw=0.5)
+    
     # current trace
     I = 0*t
     for a, amp in enumerate(results['AMPS']):
         cond = (t>((2*a+1)*results['duration'])) & (t<((2*a+2)*results['duration']))
         I[cond] = amp
+    
     ax.plot(t[(t>100)], results['Vm'].min()-3*Vbar/2+I[(t>100)]/I.max()*Vbar, color='k')
 
     ax.axis('off')
@@ -76,13 +95,16 @@ def FIcurve_plot(results, Vbar=10):
                        Ybar_label2='%.1fpA'%(1e3*I.max()), ycolor='tab:grey', ycolor2='k') 
     pt.annotate(ax, '      R$_{in}$=%.1fM$\Omega$ ' % results['Rin'], (0, 0), va='top')
     pt.annotate(ax, '\n      V$_{rest}$=%.1fmV ' % results['V0'], (0, 0), va='top')
+    pt.annotate(ax, '\n\n      $\\tau_m$=%.2fms ' % res.x[0], (0, 0), va='top')
 
+    # print(np.abs(res.x[1]/results['AMPS'][0])) # -> check the calculated input res
+    
     # f-I curve inset
     inset = pt.inset(ax, [0, 0.6, 0.2, 0.4])
     inset.plot(1e3*results['AMPS'], results['RATES'], 'ko-', lw=0.5)
     pt.set_plot(inset, xlabel='amp. (pA)', ylabel='firing rate (Hz)')
-    return fig
 
+    return fig
 
 ###############################################################################################
 
