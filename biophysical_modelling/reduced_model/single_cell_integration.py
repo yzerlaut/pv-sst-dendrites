@@ -57,27 +57,15 @@ def initialize(Model, with_network=False):
 #####    Synaptic Integration     #####
 #######################################
 
-# normalization factor of synaptic inputs
-def double_exp_normalization(T1, T2):
-    return T1/(T2-T1)*((T2/T1)**(T2/(T2-T1)))
+# -- excitation 
+EXC_SYNAPSES_EQUATIONS = '''dgAMPA/dt = -gAMPA/({tauAMPA}*ms) : siemens (clock-driven)
+                            gE_post = gAMPA : siemens (summed)'''
 
-# -- excitation (NMDA-dependent)
-EXC_SYNAPSES_EQUATIONS = '''dgRiseAMPA/dt = -gRiseAMPA/({tauRiseAMPA}*ms) : 1 (clock-driven)
-                            dgDecayAMPA/dt = -gDecayAMPA/({tauDecayAMPA}*ms) : 1 (clock-driven)
-                            dgRiseNMDA/dt = -gRiseNMDA/({tauRiseNMDA}*ms) : 1 (clock-driven)
-                            dgDecayNMDA/dt = -gDecayNMDA/({tauDecayNMDA}*ms) : 1 (clock-driven)
-                            gAMPA = ({qAMPA}*nS)*{nAMPA}*(gDecayAMPA-gRiseAMPA) : siemens
-                            gNMDA = ({qAMPA}*{qNMDAtoAMPAratio}*nS)*{nNMDA}*(gDecayNMDA-gRiseNMDA)/(1+{etaMg}*{cMg}*exp(-v_post/({V0NMDA}*mV))) : siemens
-                            gE_post = gAMPA+gNMDA : siemens (summed)'''
-
-ON_EXC_EVENT = 'gDecayAMPA += 1; gRiseAMPA += 1; gDecayNMDA += 1; gRiseNMDA += 1'
+ON_EXC_EVENT = 'gAMPA += {qAMPA}*nS'
 
 def load_params(filename):
 
     Model = params.load(filename) # neural_network_dynamics/utils/params.py
-
-    Model['nAMPA'] = double_exp_normalization(Model['tauRiseAMPA'],Model['tauDecayAMPA'])    
-    Model['nNMDA'] = double_exp_normalization(Model['tauRiseNMDA'],Model['tauDecayNMDA'])
 
     return Model
 
