@@ -20,7 +20,7 @@
     " # ---------- SYNAPTIC PARAMS  ----------------- # ": "",
     " ################################################# ": "",
     "Ee":0," [mV]":"",
-    "qAMPA":1.0," [nS] ## Destexhe et al., 1998: 0.35 to 1.0 nS":"",
+    "qAMPA":0.4," [nS] ## Destexhe et al., 1998: 0.35 to 1.0 nS":"",
     "tauAMPA":5, " [ms] ## Destexhe et al. 1998: the decay time constant is about 5 ms (e.g., Hestrin, 1993) ":"",
     " ################################################# ": "",
     " # ---------- SIMULATION PARAMS  ----------------- #":"",
