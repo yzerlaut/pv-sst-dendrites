@@ -270,11 +270,10 @@ def run_sim(cellType='Basket',
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
               'dt': dt, 't0':t0, 'ISI':ISI, 'interspike':interspike,
-              'distance_inervals':distance_intervals,
+              'distance_intervals':distance_intervals,
               'synapses':synapses,
               'tstop':tstop}
 
-    print(filename)
     np.save(filename, output)
 
 
