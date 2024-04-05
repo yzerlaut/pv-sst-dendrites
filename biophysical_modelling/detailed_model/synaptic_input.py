@@ -60,7 +60,12 @@ def add_synaptic_input(cell, synapses,
 
 
             ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]
+            if (cell.params_key=='MC') and not with_NMDA:
+                ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
+                                cell.params['%s_qAMPAonlyBoost'%cell.params_key]
+            else:
+                # regular ampa weight
+                ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]
 
             if with_NMDA:
                 nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))

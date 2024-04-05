@@ -298,7 +298,7 @@ if __name__=='__main__':
     parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
     parser.add_argument("--sparsening", help="in percent", type=float, 
                         default=[5], nargs='*')
-    parser.add_argument("--interspike", type=float, default=1.0)
+    parser.add_argument("--interspike", type=float, default=0.5)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=0)

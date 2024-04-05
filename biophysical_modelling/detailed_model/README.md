@@ -107,8 +107,9 @@ N.B. to remove the axon from the morphology, use the scipt `neural_network_dynam
 |                   | **Parameter description**  |  **Name**  |     **Value**      | **Unit**  |                                                                      |
 |-------------------|----------------------------|------------|--------------------|-----------|----------------------------------------------------------------------|
 | **AMPA receptor** |                            |            |                    |           |                                                                      |
-|                   | conductance quantal        | `BC_qAMPA` | 1.0 10<sup>-3</sup>| uS        |    in Basket cell                                                    |
-|                   | conductance quantal        | `MC_qAMPA` | 1.0 10<sup>-3</sup>| uS        |    in Martinotti cell                                                |
+|                   | conductance quantal        | `BC_qAMPA` | 0.8 10<sup>-3</sup>| uS        |    in Basket cell                                                    |
+|                   | conductance quantal        | `MC_qAMPA` | 0.8 10<sup>-3</sup>| uS        |    in Martinotti cell                                                |
+|                   | boost factor for AMPA only | `MC_qAMPAonlyBoost` |  1.5      |           |    (evaluated from the `Clustered-Input.ipynb`)                      |
 |                   | decay time constant        |            | 2.0                | ms        | changed directly in the [`ampain.mod`](./mechanisms/ampain.mod) file |
 |-------------------|----------------------------|------------|--------------------|-----------|----------------------------------------------------------------------|
 | **NMDA receptor** |                            |            |                    |           |                                                                      |
@@ -117,8 +118,8 @@ N.B. to remove the axon from the morphology, use the scipt `neural_network_dynam
 |                   | decay time constant        |            | 80.0               | ms        | changed directly in the [`nmdain.mod`](./mechanisms/nmdain.mod) file |
 |-------------------|----------------------------|------------|--------------------|-----------|----------------------------------------------------------------------|
 | **GABAa receptor**|                            |            |                    |           |                                                                      |
-|                   | conductance quantal        | `BC_qGABA` | 4.0 10<sup>-3</sup>| uS        |    in Basket cell                                                    |
-|                   | conductance quantal        | `MC_qGABA` | 4.0 10<sup>-3</sup>| uS        |    in Martinotti cell                                                |
+|                   | conductance quantal        | `BC_qGABA` | 2.0 10<sup>-3</sup>| uS        |    in Basket cell                                                    |
+|                   | conductance quantal        | `MC_qGABA` | 2.0 10<sup>-3</sup>| uS        |    in Martinotti cell                                                |
 |-------------------|----------------------------|------------|--------------------|-----------|----------------------------------------------------------------------|
 
 ## References
