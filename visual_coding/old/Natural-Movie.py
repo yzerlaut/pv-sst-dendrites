@@ -167,10 +167,15 @@ for c, cellType in enumerate(examples.keys()):
 # loop over frames to build the time course
 
 rate_smoothing = 10e-3
-
+"""
 PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
-             'natural_movie_one':['natural_movie_one',
-                                  'natural_movie_one_more_repeats']}
+             'natural_movie_one':['natural_movie_one_more_repeats',
+                                  'natural_movie_one']}
+"""
+PROTOCOLS = {'natural_movie_three':['natural_movie_three',
+                                    ''],
+             'natural_movie_one':['natural_movie_one_more_repeats',
+                                  'natural_movie_one']}
 
 for p in PROTOCOLS:
     
@@ -190,12 +195,24 @@ for p in PROTOCOLS:
                                        [color, 'tab:grey']):
                     
                     for unit in units:
+                        filename0 = os.path.join('..', 'data', 'visual_coding', key, 
+                                                '%s_unit_%i.npy' % (protocols[0], unit))
+                        filename1 = os.path.join('..', 'data', 'visual_coding', key, 
+                                                '%s_unit_%i.npy' % (protocols[1], unit))
+                        if os.path.isfile(filename0):
+                            spikeResp = spikingResponse(None, None, None, filename=filename0)
+                            rates.append(spikeResp.get_rate(smoothing=rate_smoothing))
+                        elif os.path.isfile(filename1):
+                            spikeResp = spikingResponse(None, None, None, filename=filename1)
+                            rates.append(spikeResp.get_rate(smoothing=rate_smoothing))
+                        """
                         for protocol in protocols:
                             filename = os.path.join('..', 'data', 'visual_coding', key, 
                                                     '%s_unit_%i.npy' % (protocol, unit))
                             if os.path.isfile(filename):
                                 spikeResp = spikingResponse(None, None, None, filename=filename)
                                 rates.append(spikeResp.get_rate(smoothing=rate_smoothing))
+                        """
                             
     RATES['time'] = spikeResp.t
     np.save(os.path.join('..', 'data', 'visual_coding', 'RATES_%s.npy' % p), RATES)
@@ -231,12 +248,16 @@ from scipy.optimize import minimize
 
 def gaussian(t, X):
     return (1-X[2])*np.exp(-(t-X[1])**2/2/X[0]**2)+X[2]
-                 
-def fit_gaussian_width(shift, array,
+
+def lorentzian(t, X):
+    return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
+    
+def fit_half_width(shift, array,
                        min_time=100e-3,
                        max_time=1000e-3):
     def func(X):
-        return np.sum(np.abs(gaussian(shift, X)-array))
+        #return np.sum(np.abs(gaussian(shift, X)-array))
+        return np.sum(np.abs(lorentzian(shift, X)-array))
     res = minimize(func, [3*min_time,0,1],
                    bounds=[[min_time, max_time],
                            [-max_time, max_time],
@@ -244,7 +265,8 @@ def fit_gaussian_width(shift, array,
     return res.x
 
 plt.plot(time_shift, CCF/np.max(CCF), label='data')
-plt.plot(time_shift, gaussian(time_shift, fit_gaussian_width(time_shift, CCF/np.max(CCF))), label='fit')
+#plt.plot(time_shift, gaussian(time_shift, fit_half_width(time_shift, CCF/np.max(CCF))), label='fit')
+plt.plot(time_shift, lorentzian(time_shift, fit_half_width(time_shift, CCF/np.max(CCF))), label='fit')
 
 #plt.plot(ts, (1-C)*np.exp(-ts/tau)+C, '--', label='exp. fit')
 plt.legend()
@@ -279,7 +301,7 @@ for k, key, pos_color, neg_color in zip(range(2),
     ax3.plot(time_shift, CCF/np.max(CCF), color=neg_color)
     
     # gaussian fit for width
-    tau0 = fit_gaussian_width(time_shift, CCF/np.max(CCF))[0]
+    tau0 = fit_half_width(time_shift, CCF/np.max(CCF))[0]
     ax12.bar([2*k+1], [1e3*tau0], color=neg_color)
 
     ax11.bar([k], [CCF[int(len(time_shift)/2)]], color=pos_color)
@@ -290,7 +312,7 @@ for k, key, pos_color, neg_color in zip(range(2),
     ax3.plot(time_shift, CCF/np.max(CCF), color=pos_color)
     
     # gaussian fit for width
-    tau = fit_gaussian_width(time_shift, CCF/np.max(CCF))[0]
+    tau = fit_half_width(time_shift, CCF/np.max(CCF))[0]
     ax12.bar([2*k], [1e3*tau], color=pos_color)
     #ax13.bar([k], [1e3*(tau-tau0)], color=pos_color)
     
@@ -304,7 +326,7 @@ pt.set_plot(ax2, xlabel='jitter (s)',
             #title='"-" vs "+" units', 
             ylabel='corr. coef.',
             yticks=[0.2,0.5,0.8],
-            xlim=[-1.5,1.5], xticks=[-0.9,0,0.9])
+            xlim=[-1.3,1.5], xticks=[-0.9,0,0.9])
 pt.set_plot(ax3, xlabel='jitter (s)', 
             ylabel='norm. corr.',
             xlim=[-1.5,1.5], yticks=[0,1])
@@ -430,7 +452,7 @@ for k, cellType, color1, color2 in zip(range(2),
                       color=color)
 
         # gaussian fit for width
-        CCs['%s_%sWidths' % (cellType,pn)] = np.array([fit_gaussian_width(CCs['time_shift'], CCF/np.max(CCF))[0]\
+        CCs['%s_%sWidths' % (cellType,pn)] = np.array([fit_half_width(CCs['time_shift'], CCF/np.max(CCF))[0]\
                                                         for CCF in CCs['%s_%sUnits' % (cellType, pn)]])
         ax12.bar([k+2*i], [1e3*np.mean(CCs['%s_%sWidths' % (cellType,pn)])], 
                   yerr=[1e3*stats.sem(CCs['%s_%sWidths' % (cellType,pn)])],
