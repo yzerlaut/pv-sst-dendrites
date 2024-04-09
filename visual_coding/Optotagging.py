@@ -257,7 +257,7 @@ trials = session.optogenetic_stimulation_epochs[\
                 (session.optogenetic_stimulation_epochs.duration < 0.02)]
 
 # final units
-positive_units, fig = analyze_optotagging_responses(session, trials, units,
+positive_units, fig, _ = analyze_optotagging_responses(session, trials, units,
                                                     label='10ms pulse',
                                                     with_fig=True)
 
@@ -298,6 +298,8 @@ _ = analyze_optotagging_responses(session, trials, units,
 # %%
 Optotagging = {}
 
+Nmin_units =  2
+
 for Sessions, Key in zip([PV_sessions, SST_sessions],
                          ['PV_sessions', 'SST_sessions']):
     
@@ -323,20 +325,22 @@ for Sessions, Key in zip([PV_sessions, SST_sessions],
                         (session.optogenetic_stimulation_epochs.duration < 0.02)]
 
         # final units
-        positive_units, fig = analyze_optotagging_responses(session, trials, units,
+        positive_units, fig, _ = analyze_optotagging_responses(session, trials, units,
                                                        label='10ms pulse',
                                                        with_fig=True)
         negative_units = [i for i in units.index if i not in positive_units]
         
-        fig.suptitle('%s : #%i\n' % (Key, iSession+1))
+        print('%s : #%i (n=%i positive units) \n' % (Key, iSession+1, len(positive_units)))
+        fig.suptitle('%s : #%i (n=%i positive units) \n' % (Key, iSession+1, len(positive_units)))
         fig.savefig(os.path.join('..', 'figures', 'visual_coding', 
                     'Optotagging', Key+'-%i.png' % (iSession+1)))
         plt.close(fig)
-        
-        Optotagging[Key].append(Sessions.index.values[iSession])
-        Optotagging[Key.replace('sessions', 'positive_units')].append(positive_units)
-        Optotagging[Key.replace('sessions', 'negative_units')].append(negative_units)
-        Optotagging[Key.replace('sessions', 'session_type')].append(session.session_type)
+
+        if len(positive_units)>=Nmin_units:
+            Optotagging[Key].append(Sessions.index.values[iSession])
+            Optotagging[Key.replace('sessions', 'positive_units')].append(positive_units)
+            Optotagging[Key.replace('sessions', 'negative_units')].append(negative_units)
+            Optotagging[Key.replace('sessions', 'session_type')].append(session.session_type)
         
 # considering all units in V1
 #np.save(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results-VISp.npy'), Optotagging)
@@ -349,7 +353,15 @@ Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-R
 
 for Key in ['PV_sessions', 'SST_sessions']:
     print('')
+    print('- N=%i sessions' % len(Optotagging[Key]))
     print(Key, ' ---> %i positive units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]]))
+    print('     %.0f +/- %.0f positive units' % (\
+        np.mean([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]]),
+        np.std([len(x) for x in Optotagging[Key.replace('sessions', 'positive_units')]])))
     print(Key, ' ---> %i negative units' % np.sum([len(x) for x in Optotagging[Key.replace('sessions', 'negative_units')]]))
+    print('     %.0f +/- %.0f positive units' % (\
+        np.mean([len(x) for x in Optotagging[Key.replace('sessions', 'negative_units')]]),
+        np.std([len(x) for x in Optotagging[Key.replace('sessions', 'negative_units')]])))
+
 
 # %%
