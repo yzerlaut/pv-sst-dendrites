@@ -6,7 +6,7 @@
 
 > relies on the MICrONS dataset, see: https://microns-explorer.org
 
-### A.1) Dataset Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/anatomy/Dataset-Presentation.ipynb)
+### A.1) Dataset Presentation [(-Notebook-)](./anatomy/Dataset-Presentation.ipynb)
 
 - details the set of Martinotti and Basket cells analyzed in the study
 - plot all celular morhphologies 
@@ -22,8 +22,6 @@
 - computes the dendritic diameters along the different 
 
 ## B) Simplified Model of Dendritic Integration 
-
-*Build the figure panels related to Figure X.*
 
 ### B.1) Impedance Profile Characterization [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Impedance-BRT.ipynb)
 
@@ -57,10 +55,15 @@
 
 - simulate backgrounds excitatory and inhibitory activity
 - adds a stimulus input of increasing strength
+- record stimulus-evoked spiking activity
+
+## D) Spiking Activity of PV+ and SST+ Interneurons in the Mouse Visual Cortex
+
+### D.1) Input-Output curves with Background Activity [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/detailed_model/Stim-on-Background.ipynb)
 
 ## D) In Vivo Imaging of Neural Activity in Interneurons of the Mouse Visual Cortex
 
-[...]
+### C.4) Input-Output curves with Background Activity [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/detailed_model/Stim-on-Background.ipynb)
 
 ## Usage/Setup
 
