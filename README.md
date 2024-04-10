@@ -25,14 +25,15 @@
 
 *Build the figure panels related to Figure X.*
 
-### B.1) Model Presentation [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Model-Presentation.ipynb)
+### B.1) Impedance Profile Characterization [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Impedance-BRT.ipynb)
 
 - morphology drawing 
-- input impedance characterization
+- input and transfer impedance characterization
 
-### B.2) Analysis of Synaptic Integration [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Analysis-of-Synaptic-Integration.ipynb)
+### B.2) Analysis of Synaptic Integration [(-Notebook-)](https://github.com/yzerlaut/pv-sst-dendrites/blob/main/biophysical_modelling/reduced_model/Multi-Input-Integration.ipynb)
 
-- ...
+- performs multi-input integration at different locations
+- compares with linear predictions
 
 ## C) Biophysical Modelling of Morphologically-Detailed Reconstructions
 
