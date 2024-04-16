@@ -66,10 +66,10 @@ fi
 if [[ $1 == 'all' || $1 == 'full-input-output-curve' ]]
 then
     # Martinotti Cell
-    python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 40 45 --bgStimFreq 3e-4 --bgFreqInhFactor 6 --nStimRepeat 100 --test_NMDA --suffix Full --ISI 400
-    #python stim_on_background.py -c Martinotti --nCluster 0 5 10 15 20 25 30 35 --bgStimFreq 5e-4 --bgFreqInhFactor 1 --nStimRepeat 100 --test_uniform --suffix TestUniform --ISI 400 --with_NMDA
+    python stim_on_background.py -c Martinotti --nCluster 0 3 6 9 12 15 18 21 24 --bgStimFreq 1e-3 --bgFreqInhFactor 8 --nStimRepeat 100 --test_NMDA --suffix Full --ISI 400
+    #python stim_on_background.py -c Martinotti --nCluster 0 3 6 9 12 15 18 21 24 --bgStimFreq 1e-3 --bgFreqInhFactor 8 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400
     # Basket Cell
-    python stim_on_background.py -c Basket --nCluster 0 5 10 15 20 25 30 35 40 45 50 55 60 65 --bgStimFreq 3e-3 --bgFreqInhFactor 2 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400 
+    python stim_on_background.py -c Basket --nCluster 0 5 10 15 20 25 30 35 40 45 50 --bgStimFreq 3e-3 --bgFreqInhFactor 0.75 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400 
 fi
 #
 #
