@@ -2,7 +2,8 @@
 
 *Analyze the dendritic integration properties of PV+ and SST+ interneurons in the mouse visual cortex*
 
-## A) Dendritic Anatomy Analysis -- EM dataset
+
+## A) Dendritic Anatomy Analysis (Figure 3) -- EM dataset
 
 > relies on the MICrONS dataset, see: https://microns-explorer.org
 
@@ -21,7 +22,9 @@
 
 - computes the dendritic diameters along the different 
 
-## B) Simplified Model of Dendritic Integration 
+
+
+## B) Simplified Model of Dendritic Integration (Figure 1)
 
 ### B.1) Impedance Profile Characterization [(-Notebook-)](./biophysical_modelling/reduced_model/Impedance-BRT.ipynb)
 
@@ -33,7 +36,9 @@
 - performs multi-input integration at different locations
 - compares with linear predictions
 
-## C) Biophysical Modelling of Morphologically-Detailed Reconstructions
+
+
+## C) Biophysical Modelling of Morphologically-Detailed Reconstructions (Figure 4,5)
 
 /!\ Need to compile the NMODL mechanisms for NEURON with `nrnivmodl mechanisms`.
 
@@ -57,7 +62,15 @@
 - adds a stimulus input of increasing strength
 - record stimulus-evoked spiking activity
 
-## D) Spiking Activity of PV+ and SST+ Interneurons in the Mouse Visual Cortex
+### C.5) Firing Dynamics following a Stoachastic Process Stimulation [(-Notebook-)](./biophysical_modelling/detailed_model/StochProc-input.ipynb)
+
+- simulate excitatory and inhibitory activity driven by an Ornstein-Uhlenbeck process
+- do multiple runs to compute population averages
+- analyze the temporal transformation between input and output
+
+
+
+## D) Spiking Activity of PV+ and SST+ Interneurons in the Mouse Visual Cortex (Figure 5)
 
 Analysis for the *Visual Coding Neuropixels* dataset of [Siegle et al., 2021](https://www.nature.com/articles/s41586-020-03171-x)
 
@@ -73,7 +86,9 @@ Download the dataset with the script [./visual_coding/Download.py](./visual_codi
 - Computes the stimulus-evoked time-varying rate of positive and negative units
 - Compute the cross-correlation function between positive and negative units
 
-## E) In Vivo Calcium Imaging of Neural Activity in SST+ cells with and without the NDMAR
+
+
+## E) In Vivo Calcium Imaging of Neural Activity in SST+ cells with and without the NDMAR (Figure 5)
 
 ### E.1) Show Raw Data [(-Notebook-)](./in-vivo/Show-Raw-Data.ipynb)
 
@@ -86,4 +101,7 @@ Download the dataset with the script [./visual_coding/Download.py](./visual_codi
 
 ## Usage/Setup
 
-- Part A) relies on the Allen Institute datasets
+Clone the repository with its submodules
+```
+git clone https://github.com/yzerlaut/pv-sst-dendrites --recurse-modules
+```
