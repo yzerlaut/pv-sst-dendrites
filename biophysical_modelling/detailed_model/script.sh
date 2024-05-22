@@ -36,7 +36,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
 then
     ## Basket Cell
-    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 7e-3 --bgFreqInhFactor 1.0 --iBranch 1 &
+    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 3e-3 --bgFreqInhFactor 0.75 --iBranch 1 &
     # Martinotti Cell
     python tvRate_sim.py --test -c Martinotti --with_NMDA --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Martinotti.npy --stimFreq 1e-3 --bgFreqInhFactor 8 --iBranch 1 &
 fi
@@ -44,11 +44,16 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-tvRate-repeated' ]]
 then
     ## Basket Cell
-    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1
-    #python tvRate_sim.py --test_with_repeats -c Basket --from_uniform --with_presynaptic_spikes --stimFreq 7e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix Uniform
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 0.75 --iBranch 1
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 4e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix 1
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 6e-3 --bgFreqInhFactor 2 --iBranch 1 --suffix 2
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 5e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix 3
     # Martinotti Cell
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1e-3 --bgFreqInhFactor 8 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 1.2e-4 --bgFreqInhFactor 4 --iBranch 1 --suffix noNMDA
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 8 --iBranch 1
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 6 --iBranch 1 --suffix 1
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 4e-3 --bgFreqInhFactor 8 --iBranch 1 --suffix 2
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 5e-3 --bgFreqInhFactor 8 --iBranch 1 --suffix 3
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 6 --iBranch 1 --suffix noNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]
