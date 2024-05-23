@@ -211,6 +211,7 @@ def run_sim(cellType='Basket',
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell,\
                                             synapses, 
                                             EI_ratio=0,
+                                            boost_AMPA_for_SST_noNMDA=False,
                                             with_NMDA=with_NMDA)
 
     # -- link events to synapses

@@ -27,6 +27,7 @@ def PoissonSpikeTrain(freq,
 
 def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
+                       boost_AMPA_for_SST_noNMDA=True,
                        EI_ratio=20./100.):
 
     AMPAS, NMDAS, GABAS = [], [], []
@@ -60,7 +61,8 @@ def add_synaptic_input(cell, synapses,
 
 
             ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            if (cell.params_key=='MC') and not with_NMDA:
+            if (cell.params_key=='MC') and (not with_NMDA)\
+                    and boost_AMPA_for_SST_noNMDA:
                 ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
                                 cell.params['%s_qAMPAonlyBoost'%cell.params_key]
             else:

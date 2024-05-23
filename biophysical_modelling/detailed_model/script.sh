@@ -17,6 +17,18 @@ then
 fi
 
 
+#########################################
+########### clustered input (Fig. 4) ####
+#########################################
+if [[ $1 == 'all' || $1 == 'full-input-output-curve' ]]
+then
+    # SST Model
+    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 5 6 7 8 9 10
+    # PV Cell
+    python clustered_input_stim.py -c Basket --test_uniform --sparsening 5 6 7 8 9 10
+fi
+
+
 ################################
 ######## step rate (Fig. 5) ####
 ################################
