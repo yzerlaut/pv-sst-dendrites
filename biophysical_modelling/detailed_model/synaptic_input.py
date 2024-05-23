@@ -66,6 +66,7 @@ def add_synaptic_input(cell, synapses,
                 ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
                                 cell.params['%s_qAMPAonlyBoost'%cell.params_key]
             else:
+                print(cell.params_key, 'no AMPA boost')
                 # regular ampa weight
                 ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]
 

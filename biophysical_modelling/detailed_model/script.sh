@@ -20,12 +20,14 @@ fi
 #########################################
 ########### clustered input (Fig. 4) ####
 #########################################
-if [[ $1 == 'all' || $1 == 'full-input-output-curve' ]]
+if [[ $1 == 'all' || $1 == 'clustered-input' ]]
 then
     # SST Model
-    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 5 6 7 8 9 10
+    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 5 7 10 
+    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 5 7 10 --fix_missing
     # PV Cell
-    python clustered_input_stim.py -c Basket --test_uniform --sparsening 5 6 7 8 9 10
+    python clustered_input_stim.py -c Basket --test_uniform --sparsening 5 7 10
+    python clustered_input_stim.py -c Basket --test_uniform --sparsening 5 7 10 --fix_missing
 fi
 
 
