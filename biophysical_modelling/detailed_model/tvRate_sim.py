@@ -170,7 +170,9 @@ if __name__=='__main__':
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
     parser.add_argument("--stochProcSeed", type=int, default=1)
+    parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
+    parser.add_argument("--nSpikeSeed", type=int, default=8)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -231,7 +233,7 @@ if __name__=='__main__':
             filename='../../data/detailed_model/tvRateStim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
-        grid = dict(spikeSeed=np.arange(48))
+        grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
@@ -258,8 +260,8 @@ if __name__=='__main__':
                 filename='../../data/detailed_model/tvRateStim_simBranch%i_%s.zip' %\
                                 (b, args.cellType+args.suffix))
 
-            grid = dict(stochProcSeed=np.arange(4),
-                        spikeSeed=np.arange(20))
+            grid = dict(stochProcSeed=np.arange(args.nStochProcSeed),
+                        spikeSeed=np.arange(args.nSpikeSeed))
 
             if args.test_uniform:
                 grid = dict(from_uniform=[False, True], **grid)

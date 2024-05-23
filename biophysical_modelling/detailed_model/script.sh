@@ -1,3 +1,10 @@
+if [[ $1 == 'all' || $1 == 'test' ]]
+then
+    echo 'Running the script to regenerate all modelling data'
+    echo '     [...]'
+fi
+
+
 ###########################################################
 ########### stimulation on top of background (Fig. 4) ####
 ##########################################################
@@ -11,7 +18,6 @@ if [[ $1 == 'all' || $1 == 'full-input-output-curve' ]]
 then
     # Martinotti Cell
     python stim_on_background.py -c Martinotti --nCluster 0 2 4 6 8 10 12 14 16 18 20 --bgStimFreq 1e-3 --bgFreqInhFactor 8 --nStimRepeat 100 --test_NMDA --suffix Full --ISI 400
-    #python stim_on_background.py -c Martinotti --nCluster 0 3 6 9 12 15 18 21 24 --bgStimFreq 1e-3 --bgFreqInhFactor 8 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400
     # Basket Cell
     python stim_on_background.py -c Basket --nCluster 0 5 10 15 20 25 30 35 40 45 50 --bgStimFreq 3e-3 --bgFreqInhFactor 0.75 --nStimRepeat 100 --test_uniform --suffix Full --ISI 400 
 fi
@@ -50,7 +56,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
 then
     ## Basket Cell
-    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 3e-3 --bgFreqInhFactor 0.75 --iBranch 1 &
+    python tvRate_sim.py --test -c Basket --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Basket.npy --stimFreq 3e-3 --bgFreqInhFactor 1 --iBranch 1 &
     # Martinotti Cell
     python tvRate_sim.py --test -c Martinotti --with_NMDA --with_presynaptic_spikes --filename ../../data/detailed_model/demo-tvRate-Martinotti.npy --stimFreq 1e-3 --bgFreqInhFactor 8 --iBranch 1 &
 fi
@@ -58,16 +64,10 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-tvRate-repeated' ]]
 then
     ## Basket Cell
-    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 0.75 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 4e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix 1
-    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 6e-3 --bgFreqInhFactor 2 --iBranch 1 --suffix 2
-    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 5e-3 --bgFreqInhFactor 1 --iBranch 1 --suffix 3
+    #python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 4.8e-3 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 16
     # Martinotti Cell
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 8 --iBranch 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 6 --iBranch 1 --suffix 1
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 4e-3 --bgFreqInhFactor 8 --iBranch 1 --suffix 2
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 5e-3 --bgFreqInhFactor 8 --iBranch 1 --suffix 3
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 6 --iBranch 1 --suffix noNMDA
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 2e-4 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 8 
+    #python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 3e-3 --bgFreqInhFactor 6 --iBranch 1 --suffix noNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'tvRate' ]]

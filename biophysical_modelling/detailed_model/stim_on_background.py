@@ -12,7 +12,7 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # stim props
             nStimRepeat=2,
-            stimSeed=3,
+            stimSeed=4,
             nCluster=[10],
             interspike=2,
             t0=200,
