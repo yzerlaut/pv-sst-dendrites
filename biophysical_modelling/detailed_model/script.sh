@@ -59,9 +59,9 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
     ## Basket Cell
-    python step_stim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 6e-3 --bgFreqInhFactor 2 --iBranch 1
+
     # Martinotti Cell
-    python step_stim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 6e-4 --bgFreqInhFactor 4 --iBranch 1
+
 fi
 
 ##########################################################
@@ -71,9 +71,10 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
 then
     ## Basket Cell
-    #python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 5e-3 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 16
+    python tvRate_sim.py --test_with_repeats -c Basket --with_presynaptic_spikes --stimFreq 5.5e-3 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 8
     # Martinotti Cell
-    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1e-4 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 16
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_NMDA --with_presynaptic_spikes --stimFreq 1.65e-4 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 8
+    python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 4e-4 --bgFreqInhFactor 1 --iBranch 1 --nSpikeSeed 8 --suffix noNMDA 
     #python tvRate_sim.py --test_with_repeats -c Martinotti --with_presynaptic_spikes --stimFreq 6e-3 --bgFreqInhFactor 4 --iBranch 1 --suffix noNMDA --nSpikeSeed 48
 fi
 
