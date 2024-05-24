@@ -59,9 +59,18 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
     ## Basket Cell
-
+    python step_stim.py --test_with_repeats -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 10e-3\
+                            --bgFreqInhFactor 1\
+                            --iBranch 1 --nSpikeSeed 102
     # Martinotti Cell
-
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA\
+                            --with_presynaptic_spikes\
+                            --stimFreq 4e-4\
+                            --bgFreqInhFactor 1\
+                            --iBranch 1 --nSpikeSeed 102
 fi
 
 ##########################################################
