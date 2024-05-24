@@ -160,6 +160,7 @@ if __name__=='__main__':
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
     parser.add_argument("--spikeSeed", type=int, default=1)
+    parser.add_argument("--nSpikeSeed", type=int, default=8)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -217,7 +218,7 @@ if __name__=='__main__':
             filename='../../data/detailed_model/StepStim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
-        grid = dict(spikeSeed=np.arange(2*24))
+        grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)
