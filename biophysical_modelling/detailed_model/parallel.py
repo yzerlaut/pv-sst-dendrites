@@ -93,7 +93,15 @@ class Parallel:
             self.PARAMS_SCAN['filenames'].append(\
                     self.build_filename_single_sim(self.KEYS, VAL))
 
-    def run(self, single_run_func,
+    def check_success(self):
+        success = True
+        for filename in self.PARAMS_SCAN['filenames']:
+            if not os.path.isfile(os.path.join(self.temp_folder, filename)):
+                # if it doesn't exists !
+                success = False
+        return success
+
+    def run_scan(self, single_run_func,
             single_run_args={},
             parallelize=True,
             fix_missing_only=False,
@@ -151,7 +159,7 @@ class Parallel:
 
             # write all single sim files in the zip file
             for FN in self.PARAMS_SCAN['filenames']:
-                print(FN)
+                print('writing', FN, ' in zip folder')
                 zf.write(os.path.join(self.temp_folder, FN), arcname=FN)
 
             # add the scan metadata to the zip
@@ -161,8 +169,24 @@ class Parallel:
             # close the zip file
             zf.close()
 
+            return self.check_success()
+
         else:
             print(' need to build the simulation with the varied parameters ! ')
+
+
+    def run(self, *args, **opt_args):
+        self.run_scan(*args, **opt_args)
+        i=0
+        success = False
+        while not success and i<10:
+            if 'fix_missing_only' in opt_args:
+                opt_args['fix_missing_only']=True
+                success = self.run_scan(*args, *opt_args)
+            else:
+                success = self.run_scan(*args, fix_missing_only=True, **opt_args)
+            print('\n\n'+20*'-'+' Success Check #%i: %s'%(i+1, success)+20*'-'+'\n\n')
+            i+=1
 
     def unzip(self):
 

@@ -115,6 +115,7 @@ then
                         --bgFreqInhFactor 1\
                         --iBranch 1\
                          --nStochProc 4 --no_Vm\
+                         --fix_missing_only\
                         --nSpikeSeed 56
     # Martinotti Cell
     python tvRate_sim.py -c Martinotti\
@@ -124,6 +125,7 @@ then
                          --bgFreqInhFactor 1\
                          --iBranch 1\
                          --nStochProc 4 --no_Vm\
+                         --fix_missing_only\
                          --nSpikeSeed 56
     # Martinotti Cell, no NMDA
     python tvRate_sim.py -c Martinotti\
@@ -133,5 +135,6 @@ then
                          --iBranch 1\
                          --nSpikeSeed 56\
                          --nStochProc 4 --no_Vm\
+                         --fix_missing_only\
                          --suffix noNMDA 
 fi
