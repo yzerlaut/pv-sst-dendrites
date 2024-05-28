@@ -175,18 +175,31 @@ class Parallel:
             print(' need to build the simulation with the varied parameters ! ')
 
 
-    def run(self, *args, **opt_args):
-        self.run_scan(*args, **opt_args)
+    def run(self, single_run_func,
+            single_run_args={},
+            parallelize=True,
+            fix_missing_only=False,
+            Nmax_simultaneous_processes=None,
+            Nmax_check=10):
+
+        self.run_scan(single_run_func, 
+                single_run_args=single_run_args,
+                parallelize=parallelize,
+                fix_missing_only=fix_missing_only,
+                Nmax_simultaneous_processes=Nmax_simultaneous_processes)
+
         i=0
         success = False
-        while not success and i<10:
-            if 'fix_missing_only' in opt_args:
-                opt_args['fix_missing_only']=True
-                success = self.run_scan(*args, *opt_args)
-            else:
-                success = self.run_scan(*args, fix_missing_only=True, **opt_args)
+        while not success and i<Nmax_check:
+            success = self.run_scan(single_run_func, 
+                    single_run_args=single_run_args,
+                    parallelize=parallelize,
+                    fix_missing_only=True,
+                    Nmax_simultaneous_processes=Nmax_simultaneous_processes)
+
             print('\n\n'+20*'-'+' Success Check #%i: %s'%(i+1, success)+20*'-'+'\n\n')
             i+=1
+
 
     def unzip(self):
 
