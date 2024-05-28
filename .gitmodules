@@ -10,6 +10,3 @@
 [submodule "analyz"]
 	path = analyz
 	url = https://github.com/yzerlaut/analyz
-[submodule "MeshParty"]
-	path = MeshParty
-	url = ./MeshParty
