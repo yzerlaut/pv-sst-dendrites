@@ -116,8 +116,12 @@ if False:
 # # 3) Showing an example session response
 
 # %%
-examples = {'PV':{'sessionID':0, 'positive_color':'tab:red', 'negative_color':'dimgrey'},
-            'SST':{'sessionID':2, 'positive_color':'tab:orange', 'negative_color':'silver'}}
+examples = {'PV':{'sessionID':0, 
+                  'positive_color':'tab:red', 
+                  'negative_color':'dimgrey'},
+            'SST':{'sessionID':2, 
+                   'positive_color':'tab:orange', 
+                   'negative_color':'silver'}}
 
 rate_smoothing = 10e-3
 tmax = 3
@@ -125,10 +129,14 @@ tmax = 3
 
 for c, cellType in enumerate(examples.keys()):
 
-    fig, AX = pt.figure(axes_extents=[[[1,1]],[[1,2]],[[1,1]],[[1,2]]], hspace=0.1, figsize=(1.6,.55))
+    fig, AX = pt.figure(axes_extents=[[[1,1]],[[1,2]],[[1,1]],[[1,2]]], 
+                        hspace=0.1, figsize=(1.6,.55))
     sessionID = examples[cellType]['sessionID']
-    fig.suptitle('session %i\n' % Optotagging['%s_sessions' % cellType][sessionID], fontsize=6)
-    print(cellType, ' -> sessionID: ', Optotagging['%s_sessions' % cellType][sessionID])
+    fig.suptitle(\
+            'session %i\n' % Optotagging['%s_sessions' % cellType][sessionID], 
+                 fontsize=6)
+    print(cellType, ' -> sessionID: ', 
+          Optotagging['%s_sessions' % cellType][sessionID])
 
     for k, key in enumerate(['positive', 'negative']):
         rates = []
@@ -137,6 +145,7 @@ for c, cellType in enumerate(examples.keys()):
                 filename = os.path.join('..', 'data', 'visual_coding', cellType, 
                                         '%s_unit_%i.npy' % (protocol, unit))
                 if os.path.isfile(filename):
+                    print('[ok]', cellType, key, protocol, unit, 'found')
                     spikeResp = spikingResponse(None, None, None, filename=filename)
                     cond = spikeResp.t<tmax
                     rates.append(spikeResp.get_rate(smoothing=rate_smoothing)[cond])
@@ -146,9 +155,12 @@ for c, cellType in enumerate(examples.keys()):
                     AX[2*k].scatter(spikeResp.t[sCond], u+0*spikeResp.t[sCond], 
                                     s=0.05,
                                     color=examples[cellType]['%s_color'%key])
+                else:
+                    print('[X] ', cellType, key, protocol, unit, 'missing')
         print('number of repeats:', spikeResp.spike_matrix.shape[0], '  ', key, cellType)
 
-        AX[2*k+1].fill_between(spikeResp.t[cond], 0*spikeResp.t[cond], np.mean(rates, axis=0),
+        AX[2*k+1].fill_between(spikeResp.t[cond], 
+                               0*spikeResp.t[cond], np.mean(rates, axis=0),
                                alpha=.7, lw=0,
                                color=examples[cellType]['%s_color'%key])
         pt.annotate(AX[2*k], '%i units' % len(rates), (1,0.5),
