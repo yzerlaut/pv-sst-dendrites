@@ -36,8 +36,8 @@ warnings.filterwarnings("ignore")
 # # 1) Loading the Optotagging results
 
 # %%
-#Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), allow_pickle=True).item()
-Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 'Optotagging-Results.npy'), allow_pickle=True).item()
+Optotagging = np.load(os.path.join('..', 'data', 'visual_coding', 
+                    'Optotagging-Results.npy'), allow_pickle=True).item()
 
 # randomly subsample the negative units to 100 cells per session
 np.random.seed(1)
@@ -553,4 +553,76 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 #pt.set_plot(ax, xlabel='$\delta$ time (s)', xlim=[-1.5,1.5])
 fig.suptitle('cross-correl. "-" vs "+" units')
 
+
 # %%
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+                allow_pickle=True).item()
+
+fig1, ax = pt.figure(figsize=(2,1), left=0.2)
+
+tlim = [-1.1, 20]
+cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
+
+for k, key, pos_color, neg_color in zip(range(2),
+                                        ['SST', 'PV'], 
+                                        ['tab:orange', 'tab:red'],
+                                        ['silver', 'dimgrey']):
+
+    neg_rates = np.mean(RATES['%s_negUnits' % key], axis=0)
+    pt.annotate(ax, 2*k*'\n'+'%.1fHz' % np.std(4.*neg_rates), (0,1),
+                ha='right', va='top', color=neg_color)
+    ax.plot(RATES['time'][cond], (neg_rates[cond]-np.mean(neg_rates))/np.std(neg_rates), 
+            color=neg_color)
+    pos_rates = np.mean(RATES['%s_posUnits' % key], axis=0)
+    pt.annotate(ax, (2*k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
+                ha='right', va='top', color=pos_color)
+    ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
+            color=pos_color)
+
+ax.plot([tlim[1],tlim[1]-1], [8, 8], 'k-')
+ax.annotate('1s',(tlim[1]-.5,8.5), ha='center') 
+ax.plot(-1*np.ones(2), [4, 8], 'k-')
+pt.set_plot(ax, [], xlim=tlim)
+
+
+# %%
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+                allow_pickle=True).item()
+
+fig1, ax = pt.figure(figsize=(2,1), left=0.2)
+
+tlim = [-1.1, 40]
+cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
+
+neg_rates = 0.5*(\
+        np.mean(RATES['PV_negUnits'], axis=0)+\
+        np.mean(RATES['SST_negUnits'], axis=0))
+scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
+
+
+pt.annotate(ax, '%.1fHz' % np.std(4.*neg_rates), (0,1),
+            ha='right', va='top', color=neg_color)
+
+ax.fill_between(RATES['time'][cond], 
+                np.min(scaled_neg_rates),
+                scaled_neg_rates[cond],
+                color=neg_color, lw=0, alpha=.5)
+
+for k, key, pos_color in zip(range(2),
+                            ['SST', 'PV'], 
+                            ['tab:orange', 'tab:red']):
+
+    pos_rates = np.mean(RATES['%s_posUnits' % key], axis=0)
+    pt.annotate(ax, (k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
+                ha='right', va='top', color=pos_color)
+    ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
+            color=pos_color)
+
+ax.plot([tlim[1],tlim[1]-1], [8, 8], 'k-')
+ax.annotate('1s',(tlim[1]-.5,8.5), ha='center') 
+ax.plot(-1*np.ones(2), [4, 8], 'k-')
+pt.set_plot(ax, [], xlim=tlim)
+
+# %%
+OU = np.interp(np.arange(t[0], t[-1], dt), t, scaled_neg_rates)
+pt.plot(OU)

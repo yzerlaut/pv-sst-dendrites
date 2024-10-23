@@ -4,7 +4,7 @@ channels:
 
 dependencies:
   - jupyterlab
-  - jupyter_contrib_nbextensions==0.5.1
+  #- jupyter_contrib_nbextensions==0.5.1
   - python==3.8.10
   - numpy
   - matplotlib
