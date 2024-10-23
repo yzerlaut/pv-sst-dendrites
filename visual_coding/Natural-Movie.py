@@ -554,6 +554,9 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 fig.suptitle('cross-correl. "-" vs "+" units')
 
 
+# %% [markdown]
+# # Exporting Negative-Units Rates as Inputs to Stimulation
+
 # %%
 RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
                 allow_pickle=True).item()
@@ -591,7 +594,7 @@ RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie
 
 fig1, ax = pt.figure(figsize=(2,1), left=0.2)
 
-tlim = [-1.1, 40]
+tlim = [-1.1, 10]
 cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
 
 neg_rates = 0.5*(\
@@ -623,6 +626,3 @@ ax.annotate('1s',(tlim[1]-.5,8.5), ha='center')
 ax.plot(-1*np.ones(2), [4, 8], 'k-')
 pt.set_plot(ax, [], xlim=tlim)
 
-# %%
-OU = np.interp(np.arange(t[0], t[-1], dt), t, scaled_neg_rates)
-pt.plot(OU)
