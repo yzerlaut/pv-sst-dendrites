@@ -31,6 +31,7 @@ def run_sim(cellType='Basket',
 
     from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+    h.dt = dt
 
     def OrnsteinUhlenbeck_Process(mu, sigma, tau, 
                                   dt=0.1, tstop=100):

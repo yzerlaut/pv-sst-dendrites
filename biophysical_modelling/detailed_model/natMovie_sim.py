@@ -6,19 +6,6 @@ sys.path.append('../..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
-########################################################
-# Import Natural Movie Spiking Activity
-########################################################
-RATES = np.load(os.path.join('..', '..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
-                allow_pickle=True).item()
-
-t = RATES['time']
-tstop = t[-1]
-neg_rates = 0.5*(\
-        np.mean(RATES['PV_negUnits'], axis=0)+\
-        np.mean(RATES['SST_negUnits'], axis=0))
-scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
-
 
 def run_sim(cellType='Basket', 
             passive_only=False,
@@ -30,7 +17,6 @@ def run_sim(cellType='Basket',
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
-            stochProcSeed=1,
             spikeSeed=2,
             # biophysical props
             with_NMDA=False,
@@ -38,10 +24,26 @@ def run_sim(cellType='Basket',
             with_presynaptic_spikes=False,
             no_Vm=False,
             spike_threshold=0.,
+            tstop=0.,
             dt= 0.01):
 
-    from cell_template import Cell, h, np
+    from cell_template import Cell, h, np, os
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+    h.dt = dt
+
+    ########################################################
+    # Import Natural Movie Spiking Activity
+    ########################################################
+    RATES = np.load(os.path.join('..', '..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+                    allow_pickle=True).item()
+    t = 1e3*(RATES['time']-RATES['time'][0]) # s to ms
+    if tstop<=0.:
+        tstop = t[-1]
+    neg_rates = 0.5*(\
+            np.mean(RATES['PV_negUnits'], axis=0)+\
+            np.mean(RATES['SST_negUnits'], axis=0))
+    # scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
+    scaled_neg_rates = neg_rates/np.std(neg_rates)
 
     ######################################################
     ##   simulation preparation  #########################
@@ -76,24 +78,21 @@ def run_sim(cellType='Basket',
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                                        with_NMDA=with_NMDA)
 
-    # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
-    np.random.seed(stochProcSeed)
-    OU = np.clip(\
-            meanStim+stdStim*\
-                np.interp(np.arange(t[0], tstop, dt), t, scaled_neg_rates),
-             0, np.inf)
+    # Time-Varying Rate (clipped to positive-values)
+    Rate = np.interp(np.arange(0, tstop, dt), 
+                                t[t<=tstop],
+                                  scaled_neg_rates[t<=tstop])
 
     # -- background activity 
     np.random.seed(spikeSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*OU, 
+            TRAINS.append(list(PoissonSpikeTrain(stimFreq*Rate, 
                                                  dt=dt,
                                                  tstop=tstop)))
         else:
-            TRAINS.append(list(PoissonSpikeTrain(\
-                                    bgFreqInhFactor*stimFreq*OU,
+            TRAINS.append(list(PoissonSpikeTrain(stimFreq*bgFreqInhFactor*Rate,
                                                  dt=dt,
                                                  tstop=tstop)))
 
@@ -126,14 +125,14 @@ def run_sim(cellType='Basket',
 
     # save the output
     Vm = np.array(Vm_soma)
-    output = {'OU':OU,
+    output = {'Rate':Rate,
               'spikes':dt*\
                 np.argwhere((Vm[1:]>spike_threshold) &\
                                     (Vm[:-1]<=spike_threshold)),
-              'dt': dt, 
               'synapses':synapses,
               'stimFreq':stimFreq,
               'bgFreqInhFactor':bgFreqInhFactor,
+              'dt': dt, 
               'tstop':tstop}
 
     if not no_Vm:
@@ -166,7 +165,6 @@ if __name__=='__main__':
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
-    parser.add_argument("--stochProcSeed", type=int, default=1)
     parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
@@ -198,12 +196,12 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
+    parser.add_argument("--tstop", type=float, default=0.)
 
     args = parser.parse_args()
      
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
-                  stochProcSeed=args.stochProcSeed,
                   spikeSeed=args.spikeSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
@@ -213,6 +211,7 @@ if __name__=='__main__':
                   with_NMDA=args.with_NMDA,
                   from_uniform=args.from_uniform,
                   no_Vm=args.no_Vm,
+                  tstop=args.tstop,
                   dt=args.dt)
 
     if args.test:
@@ -255,8 +254,7 @@ if __name__=='__main__':
                 filename='../../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
                                 (b, args.cellType+args.suffix))
 
-            grid = dict(stochProcSeed=np.arange(args.nStochProcSeed),
-                        spikeSeed=np.arange(args.nSpikeSeed))
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
             if args.test_uniform:
                 grid = dict(from_uniform=[False, True], **grid)
