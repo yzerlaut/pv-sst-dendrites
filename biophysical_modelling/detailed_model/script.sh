@@ -147,25 +147,25 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
 then
     ## Basket Cell
-    #python natMovie_sim.py --test_with_repeats\
-                            #-c Basket\
-                            #--with_presynaptic_spikes\
-                            #--stimFreq 1.2e-3\
-                            #--bgFreqInhFactor 1.00\
-                            #--iBranch 1\
-                            #--tstop 40000.\
-                            #--dt 0.05\
-                            #--nSpikeSeed 16
+    python natMovie_sim.py --test_with_repeats\
+                            -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 1.2e-3\
+                            --bgFreqInhFactor 1.00\
+                            --iBranch 1\
+                            --tstop 0.\
+                            --dt 0.05\
+                            --nSpikeSeed 16
     # Martinotti Cell
     python natMovie_sim.py --test_with_repeats\
                              -c Martinotti\
                              --with_NMDA --with_presynaptic_spikes\
                              --stimFreq 5e-5\
-                             --tstop 40000.\
+                             --tstop 0.\
                              --dt 0.05\
                              --bgFreqInhFactor 1\
                              --iBranch 1\
-                             --nSpikeSeed 12
+                             --nSpikeSeed 16
     # Martinotti Cell, no NMDA
     #python tvRate_sim.py --test_with_repeats\
                          #-c Martinotti\
