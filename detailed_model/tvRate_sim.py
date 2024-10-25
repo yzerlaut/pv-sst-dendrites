@@ -1,8 +1,8 @@
 import numpy as np
 from parallel import Parallel
 
-import sys, os
-sys.path.append('../..')
+import sys
+sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -14,9 +14,11 @@ def run_sim(cellType='Basket',
             # stim props
             meanStim=2.,
             stdStim=0.75,
+            tauStim=50,
             # bg stim
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
+            stochProcSeed=1,
             spikeSeed=2,
             # biophysical props
             with_NMDA=False,
@@ -24,26 +26,24 @@ def run_sim(cellType='Basket',
             with_presynaptic_spikes=False,
             no_Vm=False,
             spike_threshold=0.,
-            tstop=0.,
+            tstop=1000.,
             dt= 0.01):
 
-    from cell_template import Cell, h, np, os
+    from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
     h.dt = dt
 
-    ########################################################
-    # Import Natural Movie Spiking Activity
-    ########################################################
-    RATES = np.load(os.path.join('..', '..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
-                    allow_pickle=True).item()
-    t = 1e3*(RATES['time']-RATES['time'][0]) # s to ms
-    if tstop<=0.:
-        tstop = t[-1]
-    neg_rates = 0.5*(\
-            np.mean(RATES['PV_negUnits'], axis=0)+\
-            np.mean(RATES['SST_negUnits'], axis=0))
-    # scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
-    scaled_neg_rates = neg_rates/np.std(neg_rates)
+    def OrnsteinUhlenbeck_Process(mu, sigma, tau, 
+                                  dt=0.1, tstop=100):
+        """ taken from github.com/yzerlaut/analyz """
+        diffcoef = 2*sigma**2/tau
+        y0, n_steps= mu, int(tstop/dt)
+        A = np.sqrt(diffcoef*tau/2.*(1-np.exp(-2*dt/tau)))
+        noise, y = np.random.randn(n_steps), np.zeros(n_steps)
+        y[0] = y0
+        for i in range(n_steps-1):
+            y[i+1] = y0 + (y[i]-y0)*np.exp(-dt/tau)+A*noise[i]
+        return y
 
     ######################################################
     ##   simulation preparation  #########################
@@ -78,21 +78,26 @@ def run_sim(cellType='Basket',
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                                        with_NMDA=with_NMDA)
 
-    # Time-Varying Rate (clipped to positive-values)
-    Rate = np.interp(np.arange(0, tstop, dt), 
-                                t[t<=tstop],
-                                  scaled_neg_rates[t<=tstop])
+    # Ornstein-Uhlenbeck Time-Varying Rate (clipped to positive-values)
+    np.random.seed(stochProcSeed)
+    OU = np.clip(\
+            OrnsteinUhlenbeck_Process(meanStim,
+                                      stdStim, 
+                                      tauStim,
+                                      dt, tstop),
+                0, np.inf)
 
     # -- background activity 
     np.random.seed(spikeSeed)
     TRAINS = []
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*Rate, 
+            TRAINS.append(list(PoissonSpikeTrain(stimFreq*OU, 
                                                  dt=dt,
                                                  tstop=tstop)))
         else:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*bgFreqInhFactor*Rate,
+            TRAINS.append(list(PoissonSpikeTrain(\
+                                    bgFreqInhFactor*stimFreq*OU,
                                                  dt=dt,
                                                  tstop=tstop)))
 
@@ -125,14 +130,14 @@ def run_sim(cellType='Basket',
 
     # save the output
     Vm = np.array(Vm_soma)
-    output = {'Rate':Rate,
+    output = {'OU':OU,
               'spikes':dt*\
                 np.argwhere((Vm[1:]>spike_threshold) &\
                                     (Vm[:-1]<=spike_threshold)),
+              'dt': dt, 
               'synapses':synapses,
               'stimFreq':stimFreq,
               'bgFreqInhFactor':bgFreqInhFactor,
-              'dt': dt, 
               'tstop':tstop}
 
     if not no_Vm:
@@ -165,6 +170,7 @@ if __name__=='__main__':
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
+    parser.add_argument("--stochProcSeed", type=int, default=1)
     parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
@@ -196,12 +202,13 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
-    parser.add_argument("--tstop", type=float, default=0.)
+    parser.add_argument("--tstop", type=float, default=5000.)
 
     args = parser.parse_args()
      
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
+                  stochProcSeed=args.stochProcSeed,
                   spikeSeed=args.spikeSeed,
                   stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
@@ -224,7 +231,7 @@ if __name__=='__main__':
     elif args.test_with_repeats:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/natMovieStim_demo_%s%s.zip' %\
+            filename='../data/detailed_model/tvRateStim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
@@ -251,10 +258,11 @@ if __name__=='__main__':
             params['iBranch'] = b
             
             sim = Parallel(\
-                filename='../../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
+                filename='../data/detailed_model/tvRateStim_simBranch%i_%s.zip' %\
                                 (b, args.cellType+args.suffix))
 
-            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+            grid = dict(stochProcSeed=np.arange(args.nStochProcSeed),
+                        spikeSeed=np.arange(args.nSpikeSeed))
 
             if args.test_uniform:
                 grid = dict(from_uniform=[False, True], **grid)

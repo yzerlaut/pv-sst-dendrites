@@ -18,7 +18,7 @@
 #
 # we feed the neuron with spikes from the "visual_coding" dataset.
 #
-# see [../../visual_coding](../../visual_coding)
+# see [../visual_coding](../visual_coding)
 
 # %%
 import numpy as np
@@ -26,10 +26,10 @@ import numpy as np
 import sys, os
 from parallel import Parallel
 
-sys.path.append('../..')
+sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
-sys.path.append('../../analyz')
+sys.path.append('../analyz')
 from analyz.processing.signanalysis import autocorrel, crosscorrel
 
 # %%
@@ -83,7 +83,7 @@ RESULTS = {'Martinotti_example_index':0,
 for cellType in ['Martinotti', 'Basket']:
 
     sim = Parallel(\
-            filename='../../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -127,7 +127,7 @@ RESULTS['Basket_example_index'] = 1
 
 for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
     
-    sim = Parallel(filename='../../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
+    sim = Parallel(filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
     sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
     RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
@@ -171,7 +171,7 @@ for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
-#    fig.savefig('../../figures/Figure5/StochProcSim_example_%s.pdf' % cellType)
+#    fig.savefig('../figures/Figure5/StochProcSim_example_%s.pdf' % cellType)
 
 # %%
 fig, ax = pt.figure(figsize=(1.1,0.85))
@@ -222,7 +222,7 @@ pt.set_plot(ax, xlabel='jitter (s)',
             #xlim=[-0.21,0.27], 
             title='model',
             ylabel='corr. coef.')
-fig.savefig('../../figures/Figure5/CrossCorrel-Model.pdf')
+fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
 
 # %%
 fig, ax = pt.figure(figsize=(0.8,0.85))
@@ -251,7 +251,7 @@ pt.set_plot(ax, ['left'], yticks=[0,50,100],
             title='single seed',
             #ylabel=u'\u00bd' + ' width\n(ms)',
             ylabel='width (ms)')
-#fig.savefig('../../figures/detailed_model/Widths.svg')
+#fig.savefig('../figures/detailed_model/Widths.svg')
 
 # %% [markdown]
 # ## Analysis over different seeds
@@ -275,7 +275,7 @@ for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA']:
         
         try:
             sim = Parallel(\
-                    filename='../../data/detailed_model/tvRateStim_simBranch%i_%s.zip' % (iBranch,cellType))
+                    filename='../data/detailed_model/tvRateStim_simBranch%i_%s.zip' % (iBranch,cellType))
             sim.load()
 
             sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -385,7 +385,7 @@ pt.set_plot(ax, xlabel='jitter (s)',
             yticks=[0.,0.5,1.0],
             xlim=[-0.35,0.35],
             xticks=[-0.3,0,0.3])
-fig.savefig('../../figures/detailed_model/CrossCorrel.pdf')
+fig.savefig('../figures/detailed_model/CrossCorrel.pdf')
 
 # %%
 # Gaussian fit to quantify the decay
@@ -437,7 +437,7 @@ pt.set_plot(ax, ['left'],
             ylabel=u'\u00bd width (s)',
             #ylabel='width (ms)',
             yticks=[0,100], yticks_labels=['0.0', '0.1'])
-fig.savefig('../../figures/Figure5/Half-Widths-Summary.pdf')
+fig.savefig('../figures/Figure5/Half-Widths-Summary.pdf')
 
 # %% [markdown]
 # ## Compute cross-correlation functions

@@ -2,7 +2,7 @@ import numpy as np
 from parallel import Parallel
 
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -215,7 +215,7 @@ if __name__=='__main__':
     elif args.test_with_repeats:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/StepStim_demo_%s%s.zip' %\
+            filename='../data/detailed_model/StepStim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
@@ -243,7 +243,7 @@ if __name__=='__main__':
             params['iBranch'] = i
             
             sim = Parallel(\
-                filename='../../data/detailed_model/StepStim_sim%s_%s.zip' %\
+                filename='../data/detailed_model/StepStim_sim%s_%s.zip' %\
                                 (args.suffix, args.cellType))
 
             grid = dict(spikeSeed=np.arange(20))

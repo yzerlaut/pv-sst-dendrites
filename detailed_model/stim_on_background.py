@@ -2,7 +2,7 @@ import numpy as np
 from parallel import Parallel
 
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -204,7 +204,7 @@ if __name__=='__main__':
     elif args.background_calibration:
     
         sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_BgCalib.zip')
+            filename='../data/detailed_model/StimOnBg_BgCalib.zip')
 
         params['ISI'] = 1000
         params['nCluster'] = [30,60]
@@ -229,7 +229,7 @@ if __name__=='__main__':
         # run the simulation with parameter variations
 
         sim = Parallel(\
-            filename='../../data/detailed_model/StimOnBg_sim%s_%s.zip' % (args.suffix,
+            filename='../data/detailed_model/StimOnBg_sim%s_%s.zip' % (args.suffix,
                                                                           args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch))

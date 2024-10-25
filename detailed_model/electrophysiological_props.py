@@ -9,7 +9,7 @@ import numpy as np
 from cell_template import *
 
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 

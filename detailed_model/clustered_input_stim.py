@@ -1,7 +1,7 @@
 from parallel import Parallel
 
 import sys
-sys.path.append('../..')
+sys.path.append('../')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
@@ -331,7 +331,7 @@ if __name__=='__main__':
     else:
 
         sim = Parallel(\
-            filename='../../data/detailed_model/clusterStim_sim%s_%s.zip' % (args.suffix, args.cellType))
+            filename='../data/detailed_model/clusterStim_sim%s_%s.zip' % (args.suffix, args.cellType))
 
         grid = dict(iBranch=np.arange(args.nBranch),
                     iDistance=range(2),

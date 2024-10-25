@@ -7,7 +7,7 @@ import numpy as np
 h.load_file("stdlib.hoc")
 h.load_file("import3d.hoc")
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 from Utils.markdown_tables import read_table
 
 
@@ -302,7 +302,6 @@ if __name__=='__main__':
     cell = Cell(ID=ID, with_axon=False)
     print(cell.compartments['axon'])
 
-    """
     ic = h.IClamp(cell.soma[0](0.5))
     ic.amp = 0. 
     ic.dur =  1e9 * ms
@@ -331,5 +330,4 @@ if __name__=='__main__':
     plt.figure(figsize=(9,3))
     plt.plot(np.arange(len(Vm))*dt, np.array(Vm))
     plt.show()
-    """
 

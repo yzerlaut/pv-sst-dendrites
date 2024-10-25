@@ -26,12 +26,12 @@
 
 ## B) Simplified Model of Dendritic Integration (Figure 1)
 
-#### B.1) Impedance Profile Characterization [(-Notebook-)](./biophysical_modelling/reduced_model/Impedance-BRT.ipynb)
+#### B.1) Impedance Profile Characterization [(-Notebook-)](./reduced_model/Impedance-BRT.ipynb)
 
 - morphology drawing 
 - input and transfer impedance characterization
 
-#### B.2) Analysis of Synaptic Integration [(-Notebook-)](./biophysical_modelling/reduced_model/Multi-Input-Integration.ipynb)
+#### B.2) Analysis of Synaptic Integration [(-Notebook-)](./reduced_model/Multi-Input-Integration.ipynb)
 
 - performs multi-input integration at different locations
 - compares with linear predictions
@@ -40,27 +40,27 @@
 
 /!\ Need to compile the NMODL mechanisms for NEURON with `nrnivmodl mechanisms`.
 
-#### C.1) Morphologies with Dendritic Branches [(-Notebook-)](./biophysical_modelling/detailed_model/Find-Single-Dendritic-Branches.ipynb)
+#### C.1) Morphologies with Dendritic Branches [(-Notebook-)](./detailed_model/Find-Single-Dendritic-Branches.ipynb)
 
 - show the different dendritic branches in the two models
 
-#### C.2) Electrophysiological Properties [(-Notebook-)](./biophysical_modelling/detailed_model/Electrophysiological-Properties.ipynb)
+#### C.2) Electrophysiological Properties [(-Notebook-)](./detailed_model/Electrophysiological-Properties.ipynb)
  
 - compute the input resistance and spiking responses (rheobase)
 - compute the transfer resistance along the branch for each dendritic branch
 
-#### C.3) Integration of Proximal and Distal Input [(-Notebook-)](./biophysical_modelling/detailed_model/Clustered-Input.ipynb)
+#### C.3) Integration of Proximal and Distal Input [(-Notebook-)](./detailed_model/Clustered-Input.ipynb)
 
 - compute the response to stimulation in either proximal or distal segments
 - compare with linear predictions
 
-#### C.4) Input-Output curves with Background Activity [(-Notebook-)](./biophysical_modelling/detailed_model/Stim-on-Background.ipynb)
+#### C.4) Input-Output curves with Background Activity [(-Notebook-)](./detailed_model/Stim-on-Background.ipynb)
 
 - simulate backgrounds excitatory and inhibitory activity
 - adds a stimulus input of increasing strength
 - record stimulus-evoked spiking activity
 
-#### C.5) Firing Dynamics following a Stoachastic Process Stimulation [(-Notebook-)](./biophysical_modelling/detailed_model/StochProc-input.ipynb)
+#### C.5) Firing Dynamics following a Stochastic Process Stimulation [(-Notebook-)](./detailed_model/StochProc-input.ipynb)
 
 - simulate excitatory and inhibitory activity driven by an Ornstein-Uhlenbeck process
 - do multiple runs to compute population averages
