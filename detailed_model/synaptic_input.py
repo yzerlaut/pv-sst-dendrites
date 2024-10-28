@@ -28,7 +28,7 @@ def PoissonSpikeTrain(freq,
 def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
                        boost_AMPA_for_SST_noNMDA=True,
-                       EI_ratio=20./100.):
+                       Inh_fraction=20./100.):
 
     AMPAS, NMDAS, GABAS = [], [], []
     ampaNETCONS, nmdaNETCONS, gabaNETCONS = [], [], []
@@ -36,7 +36,7 @@ def add_synaptic_input(cell, synapses,
 
     excitatory = np.random.choice([True, False],
                                   len(synapses),
-                                  p=[1.-EI_ratio, EI_ratio])
+                                  p=[1.-Inh_fraction, Inh_fraction])
 
     for i, syn in enumerate(synapses):
 
