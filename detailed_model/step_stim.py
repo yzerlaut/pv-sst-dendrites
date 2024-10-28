@@ -31,7 +31,7 @@ def run_sim(cellType='Basket',
     from cell_template import Cell, h, np
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain
 
-    tstop = 3*interstim+step1Width+step2Width
+    tstop = 4*interstim+2*step1Width+step2Width
 
     ######################################################
     ##   simulation preparation  #########################
@@ -73,7 +73,10 @@ def run_sim(cellType='Basket',
     cond = (t>interstim) & (t<(interstim+step1Width))
     Stim[cond] = step1Amp
     # +step 2
-    cond = (t>2*interstim+step1Width) & (t<(2*interstim+step1Width+step2Width))
+    cond = (t>2*interstim+step1Width) & (t<(2*interstim+2*step1Width))
+    Stim[cond] = step2Amp
+    # +step 3
+    cond = (t>3*interstim+2*step1Width) & (t<(3*interstim+2*step1Width+step2Width))
     Stim[cond] = step2Amp
 
     # -- background activity 
