@@ -137,7 +137,7 @@ def proba_sim(\
     for i in range(len(t)-1):
         p[i+1] = p[i] + dt*( (P0-p[i])/tauP )
         if i in events:
-            p[i+1] += dp*(P1-p[i])
+            p[i+1] += dP*(P1-p[i])
 
     ps = np.ones(len(events)+1)*P0
     last_spike, last_p = -np.inf, P0
@@ -148,7 +148,7 @@ def proba_sim(\
         # -- Draw the Random Number here and test with new_p !! -- #
         ps[i] = new_p # we store it       
         # now update after event
-        new_p += dp*(P1-new_p)
+        new_p += dP*(P1-new_p)
         # increment variables
         last_spike = e
         last_p = new_p
@@ -269,6 +269,7 @@ for model in SIMS['models']:
 # # Model calibration: fitting parameters
 
 # %%
+# TO DO
 pass
 
 # %% [markdown]
