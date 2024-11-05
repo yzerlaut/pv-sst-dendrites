@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -25,17 +25,16 @@
 # We use a very simplified kinetic model where the release probability $p$ follows a first order dynamics given by:
 #
 # \begin{equation}
-# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \Delta p \cdot \big( p_1 - p(t) \big) \cdot \delta(t-t_{spike})
+# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \Delta p \cdot \big( p_\infty - p(t) \big) \cdot \delta(t-t_{spike})
 # \end{equation}
 #
 # where:
 # - $p_0$ is the probability at zero frequency stimulation (infinitely spaced events)
-# - $p_1$ is the probability at infinite frequency stimulation (null spaced events)
-# - $\Delta p$ is the probability increment
-#       - positive for facilitation
-#       - negative for depression
-#       - N.B. with contraint: $| \Delta p| \leq |p_1 - p_0| $
+# - $p_\infty$ is the probability at infinite frequency stimulation (null spaced events)
+# - $\Delta p$ is the probability increment --strictly positive -- with contraint: $ \Delta p \leq |p_\infty - p_0| $
 # - $\tau_p$ is the recovery time constant to go back to $p_0$ level
+#
+# *Synaptic depression* corresponds to the setting: $p_0 > t_\infty$. *Synaptic facilitation* corresponds to the setting: $p_0 < t_\infty$.
 #
 # ### - 2) A stochastic release scheme with multi-release
 #
@@ -120,46 +119,48 @@ SIMS = {\
 # # Release Probability Dynamics
 
 # %%
-def proba_sim(\
+def proba_sim(events,\
+              output='time-course', # or "events"
             dt=1e-4, # seconds
             tstop = 2, # seconds
             P0 = 0.1, # proba at 0-frequency
             P1 = 0.5, # proba at oo-frequency
             dP = 0.8, # proba increment
             tauP = 0.4, # seconds
-            Nmax = 1.,
-            interstims=[.1 for i in range(4)]+[1.]):
+            Nmax = None): # useless in this function
+
+    if output=='time-course':
+        t = np.arange(int(tstop/dt))*dt
+        p = 0*t+P0
     
-    t = np.arange(int(tstop/dt))*dt
-    p = 0*t+P0
+        # computing the proba time-course
+        iEvents = np.array(events/dt, dtype=int)
+        for i in range(len(t)-1):
+            p[i+1] = p[i] + dt*( (P0-p[i])/tauP )
+            if i in iEvents:
+                p[i+1] += dP*(P1-p[i])
+        return t, p
 
-    events = np.cumsum(np.array(interstims)/dt, dtype=int)
-    for i in range(len(t)-1):
-        p[i+1] = p[i] + dt*( (P0-p[i])/tauP )
-        if i in events:
-            p[i+1] += dP*(P1-p[i])
+    else:
+        # event-based sim
+        P = np.ones(len(events))*P0
+        last_spike, last_p = -np.inf, P0
+        for i, e in enumerate(events):
+            Dt = e-last_spike
+            new_p = P0+(last_p-P0)*np.exp(-Dt/tauP)
+            P[i] = new_p # we store it       
+            # now update after event
+            new_p += dP*(P1-new_p)
+            # increment variables
+            last_spike = e
+            last_p = new_p
+        return P
 
-    ps = np.ones(len(events)+1)*P0
-    last_spike, last_p = -np.inf, P0
-    for i, e in enumerate(events*dt):
-        Dt = e-last_spike
-        new_p = P0+(last_p-P0)*np.exp(-Dt/tauP)
-        #print()
-        # -- Draw the Random Number here and test with new_p !! -- #
-        ps[i] = new_p # we store it       
-        # now update after event
-        new_p += dP*(P1-new_p)
-        # increment variables
-        last_spike = e
-        last_p = new_p
-        
-    return (t, p), (events*dt, ps[:-1])
-
+events = np.concatenate([0.1+0.1*np.arange(5), [1.4]])
 fig, AX = pt.figure(axes=(3,1), figsize=(1.3,1))
 for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
-    #pt.plot(*proba_sim(p0=p0, p1=p1, interstims=np.ones(100)*1e-2), ax=ax)
-    pt.scatter(*proba_sim(**SIMS[model])[1], ms=8, color='k', ax=ax)
-    pt.plot(*proba_sim(**SIMS[model])[0], lw=0.3, ax=ax)
+    pt.scatter(events, proba_sim(events, output='events', **SIMS[model]), ms=8, color='k', ax=ax)
+    pt.plot(*proba_sim(events, output='time-course', **SIMS[model]), lw=0.3, ax=ax)
     pt.set_plot(ax, title=model, ylim=[0,1], yticks=[0,0.5,1],ylabel='rel. proba', xlabel='time')
     xlim = ax.get_xlim()
     for p, l in zip([SIMS[model]['P0'], SIMS[model]['P1']], ['$p_0$', '$p_\infty$']):
@@ -174,29 +175,50 @@ for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
 
 # %%
 def get_release_events(presynaptic_spikes,
-                       P0=0.5, P1=0.5, dP=0.1, tauP=0.2):
+                       P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
+                       dt_multirelease=1e-3,
+                       verbose=False):
 
     # initialisation
-    last_spike_time, last_p = -np.inf, P0 # adding a pre-spike far in the past
-    P = np.zeros(len(presynaptic_spikes)) # probas at events
+    last_spike_time = -np.inf # adding a pre-spike far in the past
+    last_p = P0 # value for a past with null-stimulation
+    P = np.ones(len(presynaptic_spikes))*P0 # probas at events -> to be modified
 
+    # build the time-varing release probability
     for i, new_spike_time in enumerate(presynaptic_spikes):
         Dt = new_spike_time-last_spike_time
         new_p =  P0+(last_p-P0)*np.exp(-Dt/tauP)
         P[i] = new_p
-        # -- Draw the Random Number here and test with new_p !! -- #
         # now update after event
         new_p += dP*(P1-new_p)
         # increment variables
         last_spike_time = new_spike_time
         last_p = new_p
 
-    return presynaptic_spikes[\
-                np.random.uniform(0, 1, size=len(P))<P]
+    release_events =[]
+    # stochastic scheme to release (multi-vesicular) events from pre-events
+    # loop over pre-events:
+    for e, p, r in zip(presynaptic_spikes, P,
+                       np.random.uniform(0,1,size=len(P))):
+        if verbose:
+            print('@ %.1fs, p=%.2f, random=%.2f' % (e, p, r))
+        n = Nmax
+        while n>0:
+            if verbose:
+                print(' - %i event test' %n, (np.sign(Nmax-n) * (p**(n+1)) ) , r , (p**n), ( (np.sign(Nmax-n) * (p**(n+1)) ) <= r ) & ( r < (p**n) ) )
+            if ( (np.sign(Nmax-n) * (p**(n+1)) ) <= r ) & ( r < (p**n) ): 
+                if verbose:
+                    print('   -> release :', n, 'event')
+                # release of n vesicles
+                for i in range(n):
+                    release_events.append(e+i*dt_multirelease)
+            n-=1
+            
+    return np.array(release_events)
 
 
 def rough_release_dynamics(events,
-            tstop=2., t0=0, dt=1e-3, tau=0.03, Q=1):
+            tstop=2., t0=0, dt=5e-4, tau=0.02, Q=1):
     
     t = np.arange(int(tstop/dt))*dt+t0
     rel = 0*t
@@ -212,13 +234,24 @@ def rough_release_dynamics(events,
 
 
 # %%
+np.random.seed(6)
+for i in range(1):
+    releaseEvents = get_release_events(np.arange(6)*0.1, 
+                                       **{'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':3},
+                                       verbose=True)
+    print('')
+    print('==> release events :', releaseEvents)
+    print('')
+
+
+# %%
 def sim_release(release_proba_params={},
                 nTrials = 10,
                 freq = 10, # Hz 
                 nStim = 7,
                 t0 = 0.1,
                 tstop = 1.2,
-                dt = 1e-3,
+                dt = 5e-4,
                 seed=0):
 
     np.random.seed(seed)
@@ -230,12 +263,15 @@ def sim_release(release_proba_params={},
         get_release_events(pre, **release_proba_params) for pre in pre_Events]
     
     fig, AX = pt.figure(axes=(4,1), figsize=(1.2,1.1), wspace=0.6)
+    # analytical prediction:
+    AX[3].plot(pre_Events[0]-t0, analytical_estimate(pre_Events[0], release_proba_params=release_proba_params), 'ro:', lw=0.3, ms=2)
+    # simulations
     Rs, t = [], -t0+np.arange(1.2*tstop/dt)*dt
     for i in range(nTrials):
-        AX[0].scatter(-t0+pre_Events[i], i*np.ones(len(pre_Events[i])), color='lightgray', s=1)
-        AX[1].scatter(-t0+release_Events[i], i*np.ones(len(release_Events[i])), color='k', s=1)
+        AX[0].scatter(-t0+pre_Events[i], i*np.ones(len(pre_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
+        AX[1].scatter(-t0+release_Events[i], i*np.ones(len(release_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
         Rs.append(rough_release_dynamics(release_Events[i], tstop=1.2*tstop, dt=dt))
-        AX[2].plot(t, i+Rs[-1], color='k', lw=0.5)
+        AX[2].plot(t, i+Rs[-1], color='k', lw=0.5, alpha=0.7)
     # we add some more
     for i in range(20*nTrials):
         release_Events = get_release_events(pre_Events[i%nTrials], **release_proba_params)
@@ -245,23 +281,34 @@ def sim_release(release_proba_params={},
         pt.set_plot(ax, yticks=[], ylabel='trials', xlabel='time (s)', title=title, 
                     ylim=[-0.5,nTrials+.5], xlim=[-t0,1.2*tstop-t0])
 
+    AX[2].plot([t[-1],t[-1]], [-0.5,0.5], color='k', lw=2)
+    pt.annotate(AX[2], ' unitary release', (t[-1],-0.5), xycoords='data', fontsize=5, rotation=90)
+    pt.annotate(AX[3], 'analytic ', (0,1), fontsize=5, color='r', rotation=90, va='top')
     pt.plot(t, np.mean(Rs, axis=0), sy=np.std(Rs, axis=0), ax=AX[3])
     pt.set_plot(AX[3], yticks=[0,1], xlabel='time (s)', title='release average', xlim=[-t0,1.2*tstop-t0]) 
     pt.annotate(AX[3], '%i trials' % (20*nTrials), (1,1), va='top', ha='right', fontsize=6, rotation=90) 
             
     return fig
 
+def analytical_estimate(events,
+                        weight=1,
+                        release_proba_params={}):
+   Nmax = release_proba_params['Nmax']
+   P = proba_sim(events, output='events', **release_proba_params)
+   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n)) for n in range(1, Nmax+1)], axis=0)
+
 
 # %%
 SIMS = {\
-    'models':['faithfull', 'stochastic', 'depressing', 'facilitating'],
-    'faithfull':   {'P0':1.00, 'P1':0.50, 'dP':0.00, 'tauP':0.50},
-    'stochastic':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50},
-    'depressing':  {'P0':0.90, 'P1':0.20, 'dP':0.60, 'tauP':0.50},
-    'facilitating':{'P0':0.05, 'P1':0.60, 'dP':0.15, 'tauP':0.50},
+    'faithfull':   {'P0':1.00, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
+    'stochastic\nNmax=1':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
+    'stochastic\nNmax=2':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':2},
+    'stochastic\nNmax=3':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':3},
+    'depressing':  {'P0':0.90, 'P1':0.20, 'dP':0.60, 'tauP':0.50, 'Nmax':2},
+    'facilitating':{'P0':0.05, 'P1':0.60, 'dP':0.15, 'tauP':0.50, 'Nmax':2},
 }
 
-for model in SIMS['models']:
+for model in SIMS:
     fig = sim_release(release_proba_params=SIMS[model], seed=6)
     pt.annotate(fig, model, (0, 0.5))
 
