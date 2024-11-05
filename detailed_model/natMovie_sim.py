@@ -34,7 +34,7 @@ def run_sim(cellType='Basket',
     ########################################################
     # Import Natural Movie Spiking Activity
     ########################################################
-    RATES = np.load(os.path.join('..', '..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+    RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
                     allow_pickle=True).item()
     t = 1e3*(RATES['time']-RATES['time'][0]) # s to ms
     if tstop<=0.:

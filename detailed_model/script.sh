@@ -153,7 +153,7 @@ then
                             --stimFreq 1.2e-3\
                             --bgFreqInhFactor 1.00\
                             --iBranch 1\
-                            --tstop 0.\
+                            --tstop 10.\
                             --dt 0.05\
                             --nSpikeSeed 16
     # Martinotti Cell
@@ -161,7 +161,7 @@ then
                              -c Martinotti\
                              --with_NMDA --with_presynaptic_spikes\
                              --stimFreq 5e-5\
-                             --tstop 0.\
+                             --tstop 10.\
                              --dt 0.05\
                              --bgFreqInhFactor 1\
                              --iBranch 1\
