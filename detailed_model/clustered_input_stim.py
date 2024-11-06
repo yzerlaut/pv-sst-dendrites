@@ -17,7 +17,7 @@ def find_clustered_input(cell,
                          distance=100,
                          from_uniform=False,
                          # synapse sparsening
-                         synSubsamplingFraction=0.05,
+                         sparsening=5.,
                          synSubsamplingSeed=3,
                          ax=None, syn_color='r',
                          with_plot=False):
@@ -32,9 +32,9 @@ def find_clustered_input(cell,
         full_synapses = cell.set_of_synapses[iBranch]                      
 
     # subsampling
-    if synSubsamplingFraction<1:
+    if sparsening<100:
         np.random.seed(synSubsamplingSeed)
-        Nsubsampling = int(len(full_synapses)*synSubsamplingFraction)
+        Nsubsampling = int(len(full_synapses)*sparsening/100.)
         N = int(len(full_synapses)/Nsubsampling)
         # synapses = np.random.choice(full_synapses, Nsubsampling)
         synapses = np.concatenate([full_synapses[::N], [full_synapses[-1]]])
@@ -92,7 +92,7 @@ def find_clustered_input(cell,
         pt.set_plot(inset, xticks=[0,200], 
                     yscale='log', yticks=[1,10], yticks_labels=['1', '10'],
                     ylabel='syn. count', xlabel='dist ($\mu$m)', fontsize=7)
-        inset.set_title('%i%% subset' % (100*synSubsamplingFraction), 
+        inset.set_title('%i%% subset' % sparsening, 
                         color='tab:grey', fontsize=6)
         pt.annotate(ax, 'n=%i' % len(cluster_synapses), (-0.2,0.2), 
                     fontsize=7, color=syn_color)
@@ -124,8 +124,9 @@ def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
     te = np.arange(len(real))*dt
     linear = np.ones(np.sum(cond))*real[0]
     for i, epsp in enumerate(sEPSPS):
-        condE = (te>i*interspike)
-        linear[condE] += epsp[:np.sum(condE)]
+        # condE = (te>i*interspike)
+        # linear[condE] += epsp[:np.sum(condE)]
+        linear += epsp
     return real, linear
 
 def efficacy(real, linear,
@@ -133,10 +134,13 @@ def efficacy(real, linear,
 
     import numpy as np
 
-    if based_on=='peak':
-        return 100.*np.max(real-real[0])/np.max(linear-linear[0])
-    elif based_on=='integral':
-        return 100.*np.sum(real-real[0])/np.sum(linear-linear[0])
+    if np.std(linear)>0:
+        if based_on=='peak':
+            return 100.*np.max(real-real[0])/np.max(linear-linear[0])
+        elif based_on=='integral':
+            return 100.*np.sum(real-real[0])/np.sum(linear-linear[0])
+    else:
+        return 0
 
 def run_sim(cellType='Basket', 
             iBranch=0,
@@ -150,12 +154,15 @@ def run_sim(cellType='Basket',
             nCluster=None,
             distance=100,
             # synapse subsampling
-            synSubsamplingFraction=0.03,
+            sparsening=3.,
             synSubsamplingSeed=2,
             # biophysical props
             with_NMDA=False,
             # sim props
             interspike=2,
+            p_release=1.,
+            Nmax_release=1,
+            releaseSeed = 0,
             t0=200,
             ISI=200,
             filename='single_sim.npy',
@@ -187,7 +194,7 @@ def run_sim(cellType='Basket',
     synapses = find_clustered_input(cell, 
                                     iBranch,
                                     from_uniform=from_uniform,
-                                    synSubsamplingFraction=synSubsamplingFraction,
+                                    sparsening=sparsening,
                                     synSubsamplingSeed=synSubsamplingSeed,
                                     distance_intervals=distance_intervals,
                                     iDistance=iDistance,
@@ -195,24 +202,31 @@ def run_sim(cellType='Basket',
                                     nCluster=nCluster)
 
     # prepare presynaptic spike trains
-    # 1) single events
-    TRAINS, tstop = [], t0
+    # 1) draw random numbers for each synapse and draw vesicle release
+    np.random.seed(releaseSeed)
+    P = np.ones(len(synapses))*p_release
+    R = np.random.uniform(0, 1, size=len(synapses))
+    N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax_release+1)], axis=0)-1
+    # 2) build sequence single events
+    TRAINS, tstop = [[] for s in synapses], t0
     for i, syn in enumerate(synapses):
-        TRAINS.append([tstop])
+        for e in range(int(N[i])):
+            TRAINS[i] += [tstop+e*interspike]
         tstop += ISI
-    # 2) grouped events
+    # 3) build final grouped events
     for i, syn in enumerate(synapses):
-        TRAINS[i].append(tstop+i*interspike)
+        for e in range(int(N[i])):
+            TRAINS[i] += [tstop+e*interspike]
     tstop += ISI
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell,\
-                                            synapses, 
-                                            EI_ratio=0,
-                                            boost_AMPA_for_SST_noNMDA=False,
-                                            with_NMDA=with_NMDA)
+                                synapses, 
+                                Inh_fraction=0,
+                                boost_AMPA_for_SST_noNMDA=False,
+                                with_NMDA=with_NMDA)
 
     # -- link events to synapses
     for i, syn in enumerate(synapses):
@@ -271,6 +285,8 @@ def run_sim(cellType='Basket',
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
               'dt': dt, 't0':t0, 'ISI':ISI, 'interspike':interspike,
+              'sparsening':sparsening,
+              'p_release':p_release, 'Nmax_release':Nmax_release,
               'distance_intervals':distance_intervals,
               'synapses':synapses,
               'tstop':tstop}
@@ -297,13 +313,21 @@ if __name__=='__main__':
     # cluster props
     parser.add_argument("--Proximal", type=float, nargs=2, default=(20,60))
     parser.add_argument("--Distal", type=float, nargs=2, default=(160,200))
-    parser.add_argument("--sparsening", help="in percent", type=float, 
+    parser.add_argument("--sparsening", help="in percent", type=int, 
                         default=[5], nargs='*')
+    parser.add_argument("--ISI", type=float, default=200.)
+    parser.add_argument("--t0", type=float, default=200.)
     parser.add_argument("--interspike", type=float, default=0.5)
+    parser.add_argument("--p_release", type=float, default=1.0)
+    parser.add_argument("--Nmax_release", type=int, default=1)
+    parser.add_argument("--releaseSeed", type=int, default=1)
+    parser.add_argument("--nReleaseSeed", type=int, default=8)
 
     # Branch number
-    parser.add_argument("--iBranch", type=int, default=0)
+    parser.add_argument("--iBranch", type=int, default=1)
     parser.add_argument("--nBranch", type=int, default=6)
+    # distance segment 0/1
+    parser.add_argument("--iDistance", type=int, default=1)
     # Testing Conditions
     parser.add_argument("--test_uniform", action="store_true")
     parser.add_argument("--test_NMDA", action="store_true")
@@ -313,20 +337,39 @@ if __name__=='__main__':
     parser.add_argument('-fmo', "--fix_missing_only", help="in scan", action="store_true")
 
     parser.add_argument("-t", "--test", help="test func", action="store_true")
+    parser.add_argument("-ts", "--test_stochastic", action="store_true")
     args = parser.parse_args()
 
     distance_intervals = [args.Proximal, args.Distal]
 
     params = dict(cellType=args.cellType,
                   iBranch=args.iBranch,
-                  iDistance=1,
-                  synSubsamplingFraction=args.sparsening[0]/100.,
+                  iDistance=args.iDistance,
+                  sparsening=args.sparsening[0],
+                  ISI=args.ISI,
+                  t0=args.t0,
                   interspike=args.interspike,
+                  p_release=args.p_release,
+                  Nmax_release=args.Nmax_release,
+                  releaseSeed=args.releaseSeed,
                   distance_intervals=distance_intervals)
 
     if args.test:
 
         run_sim(**params)
+
+    elif args.test_stochastic:
+
+        sim = Parallel(\
+            filename='../data/detailed_model/clusterStim_simStochastic%s.zip' % args.suffix)
+
+        grid = dict(releaseSeed=np.arange(args.nReleaseSeed))
+        sim.build(grid)
+
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)
 
     else:
 
@@ -335,7 +378,7 @@ if __name__=='__main__':
 
         grid = dict(iBranch=np.arange(args.nBranch),
                     iDistance=range(2),
-                    synSubsamplingFraction=[s/100. for s in args.sparsening])
+                    sparsening=args.sparsening)
 
         if args.test_uniform:
             grid = dict(from_uniform=[False, True], **grid)

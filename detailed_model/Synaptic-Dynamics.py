@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Modelling the Dynamics of Glutamatergic Synapses 
 #
-# ## --> Short-Term Plasticity + Multi-Vesicular Release
+# ## --> Short-Term Plasticity + Stochastic Vesicular Release
 #
 # We derive a very simplified model of synaptic dynamics that can capture synaptic depression and synaptic facilitation with stochastic multi-vesicular release.
 #
@@ -25,22 +25,22 @@
 # We use a very simplified kinetic model where the release probability $p$ follows a first order dynamics given by:
 #
 # \begin{equation}
-# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \Delta p \cdot \big( p_\infty - p(t) \big) \cdot \delta(t-t_{spike})
+# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \delta p \cdot \big( p_\infty - p(t) \big) \cdot \delta(t-t_{spike})
 # \end{equation}
 #
 # where:
 # - $p_0$ is the probability at zero frequency stimulation (infinitely spaced events)
 # - $p_\infty$ is the probability at infinite frequency stimulation (null spaced events)
-# - $\Delta p$ is the probability increment --strictly positive -- with contraint: $ \Delta p \leq |p_\infty - p_0| $
+# - $\delta p$ is a probability increment factor --strictly positive -- with constraint: $ \delta p \leq |p_\infty - p_0| $
 # - $\tau_p$ is the recovery time constant to go back to $p_0$ level
 #
 # *Synaptic depression* corresponds to the setting: $p_0 > t_\infty$. *Synaptic facilitation* corresponds to the setting: $p_0 < t_\infty$.
 #
 # ### - 2) A stochastic release scheme with multi-release
 #
-# For a spike event at time $t$, we draw a random number $r$ *from a uniform distribution between 0 and 1* and we release $N$ single-vesicles if: 
+# For a spike event at time $t$, we draw a random number $r$ *from a uniform distribution between 0 and 1* and we release $N$ single-vesicles (up to $N_{max}$) if: 
 # $$
-# \mathcal{H}(N_{max}-N) \cdot \big({p(t)}\big)^{N} < r \leq \big({p(t)}\big)^{N-1} \qquad \qquad  \forall N \in [0, N_{max}]
+# \mathcal{H}(N_{max}-N) \cdot \big({p(t)}\big)^{N} < r \leq \big({p(t)}\big)^{N-1} \qquad \qquad  \forall N \in [1, N_{max}]
 # $$
 #
 # where $\mathcal{H}$ is the right-continuous Heaviside function ( i.e. $\mathcal{H}(0)=1$ and $\mathcal{H}(x<0)=0$ ).
@@ -58,36 +58,49 @@
 # - double-vesicle release for $0.001  \leq r < 0.01$
 # - triple-vesicle release for $0.0001  \leq r < 0.001$
 #
+# ## Analytical prediction
+#
+# For a set of event $ \large\{ t_i \large\} $, the release probability at $p_{(i)}$ at $t=t_i$ is:
+#
+# $$
+# p_{(i)} = p_0 + \Big( p_{(i-1)} + \delta p \cdot \big( p_\infty -p_{(i-1)} \big) - p_0 \Big) \cdot e^{ - \frac{ t_{i} - t_{i-1}} { \tau_p } }
+# $$
+#
+# Therefore the average release $R$ at $t_i$ for a maximum vesicle release of $N_{max}$ with vesicle weight $w$ is:
+#
+# $$
+# R(i) = \sum_{N \in [1,N_{max}]} N \cdot w \cdot \big( ( p_{(i)} )^N - \mathcal{H}(N_{max}-N) * ( p_{(i)} )^{N+1} \big) 
+# $$
+#
 #
 # ## Implementation in an event-based simulation scheme
 #
 #
 # ```
 #
-# def get_release_events(presynaptic_spikes,
-#                        P0=0.5, P1=0.5, dP=0.1, tauP=0.2):
+# def get_release_events(pre_spikes,
+#                        P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
+#                        dt_multirelease=1e-3, # each vesicle release is shifted by dt
+#                        verbose=False):
 #
-#     # initialisation
-#     last_spike_time, last_p = -np.inf, p0 # adding a pre-spike far in the past
-#     P = np.zeros(len(presynaptic_spikes)) # probas at events
+#     # build the time-varing release probability:
+#     P = np.ones(len(pre_spikes))*P0 # initialized
+#     for i in range(len(pre_spikes)-1):
+#         P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
 #
-#     for i, new_spike_time in enumerate(presynaptic_spikes):
-#         Dt = new_spike_time-last_spike_time
-#         new_p =  P0+(last_p-P0)*np.exp(-Dt/tauP)
-#         P[i] = new_p
-#         # -- Draw the Random Number here and test with new_p !! -- #
-#         # now update after event
-#         new_p += dP*(P1-new_p)
-#         # increment variables
-#         last_spike_time = new_spike_time
-#         last_p = new_p
+#     # draw random numbers:
+#     R = np.random.uniform(0, 1, size=len(P))
 #
-#     return presynaptic_spikes[\
-#                 np.random.uniform(0, 1, size=len(P))<P]
+#     # find number of vesicles released:
+#     N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax+1)], axis=0)-1
 #
-# pre_spikes_array = np.arange(10)*0.1 #
-# get_release_events(pre_spikes_array)
-#
+#     # build release events:
+#     release_events = []
+#     for e, n in zip(pre_spikes, N):
+#         for i in range(n):
+#             release_events.append(e+i*dt_multirelease)
+#           
+#     return np.array(release_events)
 #
 # ```
 
@@ -121,13 +134,13 @@ SIMS = {\
 # %%
 def proba_sim(events,\
               output='time-course', # or "events"
-            dt=1e-4, # seconds
-            tstop = 2, # seconds
-            P0 = 0.1, # proba at 0-frequency
-            P1 = 0.5, # proba at oo-frequency
-            dP = 0.8, # proba increment
-            tauP = 0.4, # seconds
-            Nmax = None): # useless in this function
+              dt=1e-4, # seconds
+              tstop = 2, # seconds
+              P0 = 0.1, # proba at 0-frequency
+              P1 = 0.5, # proba at oo-frequency
+              dP = 0.8, # proba increment
+              tauP = 0.4, # seconds
+              Nmax = None): # useless in this function
 
     if output=='time-course':
         t = np.arange(int(tstop/dt))*dt
@@ -143,17 +156,9 @@ def proba_sim(events,\
 
     else:
         # event-based sim
-        P = np.ones(len(events))*P0
-        last_spike, last_p = -np.inf, P0
-        for i, e in enumerate(events):
-            Dt = e-last_spike
-            new_p = P0+(last_p-P0)*np.exp(-Dt/tauP)
-            P[i] = new_p # we store it       
-            # now update after event
-            new_p += dP*(P1-new_p)
-            # increment variables
-            last_spike = e
-            last_p = new_p
+        P = np.ones(len(events))*P0 # init to p0
+        for i in range(len(events)-1):
+            P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(events[i+1]-events[i])/tauP )
         return P
 
 events = np.concatenate([0.1+0.1*np.arange(5), [1.4]])
@@ -163,9 +168,9 @@ for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
     pt.plot(*proba_sim(events, output='time-course', **SIMS[model]), lw=0.3, ax=ax)
     pt.set_plot(ax, title=model, ylim=[0,1], yticks=[0,0.5,1],ylabel='rel. proba', xlabel='time')
     xlim = ax.get_xlim()
-    for p, l in zip([SIMS[model]['P0'], SIMS[model]['P1']], ['$p_0$', '$p_\infty$']):
+    for p, l, va in zip([SIMS[model]['P0'], SIMS[model]['P1']], ['$p_0$', '$p_\infty$'], ['bottom', 'top']):
         ax.plot(xlim, p*np.ones(2), 'k:', lw=0.5)
-        ax.annotate(l, (xlim[1], p), va='center')
+        ax.annotate(l, (xlim[1], p), va=va)
     AX[1].annotate('$\\delta_p$', (1.15,0.45))
     AX[1].annotate('$\\tau_p$', (1.6,0.4))
 
@@ -174,46 +179,31 @@ for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
 # # Impact on Event Release
 
 # %%
-def get_release_events(presynaptic_spikes,
+def get_release_events(pre_spikes,
                        P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
-                       dt_multirelease=1e-3,
+                       dt_multirelease=1e-3, # the vesicle release is slightly shifted in time (for the brian2 simulator)
                        verbose=False):
 
-    # initialisation
-    last_spike_time = -np.inf # adding a pre-spike far in the past
-    last_p = P0 # value for a past with null-stimulation
-    P = np.ones(len(presynaptic_spikes))*P0 # probas at events -> to be modified
+    # build the time-varing release probability:
+    P = np.ones(len(pre_spikes))*P0 # initialized
+    for i in range(len(pre_spikes)-1):
+        P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
 
-    # build the time-varing release probability
-    for i, new_spike_time in enumerate(presynaptic_spikes):
-        Dt = new_spike_time-last_spike_time
-        new_p =  P0+(last_p-P0)*np.exp(-Dt/tauP)
-        P[i] = new_p
-        # now update after event
-        new_p += dP*(P1-new_p)
-        # increment variables
-        last_spike_time = new_spike_time
-        last_p = new_p
+    # draw random numbers:
+    R = np.random.uniform(0, 1, size=len(P))
+    # find number of vesicles released:
+    N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax+1)], axis=0)-1
+    # build release events:
+    release_events = []
+    for e, n in zip(pre_spikes, N):
+        for i in range(n):
+            release_events.append(e+i*dt_multirelease)
 
-    release_events =[]
-    # stochastic scheme to release (multi-vesicular) events from pre-events
-    # loop over pre-events:
-    for e, p, r in zip(presynaptic_spikes, P,
-                       np.random.uniform(0,1,size=len(P))):
-        if verbose:
+    if verbose:
+        for e, p, r, n in zip(pre_spikes, P, R, N):
             print('@ %.1fs, p=%.2f, random=%.2f' % (e, p, r))
-        n = Nmax
-        while n>0:
-            if verbose:
-                print(' - %i event test' %n, (np.sign(Nmax-n) * (p**(n+1)) ) , r , (p**n), ( (np.sign(Nmax-n) * (p**(n+1)) ) <= r ) & ( r < (p**n) ) )
-            if ( (np.sign(Nmax-n) * (p**(n+1)) ) <= r ) & ( r < (p**n) ): 
-                if verbose:
-                    print('   -> release :', n, 'event')
-                # release of n vesicles
-                for i in range(n):
-                    release_events.append(e+i*dt_multirelease)
-            n-=1
-            
+            print('   -> release :', n, 'event(s)  -- r < p^(N=%i) = %.2f' % (n, p**n))
+           
     return np.array(release_events)
 
 
@@ -236,7 +226,7 @@ def rough_release_dynamics(events,
 # %%
 np.random.seed(6)
 for i in range(1):
-    releaseEvents = get_release_events(np.arange(6)*0.1, 
+    releaseEvents = get_release_events(np.arange(10)*0.1, 
                                        **{'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':3},
                                        verbose=True)
     print('')
@@ -295,7 +285,8 @@ def analytical_estimate(events,
                         release_proba_params={}):
    Nmax = release_proba_params['Nmax']
    P = proba_sim(events, output='events', **release_proba_params)
-   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n)) for n in range(1, Nmax+1)], axis=0)
+   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n))\n
+                          for n in range(1, Nmax+1)], axis=0)
 
 
 # %%
@@ -514,6 +505,8 @@ rate = 0.5*(\
         np.mean(RATES['PV_negUnits'], axis=0)+\
         np.mean(RATES['SST_negUnits'], axis=0))
 
+
+# %%
 def sim_release(release_proba_params={},
                 nSyns = 500,
                 seed=1):
@@ -567,8 +560,5 @@ for i, model in enumerate(SIMS['models']):
     pt.annotate(ax, i*'\n'+model, (1,1), color=COLORS[i],  va='top')
 
 pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.', yticks=[0.5,1])
-
-# %%
-0.5**2
 
 # %%
