@@ -103,7 +103,7 @@ def find_clustered_input(cell,
         return cluster_synapses
 
 
-def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
+def build_linear_pred(Vm, dt, t0, ISI, nCluster):
     """
     build the linear prediction from the full stim protocol
     """
@@ -124,8 +124,6 @@ def build_linear_pred(Vm, dt, t0, ISI, interspike, nCluster):
     te = np.arange(len(real))*dt
     linear = np.ones(np.sum(cond))*real[0]
     for i, epsp in enumerate(sEPSPS):
-        # condE = (te>i*interspike)
-        # linear[condE] += epsp[:np.sum(condE)]
         linear += epsp
     return real, linear
 
@@ -159,7 +157,6 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_NMDA=False,
             # sim props
-            interspike=0.5,
             p_release=1.,
             Nmax_release=1,
             releaseSeed = 0,
@@ -208,15 +205,17 @@ def run_sim(cellType='Basket',
     R = np.random.uniform(0, 1, size=len(synapses))
     N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax_release+1)], axis=0)-1
     # 2) build sequence single events
-    TRAINS, tstop = [[] for s in synapses], t0
+    TRAINS, tstop = [[] for s in range(Nmax_release*len(synapses))], t0
     for i, syn in enumerate(synapses):
-        for e in range(int(N[i])):
-            TRAINS[i] += [tstop+e*interspike]
+        if N[i]>0:
+            # if release- TRAINS[i] for single release, for double: TRAINS[i+len(synapses)]
+            TRAINS[(N[i]-1)*len(synapses)+i] += [tstop]
         tstop += ISI
     # 3) build final grouped events
     for i, syn in enumerate(synapses):
-        for e in range(int(N[i])):
-            TRAINS[i] += [tstop+e*interspike]
+        if N[i]>0:
+            # if release- TRAINS[i] for single release, for double: TRAINS[i+len(synapses)]
+            TRAINS[(N[i]-1)*len(synapses)+i] += [tstop]
     tstop += ISI
 
     # build synaptic input
@@ -224,12 +223,13 @@ def run_sim(cellType='Basket',
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell,\
                                 synapses, 
+                                Nmax_release=Nmax_release,
                                 Inh_fraction=0,
                                 boost_AMPA_for_SST_noNMDA=False,
                                 with_NMDA=with_NMDA)
 
     # -- link events to synapses
-    for i, syn in enumerate(synapses):
+    for i in range(len(TRAINS)):
 
         STIMS.append(h.Vector(TRAINS[i]))
         VECSTIMS[i].play(STIMS[-1])
@@ -263,9 +263,9 @@ def run_sim(cellType='Basket',
 
     # compute the linear prediction
     real_soma, linear_soma = build_linear_pred(np.array(Vm_soma),
-                            dt, t0, ISI, interspike, len(synapses))
+                            dt, t0, ISI, len(synapses))
     real_dend, linear_dend = build_linear_pred(np.array(Vm_dend),
-                            dt, t0, ISI, interspike, len(synapses))
+                            dt, t0, ISI, len(synapses))
 
     t = np.arange(len(real_soma))*dt
 
@@ -284,7 +284,7 @@ def run_sim(cellType='Basket',
               'linear_dend':linear_dend,
               'Vm_soma': np.array(Vm_soma),
               'Vm_dend': np.array(Vm_dend),
-              'dt': dt, 't0':t0, 'ISI':ISI, 'interspike':interspike,
+              'dt': dt, 't0':t0, 'ISI':ISI,
               'sparsening':sparsening,
               'p_release':p_release, 'Nmax_release':Nmax_release,
               'distance_intervals':distance_intervals,
@@ -317,14 +317,13 @@ if __name__=='__main__':
                         default=[5], nargs='*')
     parser.add_argument("--ISI", type=float, default=200.)
     parser.add_argument("--t0", type=float, default=200.)
-    parser.add_argument("--interspike", type=float, default=0.5)
     parser.add_argument("--p_release", type=float, default=1.0)
     parser.add_argument("--Nmax_release", type=int, default=1)
     parser.add_argument("--releaseSeed", type=int, default=1)
     parser.add_argument("--nReleaseSeed", type=int, default=8)
 
     # Branch number
-    parser.add_argument("--iBranch", type=int, default=1)
+    parser.add_argument("--iBranch", type=int, default=0)
     parser.add_argument("--nBranch", type=int, default=6)
     # distance segment 0/1
     parser.add_argument("--iDistance", type=int, default=1)
@@ -348,7 +347,6 @@ if __name__=='__main__':
                   sparsening=args.sparsening[0],
                   ISI=args.ISI,
                   t0=args.t0,
-                  interspike=args.interspike,
                   p_release=args.p_release,
                   Nmax_release=args.Nmax_release,
                   releaseSeed=args.releaseSeed,

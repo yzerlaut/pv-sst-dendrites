@@ -27,8 +27,16 @@ def PoissonSpikeTrain(freq,
 
 def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
+                       Nmax_release = 1,
                        boost_AMPA_for_SST_noNMDA=True,
                        Inh_fraction=20./100.):
+    """
+    add AMPA, NMDA and GABA synapses to a given cell
+
+    if Nmax>1
+    it adds other synapses with double (Nmax>=2), triple (Nmax>=3), ...
+        vesicular synaptic release only on AMPA and NMDA ! 
+    """
 
     AMPAS, NMDAS, GABAS = [], [], []
     ampaNETCONS, nmdaNETCONS, gabaNETCONS = [], [], []
@@ -38,59 +46,73 @@ def add_synaptic_input(cell, synapses,
                                   len(synapses),
                                   p=[1.-Inh_fraction, Inh_fraction])
 
-    for i, syn in enumerate(synapses):
+    for nVesicles in range(1, Nmax_release+1):
+        
+        for i, syn in enumerate(synapses):
 
-        np.random.seed(syn)
+            np.random.seed(syn)
 
-        VECSTIMS.append(h.VecStim())
+            VECSTIMS.append(h.VecStim())
 
-        # need to avoid x=0 and x=1, to allow ion concentrations variations in NEURON
-        x = np.clip(cell.SEGMENTS['NEURON_segment'][syn], 
-                1, cell.SEGMENTS['NEURON_section'][syn].nseg-2)\
-                        /cell.SEGMENTS['NEURON_section'][syn].nseg
+            # need to avoid x=0 and x=1, to allow ion concentrations variations in NEURON
+            x = np.clip(cell.SEGMENTS['NEURON_segment'][syn], 
+                    1, cell.SEGMENTS['NEURON_section'][syn].nseg-2)\
+                            /cell.SEGMENTS['NEURON_section'][syn].nseg
 
-        if excitatory[i]:
-            # excitatory synapses
+            if excitatory[i]:
+                # excitatory synapses
 
-            AMPAS.append(\
-                    h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+                AMPAS.append(\
+                        h.CPGLUIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
-            if with_NMDA:
-                NMDAS.append(\
-                        h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+                if with_NMDA:
+                    NMDAS.append(\
+                            h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
 
 
-            ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
-            if (cell.params_key=='MC') and (not with_NMDA)\
-                    and boost_AMPA_for_SST_noNMDA:
-                # boosted ampa weight
-                ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
-                                cell.params['%s_qAMPAonlyBoost'%cell.params_key]
+                ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
+                if (cell.params_key=='MC') and (not with_NMDA)\
+                        and boost_AMPA_for_SST_noNMDA:
+                    # boosted ampa weight
+                    ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
+                                    cell.params['%s_qAMPAonlyBoost'%cell.params_key]*\
+                                    nVesicles
+                else:
+                    # regular ampa weight
+                    ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
+                                                    nVesicles
+
+                if with_NMDA:
+                    nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
+                    nmdaNETCONS[-1].weight[0] = cell.params['%s_NAR'%cell.params_key]*\
+                                                    cell.params['%s_qAMPA'%cell.params_key]*\
+                                                    nVesicles
+
+                GABAS.append(None)
+                gabaNETCONS.append(None)
+
+            elif nVesicles==1:
+                # inhibitory synapses
+
+                GABAS.append(\
+                        h.GABAain(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
+
+                gabaNETCONS.append(h.NetCon(VECSTIMS[-1], GABAS[-1]))
+                gabaNETCONS[-1].weight[0] = cell.params['%s_qGABA'%cell.params_key]
+
+                AMPAS.append(None)
+                NMDAS.append(None)
+                ampaNETCONS.append(None)
+                nmdaNETCONS.append(None)
+
             else:
-                # regular ampa weight
-                ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]
-
-            if with_NMDA:
-                nmdaNETCONS.append(h.NetCon(VECSTIMS[-1], NMDAS[-1]))
-                nmdaNETCONS[-1].weight[0] = cell.params['%s_NAR'%cell.params_key]*\
-                                                cell.params['%s_qAMPA'%cell.params_key]
-
-            GABAS.append(None)
-            gabaNETCONS.append(None)
-
-        else:
-            # inhibitory synapses
-
-            GABAS.append(\
-                    h.GABAain(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
-            gabaNETCONS.append(h.NetCon(VECSTIMS[-1], GABAS[-1]))
-            gabaNETCONS[-1].weight[0] = cell.params['%s_qGABA'%cell.params_key]
-
-            AMPAS.append(None)
-            NMDAS.append(None)
-            ampaNETCONS.append(None)
-            nmdaNETCONS.append(None)
+                # nothing, no multi-vesicular of GABAergic synapses
+                GABAS.append(None)
+                gabaNETCONS.append(None)
+                AMPAS.append(None)
+                NMDAS.append(None)
+                ampaNETCONS.append(None)
+                nmdaNETCONS.append(None)
 
     return AMPAS, NMDAS, GABAS,\
             ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
