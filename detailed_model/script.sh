@@ -44,21 +44,22 @@ fi
 if [[ $1 == 'all' || $1 == 'clustered-input' ]]
 then
     # SST Model
-    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 2 4 6 8
-    python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 2 4 6 8 --fix_missing
-    python clustered_input_stim.py -c Martinotti --test_NMDA\
-                                                 --sparsening 12\
-                                                 --nReleaseSeed 24\
-                                                 --p_release 0.25\
-                                                 --Nmax_release 2\
-                                                 --suffix Stochastic
+    #python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 2 4 6 8
+    #python clustered_input_stim.py -c Martinotti --test_NMDA --sparsening 2 4 6 8 --fix_missing
+    #python clustered_input_stim.py -c Martinotti --test_NMDA\
+                                                 #--sparsening 12\
+                                                 #--nReleaseSeed 24\
+                                                 #--p_release 0.25\
+                                                 #--Nmax_release 2\
+                                                 #--suffix Stochastic
     # PV Cell
-    python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8
-    python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8 --fix_missing
+    #python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8
+    #python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8 --fix_missing
     python clustered_input_stim.py -c Basket --test_uniform\
+                                                 --interspike 2\
                                                  --sparsening 8\
                                                  --nReleaseSeed 24\
-                                                 --p_release 0.5\
+                                                 --p_release 0.4\
                                                  --Nmax_release 2\
                                                  --suffix Stochastic
 fi

@@ -159,7 +159,7 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_NMDA=False,
             # sim props
-            interspike=2,
+            interspike=0.5,
             p_release=1.,
             Nmax_release=1,
             releaseSeed = 0,
@@ -378,6 +378,7 @@ if __name__=='__main__':
 
         grid = dict(iBranch=np.arange(args.nBranch),
                     iDistance=range(2),
+                    releaseSeed=range(args.nReleaseSeed),
                     sparsening=args.sparsening)
 
         if args.test_uniform:
