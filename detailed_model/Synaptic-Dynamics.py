@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -58,7 +58,7 @@
 # - double-vesicle release for $0.001  \leq r < 0.01$
 # - triple-vesicle release for $0.0001  \leq r < 0.001$
 #
-# ## Analytical prediction
+# ## Analytical estimate (usefull for fitting and re-scalings)
 #
 # For a set of event $ \large\{ t_i \large\} $, the release probability at $p_{(i)}$ at $t=t_i$ is:
 #
@@ -285,7 +285,7 @@ def analytical_estimate(events,
                         release_proba_params={}):
    Nmax = release_proba_params['Nmax']
    P = proba_sim(events, output='events', **release_proba_params)
-   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n))\n
+   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n))\
                           for n in range(1, Nmax+1)], axis=0)
 
 
