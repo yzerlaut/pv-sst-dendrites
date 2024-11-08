@@ -38,9 +38,12 @@
 #
 # ### - 2) A stochastic release scheme with multi-release
 #
-# For a spike event at time $t$, we draw a random number $r$ *from a uniform distribution between 0 and 1* and we release $N$ single-vesicles (up to $N_{max}$) if: 
+# For a spike event at time $t$, we draw a random number $r$ *from a uniform distribution between 0 and 1* and we release $n$ single-vesicles (up to $N$) if: 
 # $$
-# \mathcal{H}(N_{max}-N) \cdot \big({p(t)}\big)^{N} < r \leq \big({p(t)}\big)^{N-1} \qquad \qquad  \forall N \in [1, N_{max}]
+# \mathcal{H}(N-n) \cdot 
+#      \binom{N}{n} \big({p_{(t)}}\big)^{n} \big(1-{p_{(t)}}\big)^{N-n}  
+#          < r \leq 
+#       \binom{N}{n-1} \big({p_{(t)}}\big)^{n-1} \big(1-{p_{(t)}}\big)^{N-(n-1)} 
 # $$
 #
 # where $\mathcal{H}$ is the right-continuous Heaviside function ( i.e. $\mathcal{H}(0)=1$ and $\mathcal{H}(x<0)=0$ ).
@@ -66,10 +69,12 @@
 # p_{(i)} = p_0 + \Big( p_{(i-1)} + \delta p \cdot \big( p_\infty -p_{(i-1)} \big) - p_0 \Big) \cdot e^{ - \frac{ t_{i} - t_{i-1}} { \tau_p } }
 # $$
 #
-# Therefore the average release $R$ at $t_i$ for a maximum vesicle release of $N_{max}$ with vesicle weight $w$ is:
+# Therefore the average release $R$ at $t_i$ for a maximum vesicle release of $N$ with vesicle weight $w$ is:
 #
 # $$
-# R(i) = \sum_{N \in [1,N_{max}]} N \cdot w \cdot \big( ( p_{(i)} )^N - \mathcal{H}(N_{max}-N) * ( p_{(i)} )^{N+1} \big) 
+# R(i) = \sum_{n \in [1,n]} n \cdot w \cdot \Big(
+#         \binom{N}{n} \big({p_{(t)}}\big)^{n} \big(1-{p_{(t)}}\big)^{N-n}
+#                 - \mathcal{H}(N_{max}-N) * \binom{N}{n+1} \big({p_{(t)}}\big)^{n+1} \big(1-{p_{(t)}}\big)^{N-(n+1)}  \Big)
 # $$
 #
 #
@@ -108,6 +113,7 @@
 # general modules
 import sys, os
 import numpy as np
+from math import comb # binomial coefficient
 from scipy import stats
 import matplotlib.pylab as plt
 # project-specific modules
@@ -174,36 +180,44 @@ for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
     AX[1].annotate('$\\delta_p$', (1.15,0.45))
     AX[1].annotate('$\\tau_p$', (1.6,0.4))
 
-
 # %% [markdown]
 # # Impact on Event Release
 
 # %%
+n = 0
+Nmax = 2
+R = 0.5*np.ones(3)
+P=np.array([0.5, 0.8, 0.2])
+Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
+np.sum((Ps/R>1).astype(int), axis=0)
+
+# %%
+from math import comb
+
 def get_release_events(pre_spikes,
                        P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
-                       dt_multirelease=1e-3, # the vesicle release is slightly shifted in time (for the brian2 simulator)
                        verbose=False):
 
     # build the time-varing release probability:
     P = np.ones(len(pre_spikes))*P0 # initialized
     for i in range(len(pre_spikes)-1):
         P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
-
+    # build the probabilities of each number of vesicles:
+    Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
     # draw random numbers:
-    R = np.random.uniform(0, 1, size=len(P))
+    R = np.random.uniform(0, 1, size=len(pre_spikes))
     # find number of vesicles released:
-    N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax+1)], axis=0)-1
+    N = np.sum((Ps/R>1).astype(int), axis=0)
     # build release events:
     release_events = []
     for e, n in zip(pre_spikes, N):
-        for i in range(n):
-            release_events.append(e+i*dt_multirelease)
+        release_events += [e for _ in range(n)]
 
     if verbose:
-        for e, p, r, n in zip(pre_spikes, P, R, N):
-            print('@ %.1fs, p=%.2f, random=%.2f' % (e, p, r))
-            print('   -> release :', n, 'event(s)  -- r < p^(N=%i) = %.2f' % (n, p**n))
-           
+        for i in range(len(pre_spikes)):
+            print('@ %.1fs, p=%.2f, random=%.2f' % (pre_spikes[i], P[i], R[i]))
+            print('   -> release :', n, 'event(s)')
+            print('            because  P(n=%i)=%.2f  < r < P(n=%i)=%.2f :' %(N[i]+1,Ps[N[i]+1,i], N[i],Ps[N[i],i]))
     return np.array(release_events)
 
 
