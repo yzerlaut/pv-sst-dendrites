@@ -33,7 +33,7 @@ sys.path.append('../analyz')
 from analyz.processing.signanalysis import autocorrel, crosscorrel
 
 # %%
-RATES = np.load(os.path.join('..', '..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
                 allow_pickle=True).item()
 
 fig1, ax = pt.figure(figsize=(1.5,1), left=0.2)
@@ -222,7 +222,7 @@ pt.set_plot(ax, xlabel='jitter (s)',
             #xlim=[-0.21,0.27], 
             title='model',
             ylabel='corr. coef.')
-fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
+#fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
 
 # %%
 fig, ax = pt.figure(figsize=(0.8,0.85))
@@ -385,7 +385,7 @@ pt.set_plot(ax, xlabel='jitter (s)',
             yticks=[0.,0.5,1.0],
             xlim=[-0.35,0.35],
             xticks=[-0.3,0,0.3])
-fig.savefig('../figures/detailed_model/CrossCorrel.pdf')
+#fig.savefig('../figures/detailed_model/CrossCorrel.pdf')
 
 # %%
 # Gaussian fit to quantify the decay
@@ -437,7 +437,7 @@ pt.set_plot(ax, ['left'],
             ylabel=u'\u00bd width (s)',
             #ylabel='width (ms)',
             yticks=[0,100], yticks_labels=['0.0', '0.1'])
-fig.savefig('../figures/Figure5/Half-Widths-Summary.pdf')
+#fig.savefig('../figures/Figure5/Half-Widths-Summary.pdf')
 
 # %% [markdown]
 # ## Compute cross-correlation functions

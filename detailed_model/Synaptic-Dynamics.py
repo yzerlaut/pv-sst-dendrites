@@ -25,16 +25,19 @@
 # We use a very simplified kinetic model where the release probability $p$ follows a first order dynamics given by:
 #
 # \begin{equation}
-# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \delta p \cdot \big( p_\infty - p(t) \big) \cdot \delta(t-t_{spike})
+# \frac{dp}{dt} = \frac{p_0-p(t)}{\tau_p} + \sum_{spike} \delta p \cdot 
+#             \big( \frac {p_\infty - p(t)}{ | p_\infty - p_0 | } \big) \cdot \delta(t-t_{spike})
 # \end{equation}
 #
 # where:
 # - $p_0$ is the probability at zero frequency stimulation (infinitely spaced events)
 # - $p_\infty$ is the probability at infinite frequency stimulation (null spaced events)
-# - $\delta p$ is a probability increment factor --strictly positive -- with constraint: $ \delta p \leq |p_\infty - p_0| $
+# - $\delta p$ is a probability increment -- strictly positive -- with constraint: $ | \delta p | \leq |p_\infty - p_0| $
 # - $\tau_p$ is the recovery time constant to go back to $p_0$ level
 #
-# *Synaptic depression* corresponds to the setting: $p_0 > t_\infty$. *Synaptic facilitation* corresponds to the setting: $p_0 < t_\infty$.
+# *Synaptic depression* corresponds to the setting: $p_0 > p_\infty$ .
+#
+# *Synaptic facilitation* corresponds to the setting: $p_0 < p_\infty$ & $\delta p > 0 $.
 #
 # ### - 2) A stochastic release scheme with multi-release
 #
@@ -50,31 +53,23 @@
 #
 # As an example, for $N_{max}=2$ at $t$ where $p(t)=0.5$, this would correspond to:
 #
-# - failure if $r > 0.5$
-# - single-vesicle release for $0.25 \leq r < 0.5$
-# - double-vesicle release for $0  \leq r < 0.25$
-#
-# Or, for $N_{max}=3$ at $t$ where $p(t)=0.1$, this would correspond to:
-#
-# - failure if $r > 0.1$
-# - single-vesicle release for $0.01 \leq r < 0.1$
-# - double-vesicle release for $0.001  \leq r < 0.01$
-# - triple-vesicle release for $0.0001  \leq r < 0.001$
+# - double-vesicle release for $0  \leq r < 0.25$ ( --> $p_{n=-} = 0.5^2 = 0.25 $ )
+# - single-vesicle release for $0.25 \leq r < 0.75$ ( --> $ p_{n=1} = 2 \cdot 0.5 \cdot (1-0.5) = 0.5$)
+# - failure if $r > 0.75$ ( --> $ p_{n=2} = (1-0.5)^2 = 0.25 $)
 #
 # ## Analytical estimate (usefull for fitting and re-scalings)
 #
 # For a set of event $ \large\{ t_i \large\} $, the release probability at $p_{(i)}$ at $t=t_i$ is:
 #
 # $$
-# p_{(i)} = p_0 + \Big( p_{(i-1)} + \delta p \cdot \big( p_\infty -p_{(i-1)} \big) - p_0 \Big) \cdot e^{ - \frac{ t_{i} - t_{i-1}} { \tau_p } }
+# p_{(i)} = p_0 + \Big( p_{(i-1)} + \delta p \cdot \big( \frac{p_\infty -p_{(i-1)}}{ | p_\infty - p_0 | } \big) - p_0 \Big) 
+#                         \cdot e^{ - \frac{ t_{i} - t_{i-1}} { \tau_p } }
 # $$
 #
 # Therefore the average release $R$ at $t_i$ for a maximum vesicle release of $N$ with vesicle weight $w$ is:
 #
 # $$
-# R(i) = \sum_{n \in [1,n]} n \cdot w \cdot \Big(
-#         \binom{N}{n} \big({p_{(t)}}\big)^{n} \big(1-{p_{(t)}}\big)^{N-n}
-#                 - \mathcal{H}(N_{max}-N) * \binom{N}{n+1} \big({p_{(t)}}\big)^{n+1} \big(1-{p_{(t)}}\big)^{N-(n+1)}  \Big)
+# R(i) = \sum_{n \in [1,N]} n \cdot w \cdot \binom{N}{n} \big({p_{(t)}}\big)^{n} \big(1-{p_{(t)}}\big)^{N-n}
 # $$
 #
 #
@@ -82,28 +77,28 @@
 #
 #
 # ```
-#
 # def get_release_events(pre_spikes,
 #                        P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
-#                        dt_multirelease=1e-3, # each vesicle release is shifted by dt
 #                        verbose=False):
 #
 #     # build the time-varing release probability:
 #     P = np.ones(len(pre_spikes))*P0 # initialized
 #     for i in range(len(pre_spikes)-1):
-#         P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+#         P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/(abs(P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+#
+#     # build the probabilities of each number of vesicles ([!!] from Nmax to 1 [!!] ) :
+#     Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
 #
 #     # draw random numbers:
-#     R = np.random.uniform(0, 1, size=len(P))
+#     R = np.random.uniform(0, 1, size=len(pre_spikes))
 #
 #     # find number of vesicles released:
-#     N = np.sum([(P**n/R >1).astype(int) for n in range(Nmax+1)], axis=0)-1
+#     N = np.sum((Ps/R>1).astype(int), axis=0)
 #
 #     # build release events:
 #     release_events = []
 #     for e, n in zip(pre_spikes, N):
-#         for i in range(n):
-#             release_events.append(e+i*dt_multirelease)
+#         release_events += [e for _ in range(n)]
 #           
 #     return np.array(release_events)
 #
@@ -127,10 +122,10 @@ from analyz.processing.signanalysis import crosscorrel
 # %%
 SIMS = {\
     'models':['faithfull', 'stochastic', 'depressing', 'facilitating'],
-    'faithfull':   {'P0':1.00, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
-    'stochastic':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
-    'depressing':  {'P0':0.90, 'P1':0.20, 'dP':0.60, 'tauP':0.50, 'Nmax':1},
-    'facilitating':{'P0':0.05, 'P1':0.60, 'dP':0.15, 'tauP':0.50, 'Nmax':1},
+    'faithfull':   {'P0':1.00, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
+    'stochastic':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
+    'depressing':  {'P0':0.90, 'P1':0.20, 'dP':0.40, 'tauP':1.0, 'Nmax':2},
+    'facilitating':{'P0':0.1, 'P1':0.60, 'dP':0.25, 'tauP':1.0, 'Nmax':2},
 }
 
 
@@ -141,11 +136,11 @@ SIMS = {\
 def proba_sim(events,\
               output='time-course', # or "events"
               dt=1e-4, # seconds
-              tstop = 2, # seconds
+              tstop = 3., # seconds
               P0 = 0.1, # proba at 0-frequency
               P1 = 0.5, # proba at oo-frequency
               dP = 0.8, # proba increment
-              tauP = 0.4, # seconds
+              tauP = 2.0, # seconds
               Nmax = None): # useless in this function
 
     if output=='time-course':
@@ -157,52 +152,45 @@ def proba_sim(events,\
         for i in range(len(t)-1):
             p[i+1] = p[i] + dt*( (P0-p[i])/tauP )
             if i in iEvents:
-                p[i+1] += dP*(P1-p[i])
+                p[i+1] += dP*(P1-p[i])/(abs(P1-P0)+1e-4)
         return t, p
 
     else:
         # event-based sim
         P = np.ones(len(events))*P0 # init to p0
         for i in range(len(events)-1):
-            P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(events[i+1]-events[i])/tauP )
+            P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/(abs(P1-P0)+1e-4) - P0 )*np.exp( -(events[i+1]-events[i])/tauP )
         return P
 
-events = np.concatenate([0.1+0.1*np.arange(5), [1.4]])
-fig, AX = pt.figure(axes=(3,1), figsize=(1.3,1))
-for ax, model in zip(AX, ['stochastic', 'depressing', 'facilitating']):
+events = np.concatenate([0.1+0.2*np.arange(5), [2.4]])
+fig, AX = pt.figure(axes=(4,1), figsize=(1.2,1), wspace=1.3)
+for ax, model in zip(AX, ['faithfull', 'stochastic', 'depressing', 'facilitating']):
     pt.scatter(events, proba_sim(events, output='events', **SIMS[model]), ms=8, color='k', ax=ax)
     pt.plot(*proba_sim(events, output='time-course', **SIMS[model]), lw=0.3, ax=ax)
-    pt.set_plot(ax, title=model, ylim=[0,1], yticks=[0,0.5,1],ylabel='rel. proba', xlabel='time')
+    pt.set_plot(ax, title=model, ylim=[0,1.05], yticks=[0,0.5,1],ylabel='rel. proba', xlabel='time')
     xlim = ax.get_xlim()
     for p, l, va in zip([SIMS[model]['P0'], SIMS[model]['P1']], ['$p_0$', '$p_\infty$'], ['bottom', 'top']):
         ax.plot(xlim, p*np.ones(2), 'k:', lw=0.5)
         ax.annotate(l, (xlim[1], p), va=va)
-    AX[1].annotate('$\\delta_p$', (1.15,0.45))
-    AX[1].annotate('$\\tau_p$', (1.6,0.4))
+AX[2].annotate(r'$\delta_p \cdot \frac{p_{(t)} - p_0}{ | p_\infty - p_0 | }$', (1.15,0.45))
+AX[2].annotate('$\\tau_p$', (1.6,0.4))
+fig.savefig('../figures/detailed_model/STPsupp_sketch.svg')
 
 # %% [markdown]
 # # Impact on Event Release
 
 # %%
-n = 0
-Nmax = 2
-R = 0.5*np.ones(3)
-P=np.array([0.5, 0.8, 0.2])
-Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
-np.sum((Ps/R>1).astype(int), axis=0)
-
-# %%
 from math import comb
 
 def get_release_events(pre_spikes,
-                       P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=1,
+                       P0=0.5, P1=0.5, dP=0.1, tauP=0.2, Nmax=2,
                        verbose=False):
 
     # build the time-varing release probability:
     P = np.ones(len(pre_spikes))*P0 # initialized
     for i in range(len(pre_spikes)-1):
-        P[i+1] = P0 + ( P[i]+dP*(P1-P[i]) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
-    # build the probabilities of each number of vesicles:
+        P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/(abs(P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+    # build the probabilities of each number of vesicles ([!!] from Nmax to 1 [!!] ) :
     Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
     # draw random numbers:
     R = np.random.uniform(0, 1, size=len(pre_spikes))
@@ -216,26 +204,34 @@ def get_release_events(pre_spikes,
     if verbose:
         for i in range(len(pre_spikes)):
             print('@ %.1fs, p=%.2f, random=%.2f' % (pre_spikes[i], P[i], R[i]))
-            print('   -> release :', n, 'event(s)')
-            print('            because  P(n=%i)=%.2f  < r < P(n=%i)=%.2f :' %(N[i]+1,Ps[N[i]+1,i], N[i],Ps[N[i],i]))
+            print('   -> release :', N[i], 'event(s)')
+            if N[i]==0:
+                print('            because  r > P(n=%i)=%.2f ' %(N[i]+1,Ps[Nmax-1-N[i],i]))
+            elif N[i]==Nmax:
+                print('            because  r < P(n=%i)=%.2f ' %(N[i],Ps[Nmax-N[i],i]))
+            else:
+                print('            because  P(n=%i)=%.2f  < r < P(n=%i)=%.2f :' % (N[i],Ps[Nmax-1-N[i],i], N[i]-1,Ps[Nmax-N[i],i]))
     return np.array(release_events)
 
 
 def rough_release_dynamics(events,
-            tstop=2., t0=0, dt=5e-4, tau=0.02, Q=1):
+                           tstop=2., t0=0, dt=5e-4, tau=0.02, Q=1):
     
     t = np.arange(int(tstop/dt))*dt+t0
     rel = 0*t
     iEvents = np.array(events/dt, dtype=int)
     for i in range(len(t)-1):
         rel[i+1] = rel[i] - dt*rel[i]/tau
-        if i in iEvents:
-            rel[i+1] += Q
+        # add events if any
+        rel[i+1] += Q*len(np.flatnonzero(i==iEvents))
     return rel
     
 # pre_spikes_array = np.arange(10)*0.1
 # pt.plot(rough_release_dynamics(get_release_events(pre_spikes_array)))
 
+
+# %% [markdown]
+# ### Testing this random scheme
 
 # %%
 np.random.seed(6)
@@ -250,46 +246,45 @@ for i in range(1):
 
 # %%
 def sim_release(release_proba_params={},
-                nTrials = 10,
-                freq = 10, # Hz 
-                nStim = 7,
-                t0 = 0.1,
-                tstop = 1.2,
+                events = np.concatenate([0.1+np.arange(7)/10., [1.1]]),
+                tstop=1.3, nTrials=10,
                 dt = 5e-4,
-                seed=0):
+                seed=0,
+                with_title=True, figsize=(1.1,1.2)):
 
     np.random.seed(seed)
     
-    pre_Events = [\
-        np.concatenate([t0+np.arange(nStim)/freq, [tstop]]) for i in range(nTrials)]
+    pre_Events = [events for i in range(nTrials)]
     
     release_Events = [\
         get_release_events(pre, **release_proba_params) for pre in pre_Events]
     
-    fig, AX = pt.figure(axes=(4,1), figsize=(1.2,1.1), wspace=0.6)
+    fig, AX = pt.figure(axes=(4,1), figsize=figsize, wspace=0.6)
     # analytical prediction:
-    AX[3].plot(pre_Events[0]-t0, analytical_estimate(pre_Events[0], release_proba_params=release_proba_params), 'ro:', lw=0.3, ms=2)
+    AX[3].plot(pre_Events[0], analytical_estimate(pre_Events[0], release_proba_params=release_proba_params),
+               'o:', color='firebrick', lw=0.3, ms=2)
     # simulations
-    Rs, t = [], -t0+np.arange(1.2*tstop/dt)*dt
+    Rs, t = [], np.arange(tstop/dt)*dt
     for i in range(nTrials):
-        AX[0].scatter(-t0+pre_Events[i], i*np.ones(len(pre_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
-        AX[1].scatter(-t0+release_Events[i], i*np.ones(len(release_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
-        Rs.append(rough_release_dynamics(release_Events[i], tstop=1.2*tstop, dt=dt))
+        AX[0].scatter(pre_Events[i], i*np.ones(len(pre_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
+        AX[1].scatter(release_Events[i], i*np.ones(len(release_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=15)
+        Rs.append(rough_release_dynamics(release_Events[i], tstop=tstop, dt=dt))
         AX[2].plot(t, i+Rs[-1], color='k', lw=0.5, alpha=0.7)
     # we add some more
     for i in range(20*nTrials):
         release_Events = get_release_events(pre_Events[i%nTrials], **release_proba_params)
-        Rs.append(rough_release_dynamics(release_Events, tstop=1.2*tstop, dt=dt))
+        Rs.append(rough_release_dynamics(release_Events, tstop=tstop, dt=dt))
     
     for ax, title in zip(AX, ['presynaptic APs', 'release events', 'release dynamics']):
-        pt.set_plot(ax, yticks=[], ylabel='trials', xlabel='time (s)', title=title, 
-                    ylim=[-0.5,nTrials+.5], xlim=[-t0,1.2*tstop-t0])
+        pt.set_plot(ax, yticks=[], ylabel='trials', xlabel='time (s)', title=title if with_title else '', 
+                    ylim=[-0.5,nTrials+1.5], xlim=[0,tstop])
 
     AX[2].plot([t[-1],t[-1]], [-0.5,0.5], color='k', lw=2)
-    pt.annotate(AX[2], ' unitary release', (t[-1],-0.5), xycoords='data', fontsize=5, rotation=90)
-    pt.annotate(AX[3], 'analytic ', (0,1), fontsize=5, color='r', rotation=90, va='top')
+    pt.annotate(AX[2], ' 1 vesicle', (t[-1],0.5), xycoords='data', fontsize=5, rotation=90)
+    pt.annotate(AX[3], 'analytic ', (0,1), fontsize=5, color='firebrick', rotation=90, va='top')
     pt.plot(t, np.mean(Rs, axis=0), sy=np.std(Rs, axis=0), ax=AX[3])
-    pt.set_plot(AX[3], yticks=[0,1], xlabel='time (s)', title='release average', xlim=[-t0,1.2*tstop-t0]) 
+    pt.set_plot(AX[3], yticks=[0,1], xlabel='time (s)', ylabel='release (/ves.)',
+                title='release average' if with_title else '', xlim=[0,tstop]) 
     pt.annotate(AX[3], '%i trials' % (20*nTrials), (1,1), va='top', ha='right', fontsize=6, rotation=90) 
             
     return fig
@@ -299,30 +294,150 @@ def analytical_estimate(events,
                         release_proba_params={}):
    Nmax = release_proba_params['Nmax']
    P = proba_sim(events, output='events', **release_proba_params)
-   return np.sum([(n*weight)*(P**n-P**(n+1)*np.sign(Nmax-n))\
-                          for n in range(1, Nmax+1)], axis=0)
+   return np.sum([(n*weight)*( comb(Nmax, n) * P**n * (1-P)**(Nmax-n) )\
+                          for n in range(Nmax, 0, -1)], axis=0)
+    
 
 
 # %%
-SIMS = {\
-    'faithfull':   {'P0':1.00, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
-    'stochastic\nNmax=1':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':1},
-    'stochastic\nNmax=2':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':2},
-    'stochastic\nNmax=3':  {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':0.50, 'Nmax':3},
-    'depressing':  {'P0':0.90, 'P1':0.20, 'dP':0.60, 'tauP':0.50, 'Nmax':2},
-    'facilitating':{'P0':0.05, 'P1':0.60, 'dP':0.15, 'tauP':0.50, 'Nmax':2},
+SIMS2 = {\
+    'faithfull\n$N_{max}$=1':   SIMS['faithfull'].copy(),
+    'stochastic\n$N_{max}$=1':  SIMS['stochastic'].copy(),
+    'stochastic\n$N_{max}$=2':  SIMS['stochastic'].copy(),
+    'stochastic\n$N_{max}$=3':  SIMS['stochastic'].copy(),
+    'depressing\n$N_{max}$=2':  SIMS['depressing'].copy(),
+    'facilitating\n$N_{max}$=2':SIMS['facilitating'].copy(),
 }
+SIMS2['stochastic\n$N_{max}$=1']['Nmax'] = 1
+SIMS2['stochastic\n$N_{max}$=2']['Nmax'] = 2
+SIMS2['stochastic\n$N_{max}$=3']['Nmax'] = 3
 
-for model in SIMS:
-    fig = sim_release(release_proba_params=SIMS[model], seed=6)
-    pt.annotate(fig, model, (0, 0.5))
+for m, model in enumerate(SIMS2):
+    fig = sim_release(release_proba_params=SIMS2[model], seed=6, figsize=(1.4,1.1), with_title=(model=='faithfull\n$N_{max}$=1'))
+    pt.annotate(fig, model+'\n$p_0$=%.2f, $p_\infty$=%.2f,\n' % (SIMS2[model]['P0'], SIMS2[model]['P1'])+\
+                            '$\delta p$=%.2f, $\\tau_p$=%.1fs' % (SIMS2[model]['dP'], SIMS2[model]['tauP']),
+    (-0.02, 0.7), ha='center', va='top')
+    fig.savefig('../figures/detailed_model/STPsupp_example%i.svg' % (m+1))
 
 # %% [markdown]
 # # Model calibration: fitting parameters
 
+# %% [markdown]
+# ## SSTs
+
 # %%
-# TO DO
-pass
+from scipy.optimize import minimize
+# SST protocol: 9 APs @ 20Hz
+time = np.arange(9)*1./20.
+failures = np.loadtxt('../data/paired-recordings/SST-failures.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+Pratios = np.loadtxt('../data/paired-recordings/SST-pn-over-p1.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+#probas = 1-np.sqrt(np.mean(failures, axis=1)/100.)
+
+# %%
+pt.plot(Pratios.mean(axis=1), sy=stats.sem(Pratios, axis=1))
+
+# %%
+tauP = 1.0
+Nmax = 2
+
+def get_probas(pre_spikes, X):
+    P0, P1, dP, tauP = X
+    P = np.ones(len(pre_spikes))*P0
+    for i in range(len(pre_spikes)-1):
+        P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/abs((P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+    return P
+
+def to_minimize(X):
+    return np.sum((np.mean(failures, axis=1)-100*(1-get_probas(time,X))**Nmax)**2)
+
+res = minimize(to_minimize, x0=[np.min(probas), np.max(probas), 0.1, tauP],
+               method='Nelder-Mead',
+               bounds=[[0.8*np.min(probas),min([1,1.2*np.max(probas)])],
+                       [0.8*np.min(probas),min([1,1.2*np.max(probas)])],
+                       [0,np.max(probas)],
+                       [tauP, tauP]])
+
+fig, [ax, ax2] = pt.figure(axes=(2,1), figsize=(1.1,1.2), hspace=0.3)
+for i in range(failures.shape[1]):
+    ax.scatter(time+np.random.randn()*5e-3, failures[:,i], color='k', marker='o', s=0.1)
+    
+pt.scatter(time, np.mean(failures, axis=1), sy=failures.std(axis=1), ax=ax, alpha=0.5)
+#ax.errorbar(time, np.mean(failures, axis=1), yerr=failures.std(axis=1), fmt='o-',color='k', lw=2, alpha=0.5)
+ax2.errorbar(time, probas, fmt='o-',color='grey', lw=2, alpha=0.5)
+
+ax.plot(time, 100*(1-get_probas(time, res.x))**Nmax, ':', color='magenta')
+ax2.plot(time, get_probas(time, res.x), '-', color='magenta')
+
+sf = 'fit: '
+for s, p in zip(['$p_0$', '$p_\infty$', '$\delta p$'], res.x):
+    sf += s+'=%.2f, '%p
+pt.annotate(ax2, sf[:-2], (0.5,1.05), ha='center', fontsize='x-small', color='magenta')
+pt.annotate(ax, 'n=%i' % failures.shape[1], (1,1), va='top', ha='right', fontsize='small')
+pt.set_plot(ax, xlabel='time (s)', ylabel='failure $f$ (%)', xticks=[0,0.2,0.4])
+pt.set_plot(ax2, xlabel='time (s)', ylabel='rel. proba.', 
+            #ylim=[0.31,0.61], yticks=[0.4,0.5,0.6], 
+            xticks=[0,0.2,0.4])
+pt.annotate(ax2, r"$1-f^{\frac{1}{%i}}$" % Nmax + ' \n', (1,0), ha='right', color='grey')
+pt.annotate(ax2, '$N_{max}=%i$, $\\tau_p$=%0ds' % (Nmax, tauP) , (1,0), ha='right', color='magenta', fontsize='x-small')
+fig.savefig('../figures/detailed_model/STPsupp_data_SST.svg')
+
+# %%
+SST_model = {'P0':res.x[0], 'P1':res.x[1], 'dP':res.x[2], 'tauP':tauP, 'Nmax':Nmax}
+fig = sim_release(events=0.1+np.arange(9)/20., tstop=0.65, release_proba_params=SST_model, seed=0)
+fig.savefig('../figures/detailed_model/STPsupp_model_SST.svg')
+np.save('../data/detailed_model/SST_stp.npy', SST_model)
+
+# %% [markdown]
+# ## PVs
+
+# %%
+from scipy.optimize import minimize
+# SST protocol: 9 APs @ 20Hz
+time = np.arange(5)*1./10.
+failures = np.loadtxt('../data/paired-recordings/PV-failures.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.')).T # 
+probas = 1-np.sqrt(np.mean(failures, axis=1)/100.)
+
+
+# %%
+def to_minimize(X):
+    return np.sum((np.mean(failures, axis=1)-100*(1-get_probas(time,X))**2)**2)
+
+res = minimize(to_minimize, x0=[np.max(probas), np.min(probas), 0.3, tauP],
+               bounds=[[0.9*np.min(probas),min([1,1.1*np.max(probas)])],
+                       [0.9*np.min(probas),min([1,1.1*np.max(probas)])],
+                       [0,np.max(probas)],
+                       [tauP, tauP]])
+
+fig, [ax, ax2] = pt.figure(axes=(2,1), figsize=(1.1,1.2), hspace=0.3)
+for i in range(failures.shape[1]):
+    ax.scatter(time+np.random.randn()*5e-3, failures[:,i], color='k', marker='o', s=0.1)
+    
+pt.scatter(time, np.mean(failures, axis=1), sy=failures.std(axis=1), ax=ax, alpha=0.5)
+#ax.errorbar(time, np.mean(failures, axis=1), yerr=failures.std(axis=1), fmt='o-',color='k', lw=2, alpha=0.5)
+ax2.errorbar(time, probas, fmt='o-',color='grey', lw=2, alpha=0.5)
+
+ax.plot(time, 100*(1-get_probas(time, res.x))**2, ':', color='magenta')
+ax2.plot(time, get_probas(time, res.x), '-', color='magenta')
+
+sf = 'fit: '
+for s, p in zip(['$p_0$', '$p_\infty$', '$\delta p$'], res.x):
+    sf += s+'=%.2f, '%p
+pt.annotate(ax2, sf[:-2], (0.5,1.), ha='center', fontsize='x-small', color='magenta')
+pt.annotate(ax, 'n=%i' % failures.shape[1], (0,1), va='top', fontsize='small')
+pt.set_plot(ax, xlabel='time (s)', ylabel='failure $f$ (%)', yticks=[0,10,20],xticks=[0,0.2,0.4])
+pt.set_plot(ax2, xlabel='time (s)', ylabel='rel. proba.', ylim=[0.699,0.95], yticks=[0.7,0.8,0.9],xticks=[0,0.2,0.4])
+pt.annotate(ax2, '1-$\sqrt{f}$ \n', (0,0), color='grey')
+pt.annotate(ax2, '$N_{max}=2$, $\\tau_p$=1s', (0,0), color='magenta', fontsize='x-small')
+fig.savefig('../figures/detailed_model/STPsupp_data_PV.svg')
+
+# %%
+PV_model = {'P0':res.x[0], 'P1':res.x[1], 'dP':res.x[2], 'tauP':tauP, 'Nmax':2}
+fig = sim_release(events=0.1+np.arange(5)/10., tstop=0.65, release_proba_params=PV_model, seed=1)
+fig.savefig('../figures/detailed_model/STPsupp_model_PV.svg')
+np.save('../data/detailed_model/PV_stp.npy', PV_model)
 
 # %% [markdown]
 # # Impact on Temporal Signal Integration
@@ -561,6 +676,7 @@ for i, model in enumerate(SIMS['models']):
     pt.annotate(AX[i+1], model, (1,.8), color=COLORS[i], va='top')
 pt.annotate(AX[0], 'input rate', (1,.8), color='grey', va='top')
 AX[0].fill_between(t[cond], 0*t[cond], rate[cond], color='lightgrey')
+fig.suptitle('release dynamics')
 
 # %%
 SIMS = np.load('../data/detailed_model/release-dynamics-visual-processing-with-stp.npy',
@@ -573,6 +689,54 @@ for i, model in enumerate(SIMS['models']):
     ax.plot(time_shift, CCF/np.max(CCF), '--' if model=='stochastic' else '-', color=COLORS[i])
     pt.annotate(ax, i*'\n'+model, (1,1), color=COLORS[i],  va='top')
 
-pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.', yticks=[0.5,1])
+pt.set_plot(ax, xlabel='shift (s)', 
+            title='(glutamate)\nrelease dynamics',
+            ylabel='peak norm.\n corr. coef.', yticks=[0.5,1])
+
+
+# %%
+def sim_release(release_proba_params={},
+                nSyns = 200,
+                seed=1):
+
+    np.random.seed(seed)
+
+    Release = 0*t    
+    for i in range(nSyns):
+        release_Events = get_release_events(\
+                    np.array(PoissonSpikeTrain(rate, dt=dt, tstop=t[-1])),
+                                               **release_proba_params)
+        Release[1:] += rough_release_dynamics(release_Events, 
+                                              tstop=t[-1]+dt, dt=dt)
+    Release /= nSyns
+            
+    return Release
+
+SIMS = {\
+    'models':['PV', 'SST'],
+    'SST':   np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item(),
+    'PV':   np.load('../data/detailed_model/PV_stp.npy', allow_pickle=True).item(),
+}
+
+for i, model in enumerate(SIMS['models']):
+    SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model])
+    
+np.save('../data/detailed_model/release-dynamics-visual-processing-fits-with-stp.npy',
+        SIMS)
+
+# %%
+SIMS = np.load('../data/detailed_model/release-dynamics-visual-processing-fits-with-stp.npy',
+               allow_pickle=True).item()
+
+COLORS = ['tab:red', 'tab:orange']
+fig, ax = pt.figure(figsize=(1.1,1.))
+for i, model in enumerate(SIMS['models']):
+    cond = t>0.8
+    CCF, time_shift = crosscorrel(rate[cond], SIMS['release_%s'%model][cond], 1.3, dt)
+    ax.plot(time_shift, CCF/np.max(CCF), '-', lw=1, color=COLORS[i])
+    pt.annotate(ax, i*'\n'+model, (1,1), color=COLORS[i],  va='top')
+
+pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.',
+            title='(glutamate)\nrelease dynamics', yticks=[0.5,1])
 
 # %%
