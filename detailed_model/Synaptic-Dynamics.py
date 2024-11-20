@@ -117,7 +117,7 @@ import plot_tools as pt
 from synaptic_input import PoissonSpikeTrain
 from scipy.optimize import minimize
 sys.path.append('../analyz')
-from analyz.processing.signanalysis import crosscorrel
+from analyz.processing.signanalysis import crosscorrel, autocorrel
 
 # %%
 SIMS = {\
@@ -327,16 +327,32 @@ for m, model in enumerate(SIMS2):
 
 # %%
 from scipy.optimize import minimize
-# SST protocol: 9 APs @ 20Hz
-time = np.arange(9)*1./20.
-failures = np.loadtxt('../data/paired-recordings/SST-failures.csv',
-           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+
+
+## PAIRED RECORDINGS ##
 Pratios = np.loadtxt('../data/paired-recordings/SST-pn-over-p1.csv',
            delimiter=';', converters=lambda s: s.replace(b',', b'.'))
-#probas = 1-np.sqrt(np.mean(failures, axis=1)/100.)
+# SST protocol: 9 APs @ 20Hz
+time_PR = np.arange(9)*1./20.
+## SNIFFER DATA ##
+sniffer = {'p_mean':0.19, 'p_sem':0.05, 'n':8}
+# SST protocol: 7 APs @ 10Hz
+time_SN = np.arange(7)*1./10.
 
 # %%
-pt.plot(Pratios.mean(axis=1), sy=stats.sem(Pratios, axis=1))
+from scipy.optimize import minimize
+
+
+fig, ax = pt.figure()
+Pratios = np.loadtxt('../data/paired-recordings/SST-pn-over-p1.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+pt.plot(Pratios.mean(axis=1), sy=stats.sem(Pratios, axis=1), color='g', ax=ax)
+Pratios = np.loadtxt('../data/paired-recordings/SST-pn-over-p1-Ca15mM.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+pt.plot(Pratios.mean(axis=1), sy=stats.sem(Pratios, axis=1), color='tab:orange', ax=ax)
+pt.annotate(ax, '[Ca2+]=2mM', (0,1), va='top', color='g', fontsize='x-small')
+pt.annotate(ax, '\n[Ca2+]=1.5mM', (0,1), va='top', color='tab:orange', fontsize='x-small')
+pt.set_plot(ax, xlabel='AP #', ylabel='$p_n$/$p_1$', yticks=np.arange(1,6), title='SST')
 
 # %%
 tauP = 1.0
@@ -350,37 +366,58 @@ def get_probas(pre_spikes, X):
     return P
 
 def to_minimize(X):
-    return np.sum((np.mean(failures, axis=1)-100*(1-get_probas(time,X))**Nmax)**2)
+    if X[2]>abs(X[1]-X[0]):
+        # dp > abs(p01-p1) --> forbidden !
+        return 1e5
+    else:
+        Ps_PR = get_probas(time_PR, X) # paired recordings pred.
+        Ps_SN = get_probas(time_SN, X) # sniffer protocol pred.
+        residual_PR = np.mean((Pratios.mean(axis=1)-Ps_PR/Ps_PR[0])**2)
+        residual_SN = abs(np.mean(Ps_SN)-sniffer['p_mean'])
+        return residual_PR+np.sign(residual_SN-1e-2)
+                
 
-res = minimize(to_minimize, x0=[np.min(probas), np.max(probas), 0.1, tauP],
+res = minimize(to_minimize, x0=[.8*sniffer['p_mean'], 1.5*sniffer['p_mean'], 0.1, tauP],
                method='Nelder-Mead',
-               bounds=[[0.8*np.min(probas),min([1,1.2*np.max(probas)])],
-                       [0.8*np.min(probas),min([1,1.2*np.max(probas)])],
-                       [0,np.max(probas)],
+               bounds=[[0.01, Pratios.mean(axis=1).max()*sniffer['p_mean']],
+                       [0.01, .8*Pratios.mean(axis=1).max()*sniffer['p_mean']],
+                       [0.05,0.5],
                        [tauP, tauP]])
 
-fig, [ax, ax2] = pt.figure(axes=(2,1), figsize=(1.1,1.2), hspace=0.3)
-for i in range(failures.shape[1]):
-    ax.scatter(time+np.random.randn()*5e-3, failures[:,i], color='k', marker='o', s=0.1)
+fig, ax = pt.figure(figsize=(1.1,1.2), hspace=0.3, right=10.)
+ax2 = pt.inset(ax, [1.6, 0, 0.3, 0.8])
+#for i in range(Pratios.shape[1]):
+#    ax.scatter(time+np.random.randn()*5e-3, Pratios[:,i], color='k', marker='o', s=0.1)
     
-pt.scatter(time, np.mean(failures, axis=1), sy=failures.std(axis=1), ax=ax, alpha=0.5)
+pt.scatter(1+np.arange(9), Pratios.mean(axis=1), sy=stats.sem(Pratios, axis=1), ax=ax, alpha=0.5)
 #ax.errorbar(time, np.mean(failures, axis=1), yerr=failures.std(axis=1), fmt='o-',color='k', lw=2, alpha=0.5)
-ax2.errorbar(time, probas, fmt='o-',color='grey', lw=2, alpha=0.5)
+#ax2.errorbar(time, probas, fmt='o-',color='grey', lw=2, alpha=0.5)
 
-ax.plot(time, 100*(1-get_probas(time, res.x))**Nmax, ':', color='magenta')
-ax2.plot(time, get_probas(time, res.x), '-', color='magenta')
+Ps = get_probas(time_PR, res.x)
+ax.plot(1+np.arange(9), Ps/Ps[0], '-', color='magenta')
 
-sf = 'fit: '
+ax2.bar([1], [sniffer['p_mean']], yerr=[sniffer['p_sem']], color='dimgrey')
+ax2.bar([0], [np.mean(get_probas(time_SN, res.x))], color='magenta')
+
+sf = 'fitted: '
 for s, p in zip(['$p_0$', '$p_\infty$', '$\delta p$'], res.x):
     sf += s+'=%.2f, '%p
-pt.annotate(ax2, sf[:-2], (0.5,1.05), ha='center', fontsize='x-small', color='magenta')
-pt.annotate(ax, 'n=%i' % failures.shape[1], (1,1), va='top', ha='right', fontsize='small')
-pt.set_plot(ax, xlabel='time (s)', ylabel='failure $f$ (%)', xticks=[0,0.2,0.4])
-pt.set_plot(ax2, xlabel='time (s)', ylabel='rel. proba.', 
-            #ylim=[0.31,0.61], yticks=[0.4,0.5,0.6], 
-            xticks=[0,0.2,0.4])
-pt.annotate(ax2, r"$1-f^{\frac{1}{%i}}$" % Nmax + ' \n', (1,0), ha='right', color='grey')
-pt.annotate(ax2, '$N_{max}=%i$, $\\tau_p$=%0ds' % (Nmax, tauP) , (1,0), ha='right', color='magenta', fontsize='x-small')
+pt.annotate(ax, sf[:-2], (1.4,1.3), ha='center', fontsize='x-small', color='magenta')
+pt.annotate(ax, 'fixed: $N_{max}=%i$, $\\tau_p$=%0ds' % (Nmax, tauP) , (-0.2,1.3), color='magenta', fontsize='x-small')
+
+pt.annotate(ax, 'paired recordings\n%i APs @ 20Hz' % Pratios.shape[0], (0.5,1), va='center', ha='center', fontsize='small')
+pt.annotate(ax, 'sniffer data\n7 APs @ 10Hz', (1.7,1.), va='center', ha='center', fontsize='small')
+#pt.annotate(ax, '[Ca$^{2+}$]=2mM', (1,0), va='bottom', ha='left', fontsize='xx-small', rotation=90)
+pt.annotate(ax2, '[Ca$^{2+}$]=1.5mM', (1,0), va='bottom', ha='left', fontsize='xx-small', rotation=90)
+pt.annotate(ax, 'n=%i' % Pratios.shape[1], (0,0.4), fontsize='small')
+pt.annotate(ax2, ' n=%i' % sniffer['n'], (1,0), ha='center', xycoords='data', fontsize='small', color='w', rotation=90)
+
+ax.plot([0,9], [1,1], 'k:', lw=0.3)
+pt.set_plot(ax, xlabel='$n$ (AP #)', ylabel='$p_n$/$p_1$', xlim=[0.5,9.5], xticks=1+np.arange(3)*4, yticks=[1,3,5])
+pt.set_plot(ax2, ylabel=r' $\langle$p$\rangle$ ves. rel.', xticks=[0,1], xticks_labels=['fit', 'data'], xticks_rotation=50)
+
+print(res.x)
+
 fig.savefig('../figures/detailed_model/STPsupp_data_SST.svg')
 
 # %%
@@ -394,48 +431,80 @@ np.save('../data/detailed_model/SST_stp.npy', SST_model)
 
 # %%
 from scipy.optimize import minimize
-# SST protocol: 9 APs @ 20Hz
-time = np.arange(5)*1./10.
-failures = np.loadtxt('../data/paired-recordings/PV-failures.csv',
-           delimiter=';', converters=lambda s: s.replace(b',', b'.')).T # 
-probas = 1-np.sqrt(np.mean(failures, axis=1)/100.)
 
+
+## PAIRED RECORDINGS ##
+Pratios = np.loadtxt('../data/paired-recordings/PV-pn-over-p1.csv',
+           delimiter=';', converters=lambda s: s.replace(b',', b'.'))
+# SST protocol: 5 APs @ 20Hz
+time_PR = np.arange(5)*1./20.
+## SNIFFER DATA ##
+sniffer = {'p_mean':0.48, 'p_sem':0.09, 'n':9}
+# SST protocol: 7 APs @ 10Hz
+time_SN = np.arange(7)*1./10.
 
 # %%
-def to_minimize(X):
-    return np.sum((np.mean(failures, axis=1)-100*(1-get_probas(time,X))**2)**2)
+tauP = 1.0
+Nmax = 2
 
-res = minimize(to_minimize, x0=[np.max(probas), np.min(probas), 0.3, tauP],
-               bounds=[[0.9*np.min(probas),min([1,1.1*np.max(probas)])],
-                       [0.9*np.min(probas),min([1,1.1*np.max(probas)])],
-                       [0,np.max(probas)],
+def get_probas(pre_spikes, X):
+    P0, P1, dP, tauP = X
+    P = np.ones(len(pre_spikes))*P0
+    for i in range(len(pre_spikes)-1):
+        P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/abs((P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+    return P
+
+def to_minimize(X):
+    if X[2]>abs(X[1]-X[0]):
+        # dp > abs(p01-p1) --> forbidden !
+        return 1e5
+    else:
+        Ps_PR = get_probas(time_PR, X) # paired recordings pred.
+        Ps_SN = get_probas(time_SN, X) # sniffer protocol pred.
+        residual_PR = np.mean((Pratios.mean(axis=1)-Ps_PR/Ps_PR[0])**2)
+        residual_SN = abs(np.mean(Ps_SN)-sniffer['p_mean'])
+        return residual_PR+np.sign(residual_SN-1e-2)
+                
+
+res = minimize(to_minimize, x0=[1.1*sniffer['p_mean'], 0.8*sniffer['p_mean'], 0.1, tauP],
+               method='Nelder-Mead',
+               bounds=[[Pratios.mean(axis=1).min()*sniffer['p_mean'], 1.],
+                       [Pratios.mean(axis=1).min()*sniffer['p_mean'], 1.],
+                       [0.05,0.5],
                        [tauP, tauP]])
 
-fig, [ax, ax2] = pt.figure(axes=(2,1), figsize=(1.1,1.2), hspace=0.3)
-for i in range(failures.shape[1]):
-    ax.scatter(time+np.random.randn()*5e-3, failures[:,i], color='k', marker='o', s=0.1)
+fig, ax = pt.figure(figsize=(1.1,1.2), hspace=0.3, right=10.)
+ax2 = pt.inset(ax, [1.6, 0, 0.3, 0.8])
     
-pt.scatter(time, np.mean(failures, axis=1), sy=failures.std(axis=1), ax=ax, alpha=0.5)
-#ax.errorbar(time, np.mean(failures, axis=1), yerr=failures.std(axis=1), fmt='o-',color='k', lw=2, alpha=0.5)
-ax2.errorbar(time, probas, fmt='o-',color='grey', lw=2, alpha=0.5)
+pt.scatter(1+np.arange(5), Pratios.mean(axis=1), sy=2*stats.sem(Pratios, axis=1), ax=ax, alpha=0.5)
 
-ax.plot(time, 100*(1-get_probas(time, res.x))**2, ':', color='magenta')
-ax2.plot(time, get_probas(time, res.x), '-', color='magenta')
+Ps = get_probas(time_PR, res.x)
+ax.plot(1+np.arange(5), Ps/Ps[0], '-', color='magenta')
 
-sf = 'fit: '
+ax2.bar([1], [sniffer['p_mean']], yerr=[sniffer['p_sem']], color='dimgrey')
+ax2.bar([0], [np.mean(get_probas(time_SN, res.x))], color='magenta')
+sf = 'fitted: '
 for s, p in zip(['$p_0$', '$p_\infty$', '$\delta p$'], res.x):
     sf += s+'=%.2f, '%p
-pt.annotate(ax2, sf[:-2], (0.5,1.), ha='center', fontsize='x-small', color='magenta')
-pt.annotate(ax, 'n=%i' % failures.shape[1], (0,1), va='top', fontsize='small')
-pt.set_plot(ax, xlabel='time (s)', ylabel='failure $f$ (%)', yticks=[0,10,20],xticks=[0,0.2,0.4])
-pt.set_plot(ax2, xlabel='time (s)', ylabel='rel. proba.', ylim=[0.699,0.95], yticks=[0.7,0.8,0.9],xticks=[0,0.2,0.4])
-pt.annotate(ax2, '1-$\sqrt{f}$ \n', (0,0), color='grey')
-pt.annotate(ax2, '$N_{max}=2$, $\\tau_p$=1s', (0,0), color='magenta', fontsize='x-small')
+pt.annotate(ax, sf[:-2], (1.4,1.3), ha='center', fontsize='x-small', color='magenta')
+pt.annotate(ax, 'fixed: $N_{max}=%i$, $\\tau_p$=%0ds' % (Nmax, tauP) , (-0.2,1.3), color='magenta', fontsize='x-small')
+
+pt.annotate(ax, 'paired recordings\n%i APs @ 20Hz' % Pratios.shape[0], (0.5,1), va='center', ha='center', fontsize='small')
+pt.annotate(ax, 'sniffer data\n7 APs @ 10Hz', (1.7,1.), va='center', ha='center', fontsize='small')
+#pt.annotate(ax, '[Ca$^{2+}$]=2mM', (1,0), va='bottom', ha='left', fontsize='xx-small', rotation=90)
+pt.annotate(ax2, '[Ca$^{2+}$]=1.5mM', (1,0), va='bottom', ha='left', fontsize='xx-small', rotation=90)
+pt.annotate(ax, 'n=%i' % Pratios.shape[1], (0,0), fontsize='small')
+pt.annotate(ax2, ' n=%i' % sniffer['n'], (1,0), ha='center', xycoords='data', fontsize='small', color='w', rotation=90)
+ax.plot([0,9], [1,1], 'k:', lw=0.3)
+pt.set_plot(ax, xlabel='$n$ (AP #)', ylabel='$p_n$/$p_1$', xlim=[0.5,5.5], xticks=1+np.arange(3)*2, yticks=range(3),ylim=[0,2])
+pt.set_plot(ax2, ylabel=r' $\langle$p$\rangle$ ves. rel.',
+            xticks=[0,1], xticks_labels=['fit', 'data'], xticks_rotation=50)
+
 fig.savefig('../figures/detailed_model/STPsupp_data_PV.svg')
 
 # %%
 PV_model = {'P0':res.x[0], 'P1':res.x[1], 'dP':res.x[2], 'tauP':tauP, 'Nmax':2}
-fig = sim_release(events=0.1+np.arange(5)/10., tstop=0.65, release_proba_params=PV_model, seed=1)
+fig = sim_release(events=0.1+np.arange(9)/20., tstop=0.65, release_proba_params=PV_model, seed=0)
 fig.savefig('../figures/detailed_model/STPsupp_model_PV.svg')
 np.save('../data/detailed_model/PV_stp.npy', PV_model)
 
@@ -732,9 +801,12 @@ COLORS = ['tab:red', 'tab:orange']
 fig, ax = pt.figure(figsize=(1.1,1.))
 for i, model in enumerate(SIMS['models']):
     cond = t>0.8
-    CCF, time_shift = crosscorrel(rate[cond], SIMS['release_%s'%model][cond], 1.3, dt)
+    CCF, time_shift = crosscorrel(rate[cond], SIMS['release_%s'%model][cond], 1.4, dt)
     ax.plot(time_shift, CCF/np.max(CCF), '-', lw=1, color=COLORS[i])
     pt.annotate(ax, i*'\n'+model, (1,1), color=COLORS[i],  va='top')
+    
+ACF, time_shift = autocorrel(rate[cond], 1.4, dt)
+ax.plot(time_shift, ACF/np.max(ACF), '-', lw=0.5, color='grey')
 
 pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.',
             title='(glutamate)\nrelease dynamics', yticks=[0.5,1])

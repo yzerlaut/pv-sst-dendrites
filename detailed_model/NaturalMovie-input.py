@@ -70,6 +70,40 @@ ax.annotate('1s',(tlim[1]-.5,8.5), ha='center')
 ax.plot(-1*np.ones(2), [4, 8], 'k-')
 pt.set_plot(ax, [], xlim=tlim, title='"visual_coding" data')
 
+# %% [markdown]
+# # Single trial example
+#
+# ```
+# python natMovie_sim.py --test --with_STP  -c Basket --tstop 500 --synapse_subsampling 20 --with_presynaptic_spikes
+# ```
+
+# %%
+results = np.load('single_sim.npy', allow_pickle=True).item()
+
+t = np.arange(len(results['Vm_soma']))*results['dt']
+fig, AX = pt.figure(axes_extents=[[(1,2)],[(1,1)]],
+                    figsize=(3,1), left=0, bottom=0., hspace=0.)
+#AX[0].plot(t, results['Vm_dend'], 'k:', lw=0.5, label=' distal\ndendrite')
+AX[0].plot(t, results['Vm_soma'], 'tab:brown', label='soma')
+AX[0].plot(t, -60+0*t, 'k:')
+pt.annotate(AX[0], '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
+pt.draw_bar_scales(AX[0], Xbar=100, Xbar_label='100ms', Ybar=10, Ybar_label='10mV')
+AX[0].legend(frameon=False, loc=(1, 0.3))
+for i, events in enumerate(results['presynaptic_exc_events']):
+    AX[1].scatter(events, i*np.ones(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=3)
+for i, events in enumerate(results['presynaptic_inh_events']):
+    AX[1].scatter(events, len(results['presynaptic_exc_events'])+i*np.ones(len(events)),
+                  facecolor='r', edgecolor=None, alpha=.35, s=3)
+    
+pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
+pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
+
+print('\n number of excitatory events: %i \n ' %\
+              np.sum([len(E) for E in results['presynaptic_exc_events']]))
+pt.set_common_xlims(AX, lims=[t[0], t[-1]])
+for ax in AX:
+    ax.axis('off')
+
 # %%
 from scipy.ndimage import gaussian_filter1d
 
@@ -87,6 +121,7 @@ for cellType in ['Martinotti', 'Basket']:
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
+    sim.fetch_quantity_on_grid('synapses', dtype=list)
 
     seeds = np.unique(sim.spikeSeed)
 
@@ -100,8 +135,6 @@ for cellType in ['Martinotti', 'Basket']:
     RESULTS['rate_%s' % cellType] = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                            int(rate_smoothing/dt))
     
-
-    RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
     RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
 
     sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=np.ndarray)
@@ -120,22 +153,24 @@ for cellType in ['Martinotti', 'Basket']:
     print(cellType, '%.2f Hz' % np.mean(RESULTS['rate_%s' % cellType][RESULTS['t']>2e3]))
 
 # %%
-zoom = [0, 4000]
+zoom = [100, 4000]
 
 RESULTS['Martinotti_example_index'] = 0 # 23, 30, 39, 41
-RESULTS['Basket_example_index'] = 1
+RESULTS['Basket_example_index'] = 0
 
 for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
     
     sim = Parallel(filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
     sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
+    sim.fetch_quantity_on_grid('synapses', return_last=True, dtype=list)
     RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
     RESULTS['pre_exc_%s' % cellType] = sim.presynaptic_exc_events[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
     RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
-
+    sim.fetch_quantity_on_grid('synapses', dtype=list)
+    synapses = sim.synapses[RESULTS['%s_example_index' % cellType]]
     fig, AX = pt.figure(axes_extents=[[(1,1)],[(1,1)],[(1,2)],[(1,1)]],
                         figsize=(1.5,0.8), left=0, bottom=0., hspace=0.)
     # input
@@ -151,23 +186,24 @@ for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
         
     # events
     if 'pre_inh_%s'%cellType in RESULTS:
-        subsampling = 8 if cellType=='Basket' else 1
+        subsampling = 2 if cellType=='Basket' else 1
         # 1/4 for display
         for i, events in enumerate(RESULTS['pre_exc_%s' % cellType][::subsampling]):
-            AX[1].plot(events, i*np.ones(len(events)), '.', color='g', ms=.5)
+            AX[1].scatter(events, i%len(synapses)+np.zeros(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=.5)
         for i, events in enumerate(RESULTS['pre_inh_%s' % cellType][::subsampling]):
-            AX[1].plot(events, 
-                       len(RESULTS['pre_exc_%s' % cellType])/subsampling+i*np.ones(len(events)), '.', 
-                       color='r', ms=.5)
+            AX[1].scatter(events,
+                       len(RESULTS['pre_exc_%s' % cellType])/subsampling+i*np.ones(len(events)), 
+                       facecolor='r', edgecolor=None, alpha=.35, s=.5)
 
     pt.set_common_xlims(AX, lims=zoom)
     pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=2,
-                       Ybar_label='%.1fmHz/syn.' % (2*1e3*RESULTS['stimFreq_%s' % cellType]),
-                       Ybar_label2='%.1fmHz/syn.' % (2*1e3*RESULTS['stimFreq_%s' % cellType]*RESULTS['bgFreqInhFactor_%s' % cellType]))
+                       #Ybar_label2='%.0fHz/syn.' % (2*RESULTS['bgFreqInhFactor_%s' % cellType]),
+                       Ybar_label='%.0fHz/syn.' % (2))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
-    pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
-    pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
+    pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r', fontsize=7)
+    pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g', fontsize=7)
+    pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=7)
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')

@@ -1,5 +1,6 @@
 from neuron import h
 import numpy as np
+from math import comb # binomial coefficient
 
 def PoissonSpikeTrain(freq,
                       dt=None,
@@ -24,6 +25,27 @@ def PoissonSpikeTrain(freq,
     else:
         print('\n missing input --> no spikes generated ! \n')
 
+def STP_release_filter(pre_spikes,
+                       P0 = 1.0, # proba at 0-frequency
+                       P1 = 1.0, # proba at oo-frequency
+                       dP = 0.0, # proba increment
+                       tauP = 1.0, # seconds
+                       Nmax=1):
+    """
+    model of spike timing dynamics
+        see Synaptic-Dynamics.ipynb notebook
+    """
+    # build the time-varing release probability:
+    P = np.ones(len(pre_spikes))*P0 # initialized
+    for i in range(len(pre_spikes)-1):
+        P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/(abs(P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
+    # build the probabilities of each number of vesicles ([!!] from Nmax to 1 [!!] ) :
+    Ps = np.cumsum([ (comb(Nmax, n) * P**n * (1-P)**(Nmax-n)) for n in np.arange(Nmax, 0, -1)], axis=0)
+    # draw random numbers:
+    R = np.random.uniform(0, 1, size=len(pre_spikes))
+    # find number of vesicles released:
+    N = np.sum((Ps/R>1).astype(int), axis=0)
+    return N
 
 def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
@@ -50,7 +72,7 @@ def add_synaptic_input(cell, synapses,
         
         for i, syn in enumerate(synapses):
 
-            np.random.seed(syn)
+            np.random.seed(syn*(1+nVesicles))
 
             VECSTIMS.append(h.VecStim())
 

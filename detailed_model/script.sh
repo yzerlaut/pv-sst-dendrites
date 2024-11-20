@@ -162,22 +162,28 @@ then
     python natMovie_sim.py --test_with_repeats\
                             -c Basket\
                             --with_presynaptic_spikes\
-                            --stimFreq 1.2e-3\
-                            --bgFreqInhFactor 1.00\
                             --iBranch 1\
-                            --tstop 50.\
+                            --tstop 4000.\
                             --dt 0.025\
-                            --nSpikeSeed 16
+                            --bgFreqInhFactor 1.0\
+                            --Inh_fraction 0.01\
+                            --synapse_subsampling 20\
+                            --with_STP\
+                            --nSpikeSeed 12
+    # -----------------------
     # Martinotti Cell
-    python natMovie_sim.py --test_with_repeats\
-                             -c Martinotti\
-                             --with_NMDA --with_presynaptic_spikes\
-                             --stimFreq 5e-5\
-                             --tstop 50.\
-                             --dt 0.025\
-                             --bgFreqInhFactor 1\
-                             --iBranch 1\
-                             --nSpikeSeed 16
+    #python natMovie_sim.py --test_with_repeats\
+                             #-c Martinotti\
+                             #--with_NMDA\
+                             #--with_presynaptic_spikes\
+                             #--Inh_fraction 0.25\
+                             #--tstop 4000.\
+                             #--dt 0.025\
+                             #--iBranch 1\
+                             #--synapse_subsampling 8\
+                             #--with_STP\
+                             #--nSpikeSeed 12
+    # -----------------------
     # Martinotti Cell, no NMDA
     #python tvRate_sim.py --test_with_repeats\
                          #-c Martinotti\

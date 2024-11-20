@@ -12,11 +12,10 @@ def run_sim(cellType='Basket',
             iBranch=0,
             from_uniform=False,
             # stim props
-            meanStim=2.,
-            stdStim=0.75,
-            # bg stim
-            stimFreq=1e-3,
+            with_STP=False,
             bgFreqInhFactor=4.,
+            Inh_fraction=15./100.,
+            synapse_subsampling=5,
             spikeSeed=2,
             # biophysical props
             with_NMDA=False,
@@ -28,7 +27,8 @@ def run_sim(cellType='Basket',
             dt= 0.01):
 
     from cell_template import Cell, h, np, os
-    from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+    from synaptic_input import add_synaptic_input, PoissonSpikeTrain,\
+                                    STP_release_filter
     h.dt = dt
 
     ########################################################
@@ -43,19 +43,32 @@ def run_sim(cellType='Basket',
             np.mean(RATES['PV_negUnits'], axis=0)+\
             np.mean(RATES['SST_negUnits'], axis=0))
     # scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
-    scaled_neg_rates = neg_rates/np.std(neg_rates)
+    # scaled_neg_rates = np.clip(scaled_neg_rates, 0, np.inf) # IF ABOVE, need to clip
+    # scaled_neg_rates = neg_rates/np.std(neg_rates)
+    scaled_neg_rates = neg_rates
+
 
     ######################################################
     ##   simulation preparation  #########################
     ######################################################
 
+    STP_model = {'P0':1.00, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+
     # create cell
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
         params_key='BC'
+        if with_STP:
+            STP_model = np.load('../data/detailed_model/PV_stp.npy',
+                                allow_pickle=True).item()
+            print(STP_model)
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
+        if with_STP:
+            STP_model = np.load('../data/detailed_model/SST_stp.npy',
+                                allow_pickle=True).item()
+            print(STP_model)
     else:
         raise Exception(' cell type not recognized  !')
 
@@ -71,38 +84,47 @@ def run_sim(cellType='Basket',
         synapses = cell.set_of_synapses[iBranch]
         # synapses = [cell.set_of_synapses[iBranch]\
                         # for iBranch in range(6)]
+    synapses = synapses[::synapse_subsampling]
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
-                                                       with_NMDA=with_NMDA)
+                                                 Nmax_release=STP_model['Nmax'],
+                                                 Inh_fraction=Inh_fraction,
+                                                 with_NMDA=with_NMDA)
 
-    # Time-Varying Rate (clipped to positive-values)
+    # Time-Varying Rate 
     Rate = np.interp(np.arange(0, tstop, dt), 
                                 t[t<=tstop],
                                   scaled_neg_rates[t<=tstop])
 
     # -- background activity 
     np.random.seed(spikeSeed)
-    TRAINS = []
+    TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*Rate, 
-                                                 dt=dt,
-                                                 tstop=tstop)))
+            # we draw one spike train:
+            train_s = np.array(PoissonSpikeTrain(Rate, 
+                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            # STP only in excitatory
+            N = STP_release_filter(train_s, **STP_model)
+            for n in range(1, STP_model['Nmax']+1):
+                # we split according to release number ++ train to ** ms **
+                TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*bgFreqInhFactor*Rate,
-                                                 dt=dt,
-                                                 tstop=tstop)))
+            # GABA -> only single release
+            train_s = np.array(PoissonSpikeTrain(Rate, 
+                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            TRAINS[i] += list(1e3*train_s) # to ** ms **
 
     # -- reordering spike trains
-    for i, syn in enumerate(synapses):
+    for i in range(len(TRAINS)):
         TRAINS[i] = np.sort(TRAINS[i])
 
     # -- link events to synapses
-    for i, syn in enumerate(synapses):
-
+    for i in range(len(TRAINS)):
+        # print(i, i%len(synapses), excitatory[i%len(synapses)], len(TRAINS[i]))
         STIMS.append(h.Vector(TRAINS[i]))
         VECSTIMS[i].play(STIMS[-1])
 
@@ -130,7 +152,6 @@ def run_sim(cellType='Basket',
                 np.argwhere((Vm[1:]>spike_threshold) &\
                                     (Vm[:-1]<=spike_threshold)),
               'synapses':synapses,
-              'stimFreq':stimFreq,
               'bgFreqInhFactor':bgFreqInhFactor,
               'dt': dt, 
               'tstop':tstop}
@@ -139,10 +160,19 @@ def run_sim(cellType='Basket',
         output['Vm_soma'] = Vm
 
     if with_presynaptic_spikes:
-        output['presynaptic_exc_events'] = [TRAINS[i]\
-                for i in range(len(excitatory)) if excitatory[i]]
+
+        # inhibitory
         output['presynaptic_inh_events'] = [TRAINS[i]\
                 for i in range(len(excitatory)) if not excitatory[i]]
+
+        # excitatory, need to loop over N
+        output['presynaptic_exc_events'] = [[]\
+                for i in range(len(synapses)) if excitatory[i]]
+        for e, i in enumerate(np.arange(len(synapses))[excitatory]):
+            for n in range(STP_model['Nmax']):
+                for k in range(n+1):
+                    output['presynaptic_exc_events'][e] +=\
+                                        list(TRAINS[i+n*len(synapses)])
 
     np.save(filename, output)
 
@@ -163,8 +193,9 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # bg stim props
-    parser.add_argument("--stimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
+    parser.add_argument("--Inh_fraction", type=float, default=15./100.)
+    parser.add_argument("--synapse_subsampling", type=int, default=5)
     parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
@@ -179,6 +210,7 @@ if __name__=='__main__':
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
     parser.add_argument("--from_uniform", action="store_true")
+    parser.add_argument("--with_STP", action="store_true")
 
     parser.add_argument("--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
@@ -196,20 +228,23 @@ if __name__=='__main__':
     parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
-    parser.add_argument("--tstop", type=float, default=0.)
+    parser.add_argument("--tstop", help='in ms, switch to 0 for full sim.',
+                        type=float, default=1000.)
 
     args = parser.parse_args()
      
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
-                  stimFreq=args.stimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
+                  Inh_fraction=args.Inh_fraction,
+                  synapse_subsampling=args.synapse_subsampling,
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   from_uniform=args.from_uniform,
+                  with_STP=args.with_STP,
                   no_Vm=args.no_Vm,
                   tstop=args.tstop,
                   dt=args.dt)
