@@ -159,6 +159,7 @@ fi
 if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
     nSpikeSeed=4
+    sleep 20h
     ## Basket Cell
     #python natMovie_sim.py -c Basket\
                             #--tstop 40000.\
