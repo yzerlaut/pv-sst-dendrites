@@ -61,7 +61,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.7, 'P1':0.7, 'dP':0.00, 'tauP':1.0, 'Nmax':2}
+            STP_model = {'P0':0.80, 'P1':0.80, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
@@ -69,7 +69,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/SST_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.4, 'P1':0.4, 'dP':0.00, 'tauP':1.0, 'Nmax':2}
+            STP_model = {'P0':0.60, 'P1':0.60, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     else:
         raise Exception(' cell type not recognized  !')
 
