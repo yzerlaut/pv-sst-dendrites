@@ -161,10 +161,8 @@ then
     nSpikeSeed=4
     ## Basket Cell
     python natMovie_sim.py -c Basket\
-                            --with_presynaptic_spikes\
                             --tstop 40000.\
                             --dt 0.025\
-                            --bgFreqInhFactor 1.0\
                             --Inh_fraction 0.025 0.05 0.1 0.15 \
                             --synapse_subsampling 1 2 4 8 12\
                             --nSpikeSeed $nSpikeSeed\
@@ -174,9 +172,9 @@ then
     # Martinotti Cell
     python natMovie_sim.py -c Martinotti\
                              --tstop 40000.\
-                            --Inh_fraction 0.025 0.05 0.1 0.15 \
-                            --synapse_subsampling 1 2 4 8 12\
                              --dt 0.025\
+                             --Inh_fraction 0.025 0.05 0.1 0.15 \
+                             --synapse_subsampling 1 2 4 8 12\
                              --nSpikeSeed $nSpikeSeed\
                              --with_NMDA\
                              --with_STP\
