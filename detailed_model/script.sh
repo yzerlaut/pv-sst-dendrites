@@ -153,44 +153,89 @@ fi
 
 
 ##########################################################
-##### time-varying rate Stochastic Inputs (Fig. 5) #######
+#####     Natural Movie Input Dynamics (Fig. x)    #######
 ##########################################################
 #
-if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
+if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
+    nSpikeSeed=4
     ## Basket Cell
-    python natMovie_sim.py --test_with_repeats\
-                            -c Basket\
+    python natMovie_sim.py -c Basket\
                             --with_presynaptic_spikes\
-                            --iBranch 1\
-                            --tstop 4000.\
+                            --tstop 40000.\
                             --dt 0.025\
                             --bgFreqInhFactor 1.0\
-                            --Inh_fraction 0.01\
-                            --synapse_subsampling 20\
+                            --Inh_fraction 0.025 0.05 0.1 0.15 \
+                            --synapse_subsampling 1 2 4 8 12\
+                            --nSpikeSeed $nSpikeSeed\
                             --with_STP\
-                            --nSpikeSeed 12
+                             --no_Vm
+    # -----------------------
+    # Martinotti Cell
+    python natMovie_sim.py -c Martinotti\
+                             --tstop 40000.\
+                            --Inh_fraction 0.025 0.05 0.1 0.15 \
+                            --synapse_subsampling 1 2 4 8 12\
+                             --dt 0.025\
+                             --nSpikeSeed $nSpikeSeed\
+                             --with_NMDA\
+                             --with_STP\
+                             --no_Vm
+fi
+
+
+if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
+then
+    nSpikeSeed=12
+    ## Basket Cell
+    #python natMovie_sim.py --test_with_repeats\
+                            #-c Basket\
+                            #--with_presynaptic_spikes\
+                            #--iBranch 1\
+                            #--tstop 4000.\
+                            #--dt 0.025\
+                            #--bgFreqInhFactor 1.0\
+                            #--Inh_fraction 0.05\
+                            #--synapse_subsampling 2\
+                            #--with_STP\
+                            #--nSpikeSeed $nSpikeSeed
     # -----------------------
     # Martinotti Cell
     #python natMovie_sim.py --test_with_repeats\
                              #-c Martinotti\
-                             #--with_NMDA\
                              #--with_presynaptic_spikes\
-                             #--Inh_fraction 0.25\
+                             #--Inh_fraction 0.2\
                              #--tstop 4000.\
                              #--dt 0.025\
                              #--iBranch 1\
-                             #--synapse_subsampling 8\
-                             #--with_STP\
-                             #--nSpikeSeed 12
+                             #--synapse_subsampling 12\
+                             #--nSpikeSeed $nSpikeSeed\
+                             #--with_NMDA\
+                             #--with_STP
+    # -----------------------
+    # Martinotti Cell -- NO STP
+    python natMovie_sim.py --test_with_repeats\
+                             -c Martinotti\
+                             --with_presynaptic_spikes\
+                             --Inh_fraction 0.2\
+                             --tstop 4000.\
+                             --dt 0.025\
+                             --iBranch 1\
+                             --synapse_subsampling 12\
+                             --nSpikeSeed $nSpikeSeed\
+                             --with_NMDA\
+                             --suffix noSTP
     # -----------------------
     # Martinotti Cell, no NMDA
-    #python tvRate_sim.py --test_with_repeats\
-                         #-c Martinotti\
-                         #--with_presynaptic_spikes\
-                         #--stimFreq 1e-3\
-                         #--bgFreqInhFactor 1\
-                         #--iBranch 1\
-                         #--nSpikeSeed 56\
-                         #--suffix noNMDA 
+    python natMovie_sim.py --test_with_repeats\
+                             -c Martinotti\
+                             --with_presynaptic_spikes\
+                             --Inh_fraction 0.2\
+                             --tstop 4000.\
+                             --dt 0.025\
+                             --iBranch 1\
+                             --synapse_subsampling 12\
+                             --nSpikeSeed $nSpikeSeed\
+                             --with_STP\
+                             --suffix noNMDA
 fi

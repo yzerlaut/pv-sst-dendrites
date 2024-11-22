@@ -113,8 +113,7 @@ rate_smoothing = 10. # ms
 RESULTS = {'Martinotti_example_index':0,
            'Basket_example_index':0} # 4, 11 ok, 13 good
 
-#for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'BasketUniform']:
-for cellType in ['Martinotti', 'Basket']:
+for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
 
     sim = Parallel(\
             filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
@@ -156,9 +155,12 @@ for cellType in ['Martinotti', 'Basket']:
 zoom = [100, 4000]
 
 RESULTS['Martinotti_example_index'] = 0 # 23, 30, 39, 41
+RESULTS['MartinottinoNMDA_example_index'] = 0 # 23, 30, 39, 41
+RESULTS['MartinottinoSTP_example_index'] = 0 # 23, 30, 39, 41
 RESULTS['Basket_example_index'] = 0
 
-for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
+for cellType, color in zip(['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
+                           ['tab:red', 'tab:orange', 'tab:purple', 'tab:pink']):
     
     sim = Parallel(filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
@@ -196,14 +198,14 @@ for cellType, color in zip(['Basket', 'Martinotti'], ['tab:red', 'tab:orange']):
                        facecolor='r', edgecolor=None, alpha=.35, s=.5)
 
     pt.set_common_xlims(AX, lims=zoom)
-    pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=2,
+    pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=4,
                        #Ybar_label2='%.0fHz/syn.' % (2*RESULTS['bgFreqInhFactor_%s' % cellType]),
-                       Ybar_label='%.0fHz/syn.' % (2))
+                       Ybar_label='%.0fHz ' % (4))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r', fontsize=7)
     pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g', fontsize=7)
-    pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=7)
+    pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=6)
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')

@@ -13,7 +13,6 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # stim props
             with_STP=False,
-            bgFreqInhFactor=4.,
             Inh_fraction=15./100.,
             synapse_subsampling=5,
             spikeSeed=2,
@@ -61,14 +60,16 @@ def run_sim(cellType='Basket',
         if with_STP:
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
-            print(STP_model)
+        else:
+            STP_model = {'P0':0.7, 'P1':0.7, 'dP':0.00, 'tauP':1.0, 'Nmax':2}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
         if with_STP:
             STP_model = np.load('../data/detailed_model/SST_stp.npy',
                                 allow_pickle=True).item()
-            print(STP_model)
+        else:
+            STP_model = {'P0':0.4, 'P1':0.4, 'dP':0.00, 'tauP':1.0, 'Nmax':2}
     else:
         raise Exception(' cell type not recognized  !')
 
@@ -151,10 +152,11 @@ def run_sim(cellType='Basket',
               'spikes':dt*\
                 np.argwhere((Vm[1:]>spike_threshold) &\
                                     (Vm[:-1]<=spike_threshold)),
-              'synapses':synapses,
-              'bgFreqInhFactor':bgFreqInhFactor,
-              'dt': dt, 
-              'tstop':tstop}
+               'Inh_fraction':Inh_fraction,
+               'synapse_subsampling':synapse_subsampling,
+               'synapses':synapses,
+               'dt': dt, 
+               'tstop':tstop}
 
     if not no_Vm:
         output['Vm_soma'] = Vm
@@ -193,9 +195,10 @@ if __name__=='__main__':
                         """, default='Basket')
     
     # bg stim props
-    parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
-    parser.add_argument("--Inh_fraction", type=float, default=15./100.)
-    parser.add_argument("--synapse_subsampling", type=int, default=5)
+    parser.add_argument("--Inh_fraction", type=float, 
+                        nargs='*', default=[15./100.])
+    parser.add_argument("--synapse_subsampling", type=int, 
+                        nargs='*', default=[5])
     parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
@@ -236,9 +239,8 @@ if __name__=='__main__':
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
-                  bgFreqInhFactor=args.bgFreqInhFactor,
-                  Inh_fraction=args.Inh_fraction,
-                  synapse_subsampling=args.synapse_subsampling,
+                  Inh_fraction=args.Inh_fraction[0],
+                  synapse_subsampling=args.synapse_subsampling[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
@@ -289,7 +291,9 @@ if __name__=='__main__':
                 filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
                                 (b, args.cellType+args.suffix))
 
-            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
+                        Inh_fraction=args.Inh_fraction,
+                        synapse_subsampling=args.synapse_subsampling)
 
             if args.test_uniform:
                 grid = dict(from_uniform=[False, True], **grid)
