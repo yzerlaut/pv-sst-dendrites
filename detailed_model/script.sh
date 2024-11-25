@@ -160,30 +160,29 @@ if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
     nSpikeSeed=4
     ## Basket Cell
-    #python natMovie_sim.py -c Basket\
-                            #--tstop 40000.\
-                            #--dt 0.025\
-                            #--Inh_fraction 0.025 0.05 0.1 0.15 \
-                            #--synapse_subsampling 1 2 4 8 12\
-                            #--nSpikeSeed $nSpikeSeed\
-                            #--with_STP\
-                            #--no_Vm\
-                            #--fix_missing_only\
-                            #--suffix InputRange
+    python natMovie_sim.py -c Basket\
+                             --tstop 20000.\
+                             --dt 0.05\
+                             --Inh_fraction 0.05 0.1 0.15\
+                             --synapse_subsampling 1 2 4\
+                            --nSpikeSeed $nSpikeSeed\
+                            --with_STP\
+                            --no_Vm\
+                            --suffix InputRange
                             
     # -----------------------
     # Martinotti Cell
-    python natMovie_sim.py -c Martinotti\
-                             --tstop 20000.\
-                             --dt 0.05\
-                             --Inh_fraction 0.025 0.05 0.1 \
-                             --synapse_subsampling 4 8 12\
-                             --nSpikeSeed $nSpikeSeed\
-                             --with_NMDA\
-                             --with_STP\
-                             --no_Vm\
-                             --fix_missing_only\
-                             --suffix InputRange
+    #python natMovie_sim.py -c Martinotti\
+                             #--tstop 20000.\
+                             #--dt 0.05\
+                             #--Inh_fraction 0.025 0.05 0.1 \
+                             #--synapse_subsampling 4 8 12\
+                             #--nSpikeSeed $nSpikeSeed\
+                             #--with_NMDA\
+                             #--with_STP\
+                             #--no_Vm\
+                             #--fix_missing_only\
+                             #--suffix InputRange
     # -----------------------
     ## Basket Cell
     #python natMovie_sim.py -c Basket\
