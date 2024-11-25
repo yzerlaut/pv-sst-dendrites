@@ -182,6 +182,7 @@ then
                              --with_NMDA\
                              --with_STP\
                              --no_Vm\
+                             --fix_missing_only\
                              --suffix InputRange
     # -----------------------
     ## Basket Cell

@@ -154,13 +154,16 @@ class Parallel:
                     # # Exit the completed processes
                     for p in PROCESSES[Nmax_simultaneous_processes*i:Nmax_simultaneous_processes*(i+1)]:
                         p.join()
-                    print('multiprocessing loop: %i/%i' % (i, len(PROCESSES)//Nmax_simultaneous_processes))
+                    print('multiprocessing loop: %i/%i' % (i+1, len(PROCESSES)//Nmax_simultaneous_processes))
                     # print('   n=%i/%i' % (i*len(PROCESSES), len(PROCESSES)))
 
-            # write all single sim files in the zip file
-            for FN in self.PARAMS_SCAN['filenames']:
-                print('writing', FN, ' in zip folder')
-                zf.write(os.path.join(self.temp_folder, FN), arcname=FN)
+            # CHECK SUCCESS !
+            success = self.check_success()
+            if success:
+                # write all single sim files in the zip file
+                for FN in self.PARAMS_SCAN['filenames']:
+                    print('writing', FN, ' in zip folder')
+                    zf.write(os.path.join(self.temp_folder, FN), arcname=FN)
 
             # add the scan metadata to the zip
             np.save(self.scan_file, self.PARAMS_SCAN)
@@ -169,7 +172,7 @@ class Parallel:
             # close the zip file
             zf.close()
 
-            return self.check_success()
+            return success
 
         else:
             print(' need to build the simulation with the varied parameters ! ')
@@ -182,14 +185,15 @@ class Parallel:
             Nmax_simultaneous_processes=None,
             Nmax_check=10):
 
-        self.run_scan(single_run_func, 
-                single_run_args=single_run_args,
-                parallelize=parallelize,
-                fix_missing_only=fix_missing_only,
-                Nmax_simultaneous_processes=Nmax_simultaneous_processes)
+        # we do a first scan
+        success = self.run_scan(single_run_func, 
+                    single_run_args=single_run_args,
+                    parallelize=parallelize,
+                    fix_missing_only=fix_missing_only,
+                    Nmax_simultaneous_processes=Nmax_simultaneous_processes)
 
+        # we check that it was successfull and re-run N times if needed
         i=0
-        success = False
         while not success and i<Nmax_check:
             success = self.run_scan(single_run_func, 
                     single_run_args=single_run_args,
