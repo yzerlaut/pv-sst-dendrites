@@ -96,7 +96,6 @@ def add_synaptic_input(cell, synapses,
                 if (cell.params_key=='MC') and (not with_NMDA)\
                         and boost_AMPA_for_SST_noNMDA:
                     # boosted ampa weight
-                    print('boosting ampa without NMDA')
                     ampaNETCONS[-1].weight[0] = cell.params['%s_qAMPA'%cell.params_key]*\
                                     cell.params['%s_qAMPAonlyBoost'%cell.params_key]*\
                                     nVesicles

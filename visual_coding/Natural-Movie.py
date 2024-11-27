@@ -361,10 +361,11 @@ fig2.savefig('../figures/Figure5/CC_movie1_units_pooled.pdf')
 # ## 6.1) compute the time-varying rate
 
 # %%
-# loop over frames to build the time course
 PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
              'natural_movie_one':['natural_movie_one', 'natural_movie_one_more_repeats']}
 
+# %%
+# loop over frames to build the time course
 np.random.seed(0)
 
 for p in PROTOCOLS:
@@ -413,16 +414,11 @@ for p in PROTOCOLS:
     np.save(os.path.join('..', 'data', 'visual_coding',
                          'RATES_per_session_%s.npy' % p), RATES)
 
-# %%
-len(RATES['%s_negUnits_subsampled%i' % (cellType,ii)]), len(RATES['%s_negUnits' % cellType])
-RATES['%s_n_per_session' % cellType]
-
 # %% [markdown]
 # ## 6.2) Compute the cross-correlation
 
 # %%
-CCs = {'dt':RATES['time'][1]-RATES['time'][0],
-       'extent':1.5}
+CCs = {'extent':1.5}
 
 for cellType in ['PV', 'SST']:
     for u in ['pos', 'neg']:
@@ -435,7 +431,8 @@ for p in PROTOCOLS:
     
     RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_%s.npy' % p),
                     allow_pickle=True).item()
-
+    if 'dt' not in CCs:
+        CCs['dt'] = RATES['time'][1]-RATES['time'][0]
     for k, cellType, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 
         for u in ['pos', 'neg']:
