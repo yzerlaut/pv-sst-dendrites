@@ -52,7 +52,28 @@ def compute_rate_psth(sim, tstop, dt, seeds,
 # # Rate dynamics of PV, SST and ~Pyr populations
 
 # %%
+# let's compute the average rates that we will need:
 RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+                allow_pickle=True).item()
+subsampling = RATES['time']<100 
+dtype = np.float32
+Averaged = {
+    'time':np.array(RATES['time'][subsampling], dtype=dtype),
+    'PV_posUnits':np.array(np.mean(RATES['PV_posUnits'], axis=0)[subsampling], dtype=dtype),
+    'PV_negUnits':np.array(np.mean(RATES['PV_negUnits'], axis=0)[subsampling], dtype=dtype),
+    'SST_posUnits':np.array(np.mean(RATES['SST_posUnits'], axis=0)[subsampling], dtype=dtype),
+    'SST_negUnits':np.array(np.mean(RATES['SST_negUnits'], axis=0)[subsampling], dtype=dtype),
+}        
+for key in ['PV', 'SST']:
+    pos_rates = [np.mean(r) for r in RATES['%s_posUnits' % key], a
+        if label=='onset':
+            print(' - mean rate of "%s" cells: %.1f Hz' % (key, np.mean(pos_rates)))
+
+np.save(os.path.join('..', 'data', 'visual_coding', 'avRATES_natural_movie_one.npy'), 
+        Averaged)
+
+# %%
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'avRATES_natural_movie_one.npy'),
                 allow_pickle=True).item()
 
 fig, AX = pt.figure(axes=(2,1), figsize=(1.5,1), left=0.2)
@@ -62,9 +83,7 @@ for tlim, ax, label in zip([[-1.1, 6.], [27.9, 35.]], AX,
                            
     cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
     
-    neg_rates = 0.5*(\
-            np.mean(RATES['PV_negUnits'], axis=0)+\
-            np.mean(RATES['SST_negUnits'], axis=0))
+    neg_rates = 0.5*(RATES['PV_negUnits']+RATES['SST_negUnits'])
     scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
     
     
@@ -80,7 +99,6 @@ for tlim, ax, label in zip([[-1.1, 6.], [27.9, 35.]], AX,
                                 ['SST', 'PV'], 
                                 ['tab:orange', 'tab:red']):
     
-        pos_rates = np.mean(RATES['%s_posUnits' % key], axis=0)
         pt.annotate(ax, (k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
                     ha='right', va='top', color=pos_color)
         ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
@@ -120,23 +138,27 @@ for i, events in enumerate(results['presynaptic_inh_events']):
 pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
 pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
 
-print('\n number of excitatory events: %i \n ' %\
+print('\n - number of excitatory events: %i' %\
               np.sum([len(E) for E in results['presynaptic_exc_events']]))
+print(' - output rate: %.1f Hz\n' % (1e3*len(results['spikes'].flatten())/results['tstop']))
 pt.set_common_xlims(AX, lims=[t[0], t[-1]])
 for ax in AX:
     ax.axis('off')
+
+# %%
 
 # %% [markdown]
 # # Simulations -> finding input parameters to get ~15Hz output firing
 
 # %%
 results = {}
-#for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
 Nss, Nif = 3, 3
-with_traces = True
-for cellType in ['BasketInputRange_noSTP', 'BasketInputRange_noSTP']:
+with_traces = False
+#for cellType in ['MartinottiInputRange', 'BasketInputRange']:
+for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
     
     results['oRate_%s' % cellType] = np.zeros((6, Nss, Nif))
+    results['Inh_fraction'], results['synapse_subsampling'] = np.zeros((Nss, Nif)), np.zeros((Nss, Nif))
         
     for iBranch in range(6):
 
@@ -155,21 +177,26 @@ for cellType in ['BasketInputRange_noSTP', 'BasketInputRange_noSTP']:
             tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
 
             if with_traces and ('traceRate_%s' % cellType not in results):
-                results['traceRate_%s' % cellType] = np.zeros((6, Nss, Nif, int(tstop/dt)))
+                results['traceRate_%s' % cellType] = np.zeros((6, Nss, Nif, int(tstop/dt)+1))
 
             for i, iF in enumerate(results['Inh_fraction_%s' % cellType]):
                 for s, ss in enumerate(results['synapse_subsampling_%s' % cellType]):
-                    # compute RATE !
-                    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-                    for i, spikes in enumerate(sim.spikes[:][i][s]):
-                        print(spikes.max())
-                        spikes_matrix[i,(spikes/dt).astype('int')] = True
-                    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                                  int(100./dt))
+                    
                     # store !
                     t = np.arange(len(rate))*dt
-                    results['oRate_%s' % cellType][iBranch,s,i] = np.mean(rate[t>0.1e3])
+                    results['oRate_%s' % cellType][iBranch,s,i] = 1e3/tstop*\
+                                np.mean([len(sim.spikes[n][i][s]) for n in range(len(seeds))])
+                    results['Inh_fraction'][s,i] = sim.Inh_fraction[0][i][s]
+                    results['synapse_subsampling'][s,i] = sim.synapse_subsampling[0][i][s]
+                    
                     if with_traces:
+                        # compute time-varying RATE !
+                        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                        for i, spikes in enumerate(sim.spikes[:][i][s]):
+                            print(spikes.max())
+                            spikes_matrix[i,(spikes/dt).astype('int')] = True
+                        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                      int(100./dt))
                         results['traceRate_%s' % cellType][iBranch,s,i,:] = rate
                     
         except BaseException as be:
@@ -177,7 +204,10 @@ for cellType in ['BasketInputRange_noSTP', 'BasketInputRange_noSTP']:
             print(filename, ' not working')
 
 # %%
-results['oRate_BasketInputRange']
+
+# %%
+results['oRate_BasketInputRange_noSTP'][5,:,:]
+results['Inh_fraction']
 
 # %%
 pt.plot(results['traceRate_MartinottiInputRange_noSTP'][:,2,2,:].mean(axis=0))
@@ -353,19 +383,23 @@ from scipy.optimize import minimize
 # Lorentzian Fit of decay
 
 def lorentzian(t, X):
-    return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
-    
+    #return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
+    #return 1./(1+(t-X[1])**2/2/X[0]**2)
+    return 1./(1+(t)**2/2/X[0]**2)
+
+Func = lorentzian # Change here !
 def fit_half_width(shift, array,
-                       min_time=100e-3,
-                       max_time=1000e-3):
-    def func(X):
-        #return np.sum(np.abs(gaussian(shift, X)-array))
-        return np.sum(np.abs(lorentzian(shift, X)-array))
-    res = minimize(func, [3*min_time,0,1],
-                   bounds=[[min_time, max_time],
-                           [-max_time, max_time],
-                           [0,1]], method='L-BFGS-B')
+                   min_time=100,
+                   max_time=1000):
+    def to_minimize(X):
+        return np.sum(np.abs(Func(shift, X)-array))
+    res = minimize(to_minimize, [3*min_time],
+                   bounds=[[min_time, max_time]], method='L-BFGS-B')
     return res.x
+
+def norm(trace):
+    return (trace-np.min(trace))/(np.max(trace)-np.min(trace))
+    
 
     
 fig, ax = pt.figure(figsize=(0.8,0.85))
@@ -375,13 +409,14 @@ for k, cellType, color in zip(range(3),
                               ['tab:red', 'tab:orange']):
 
     i0 = int(len(CCs['time_shift'])/2)
+    fit_cond = (CCs['time_shift']>0) 
     
     #tau = fit_exponential_decay(CCs['time_shift'][i0:], CCs['%s_CC' % cellType][i0:]/CCs['%s_CC' % cellType][i0])
-    tau = fit_half_width(CCs['time_shift'], CCs['%s_CC' % cellType]/np.max(CCs['%s_CC' % cellType]))[0]
+    tau = fit_half_width(CCs['time_shift'][fit_cond], norm(CCs['%s_CC' % cellType][fit_cond]))[0]
     ax.bar([1+k], [1e-3*tau], color=color)
 
     if cellType=='Basket':
-        tau = fit_half_width(CCs['time_shift'], CCs['Input_CC']/np.max(CCs['Input_CC']))[0]
+        tau = fit_half_width(CCs['time_shift'][fit_cond], norm(CCs['Input_CC'][fit_cond]))[0]
         ax.bar([0], [1e-3*tau], color='tab:grey')
     
 
@@ -390,11 +425,8 @@ for k, cellType, color in zip(range(3),
     #plt.plot(ts, np.exp(-ts/tau), color=color)
 #pt.set_plot(ax, yticks=[0,50,100])
 
-pt.set_plot(ax, ['left'],             title='single seed',
-            #ylabel=u'\u00bd' + ' width\n(ms)',
-            ylabel='width (ms)')
-pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
-            ylabel=u'\u00bd' + ' width (ms)')
+pt.set_plot(ax, ['left'], title='single seed',
+            ylabel=u'\u00bd' + ' width (s)')
 
 #fig.savefig('../figures/detailed_model/Widths.svg')
 

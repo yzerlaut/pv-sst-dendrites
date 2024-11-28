@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -125,7 +125,7 @@ examples = {'PV':{'sessionID':0,
 
 rate_smoothing = 10e-3
 tmax = 3
-
+verbose = False
 
 for c, cellType in enumerate(examples.keys()):
 
@@ -145,7 +145,8 @@ for c, cellType in enumerate(examples.keys()):
                 filename = os.path.join('..', 'data', 'visual_coding', cellType, 
                                         '%s_unit_%i.npy' % (protocol, unit))
                 if os.path.isfile(filename):
-                    print('[ok]', cellType, key, protocol, unit, 'found')
+                    if verbose:
+                        print('[ok]', cellType, key, protocol, unit, 'found')
                     spikeResp = spikingResponse(None, None, None, filename=filename)
                     cond = spikeResp.t<tmax
                     rates.append(spikeResp.get_rate(smoothing=rate_smoothing)[cond])
@@ -155,7 +156,7 @@ for c, cellType in enumerate(examples.keys()):
                     AX[2*k].scatter(spikeResp.t[sCond], u+0*spikeResp.t[sCond], 
                                     s=0.05,
                                     color=examples[cellType]['%s_color'%key])
-                else:
+                elif verbose:
                     print('[X] ', cellType, key, protocol, unit, 'missing')
         print('number of repeats:', spikeResp.spike_matrix.shape[0], '  ', key, cellType)
 
@@ -239,6 +240,14 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
             pt.annotate(AX[u][k], 'n=%i' % len(rates), (1,1), va='top', ha='right', color=c)
             pt.set_plot(AX[u][k], ['left','bottom'] if u==4 else ['left'], 
                         ylabel='rate (Hz)', xlabel='time (s)' if u==4 else '')
+
+# %%
+RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+                allow_pickle=True).item()
+
+for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
+    mRate = [np.mean(r) for r in RATES[key+'_posUnits']]
+    print(' - "%s" firing rate: %.1f +/- %.1f Hz ' % (key, np.mean(mRate), np.std(mRate)))
 
 # %% [markdown]
 # # 5) Compute the Cross.-Correlation and its decay
