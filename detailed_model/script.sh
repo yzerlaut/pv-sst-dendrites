@@ -158,7 +158,7 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
 then
-    nSpikeSeed=80
+    nSpikeSeed=56
     ## Basket Cell
     python natMovie_sim.py --test_with_repeats\
                             -c Basket\
