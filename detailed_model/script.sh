@@ -210,7 +210,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
-    nSpikeSeed=4
+    nSpikeSeed=5
     # -----------------------
     ## Basket Cell
     python natMovie_sim.py -c Basket\
