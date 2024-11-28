@@ -248,33 +248,28 @@ for k, key, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 
 from scipy.optimize import minimize
 
+
 def gaussian(t, X):
     return (1-X[2])*np.exp(-(t-X[1])**2/2/X[0]**2)+X[2]
 
 def lorentzian(t, X):
-    return (1-X[2])*(1./(1+(t)**2/2/X[0]**2))+X[2]
-    
+    #return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
+    #return 1./(1+(t-X[1])**2/2/X[0]**2)
+    return 1./(1+(t)**2/2/X[0]**2)
+
+Func = lorentzian # Change here !
 def fit_half_width(shift, array,
-                   min_time=50e-3,
+                   min_time=100e-3,
                    max_time=1000e-3):
-    def func(X):
-        #return np.sum(np.abs(gaussian(shift, X)-array))
-        return np.sum(np.abs(lorentzian(shift, X)-array))
-    res = minimize(func, [3*min_time,0,1],
-                   bounds=[[min_time, max_time],
-                           [-max_time, max_time],
-                           [0,1]], method='L-BFGS-B')
+    def to_minimize(X):
+        return np.sum(np.abs(Func(shift, X)-array))
+    res = minimize(to_minimize, [3*min_time],
+                   bounds=[[min_time, max_time]], method='L-BFGS-B')
     return res.x
 
-if True:
-    plt.plot(time_shift, CCF1/np.max(CCF1), label='data')
-    plt.plot(time_shift, CCF2/np.max(CCF2), label='data')
-    #plt.plot(time_shift, gaussian(time_shift, fit_half_width(time_shift, CCF/np.max(CCF))), label='fit')
-    fit_cond = (time_shift>0) & (time_shift<1)
-    plt.plot(time_shift[fit_cond], lorentzian(time_shift[fit_cond], fit_half_width(time_shift[fit_cond], CCF1[fit_cond]/np.max(CCF1))), label='fit')
-    plt.plot(time_shift[fit_cond], lorentzian(time_shift[fit_cond], fit_half_width(time_shift[fit_cond], CCF2[fit_cond]/np.max(CCF2))), label='fit')
-    #plt.plot(ts, (1-C)*np.exp(-ts/tau)+C, '--', label='exp. fit')
-    plt.legend(loc=(1,0.3))
+def norm(trace):
+    return (trace-np.min(trace))/(np.max(trace)-np.min(trace))
+    
 
 
 # %%
@@ -287,6 +282,7 @@ fig1.subplots_adjust(wspace=2, top=0.85)
 fig1.suptitle('movie #1, all units pooled\n')
 fig2, ax2 = pt.figure(figsize=(1.,0.85))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
+fig2b, ax2b = pt.figure(figsize=(1.,0.85))
 
 np.random.seed(5)
 
@@ -311,13 +307,13 @@ for k, key, pos_color, neg_color in zip(range(2),
                                   1.4, RATES['time'][1]-RATES['time'][0])
     ax2.plot(time_shift, CCF1, color=neg_color)
     # ax3.plot(time_shift, CCF/np.max(CCF), color=neg_color)
-    ax3.plot(time_shift, (CCF1-np.min(CCF1))/(np.max(CCF1)-np.min(CCF1)), 
-             color=neg_color)
+    ax3.plot(time_shift, norm(CCF1), color=neg_color)
     ax11.bar([2*k], [CCF1[int(len(time_shift)/2)]], color=neg_color)
     
     # fit for half width
-    fit_cond = (time_shift>0) & (time_shift<1)
-    tau0 = fit_half_width(time_shift[fit_cond], CCF1[fit_cond]/np.max(CCF1))[0]
+    fit_cond = (time_shift>0) #& (time_shift<1.5)
+    
+    tau0 = fit_half_width(time_shift[fit_cond], norm(CCF1[fit_cond]))[0]
     ax12.bar([2*k+1], [tau0], color=neg_color)
 
 
@@ -325,34 +321,35 @@ for k, key, pos_color, neg_color in zip(range(2),
                                   1.4, RATES['time'][1]-RATES['time'][0])
     ax2.plot(time_shift, CCF2, color=pos_color)
     # ax3.plot(time_shift, CCF/np.max(CCF), color=pos_color)
-    ax3.plot(time_shift, (CCF2-np.min(CCF2))/(np.max(CCF2)-np.min(CCF2)), 
-             color=pos_color)
+    ax3.plot(time_shift, norm(CCF2), color=pos_color)
 
     ax11.bar([2*k+1], [CCF2[int(len(time_shift)/2)]], color=pos_color)
     
     # gaussian fit for width
-    fit_cond = (time_shift>0) & (time_shift<1)
-    tau = fit_half_width(time_shift[fit_cond], CCF2[fit_cond]/np.max(CCF2))[0]
+    tau = fit_half_width(time_shift[fit_cond], norm(CCF2[fit_cond]))[0]
     ax12.bar([2*k], [tau], color=pos_color)
     #ax13.bar([k], [1e3*(tau-tau0)], color=pos_color)
+    ax2b.plot(time_shift[fit_cond], 
+              Func(time_shift[fit_cond], fit_half_width(time_shift[fit_cond], norm(CCF2[fit_cond]))), color=pos_color)
+    ax2b.plot(time_shift[fit_cond],
+              Func(time_shift[fit_cond], fit_half_width(time_shift[fit_cond], norm(CCF1[fit_cond]))), color=neg_color)
     
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
 pt.set_plot(ax12, ['left'], yticks=[0,0.2,0.4],
             ylabel=u'\u00bd' + ' width (s)')
 pt.set_plot(ax2, xlabel='jitter (s)', 
-            #title='"-" vs "+" units', 
             ylabel='corr. coef.',
             yticks=[0.1,0.4,0.7],
-            xlim=[-1.1,1.5], 
-            xticks=[-0.9,0,0.9])
-pt.set_plot(ax3, xlabel='jitter (s)', 
-            ylabel='norm. corr.\n(peak-baseline)',
-            xlim=[-1.5,1.5], yticks=[0,1])
+            xlim=[-1.1,1.5], xticks=[-0.9,0,0.9])
+for ax in [ax3,ax2b]:
+    pt.set_plot(ax, xlabel='jitter (s)', title='fits' if ax==ax2b else '',
+                ylabel='norm. corr.\n(peak-baseline)',
+                xlim=[-1.5,1.5], yticks=[0,1])
 
-fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
-fig3.savefig('../figures/visual_coding/normCC_movie1_units_pooled.svg')
-fig2.savefig('../figures/Figure5/CC_movie1_units_pooled.pdf')
+#fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
+#fig3.savefig('../figures/visual_coding/normCC_movie1_units_pooled.svg')
+#fig2.savefig('../figures/Figure5/CC_movie1_units_pooled.pdf')
 
 # %% [markdown]
 # # 6) Same but analyzing per session
@@ -368,6 +365,7 @@ PROTOCOLS = {'natural_movie_three':['natural_movie_three'],
 # loop over frames to build the time course
 np.random.seed(0)
 
+Nfactor = 3 # foctor to increase the subsampling of negative cells
 for p in PROTOCOLS:
     
     protocols = PROTOCOLS[p]
@@ -398,6 +396,9 @@ for p in PROTOCOLS:
                         if os.path.isfile(filename):
                             spikeResp = spikingResponse(None, None, None, filename=filename)
                             rates.append(spikeResp.get_rate(smoothing=5e-3))
+                        else:
+                            pass
+                            #print(filename, 'missing')
 
             if (len(posRates)>1):
                 # only if more than one positive units
@@ -405,7 +406,9 @@ for p in PROTOCOLS:
                 RATES['%s_negUnits' % cellType].append(np.mean(negRates, axis=0))
                 for ii in range(10):
                     RATES['%s_negUnits_subsampled%i' % (cellType,ii)].append(\
-                        np.mean([negRates[nn] for nn in np.random.choice(np.arange(len(negRates)), len(posRates), replace=False)], axis=0))
+                        np.mean([negRates[nn] for nn in np.random.choice(np.arange(len(negRates)),
+                                                                         min([Nfactor*len(posRates), len(negRates)]),
+                                                                         replace=False)], axis=0))
                 RATES['%s_n_per_session' % cellType].append(len(posRates))
             else:
                 print('session %i no ' % sessionID, cellType, p)
@@ -418,7 +421,7 @@ for p in PROTOCOLS:
 # ## 6.2) Compute the cross-correlation
 
 # %%
-CCs = {'extent':1.5}
+CCs = {'extent':1.5, 'subsampling':10}
 
 for cellType in ['PV', 'SST']:
     for u in ['pos', 'neg']:
@@ -431,8 +434,7 @@ for p in PROTOCOLS:
     
     RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_per_session_%s.npy' % p),
                     allow_pickle=True).item()
-    if 'dt' not in CCs:
-        CCs['dt'] = RATES['time'][1]-RATES['time'][0]
+        
     for k, cellType, color in zip(range(2), ['PV', 'SST'], ['tab:red','tab:orange']):
 
         for u in ['pos', 'neg']:
@@ -440,18 +442,22 @@ for p in PROTOCOLS:
             # loop over session:
             for session in range(len(RATES['%s_n_per_session' % cellType])):
                 CCs[cellType+'_%sUnits' % u].append(\
-                            crosscorrel(RATES['%s_negUnits' % cellType][session],
-                                        RATES['%s_%sUnits' % (cellType,u)][session],
-                                        CCs['extent'], CCs['dt'])[0])
+                            crosscorrel(RATES['%s_negUnits' % cellType][session][::CCs['subsampling']],
+                                        RATES['%s_%sUnits' % (cellType,u)][session][::CCs['subsampling']],
+                                        CCs['extent'],
+                                        CCs['subsampling']*(RATES['time'][1]-RATES['time'][0]))[0])
                 CCs['%s_n_per_session' % cellType].append(RATES['%s_n_per_session' % cellType][session])
                 for ii in range(10):
                     CCs['%s_negUnits_subsampled%i' % (cellType,ii)].append(\
-                                                crosscorrel(RATES['%s_negUnits' % cellType][session],
-                                                            RATES['%s_negUnits_subsampled%i' % (cellType,ii)][session],
-                                                            CCs['extent'], CCs['dt'])[0])
+                                                crosscorrel(RATES['%s_negUnits' % cellType][session][::CCs['subsampling']],
+                                                            RATES['%s_negUnits_subsampled%i' % (cellType,ii)][session][::CCs['subsampling']],
+                                                            CCs['extent'],
+                                                            CCs['subsampling']*(RATES['time'][1]-RATES['time'][0]))[0])
+    if 'dt' not in CCs:
+        CCs['dt'] = CCs['subsampling']*(RATES['time'][1]-RATES['time'][0])
                 
 # just to get the time shift
-_, CCs['time_shift'] = crosscorrel(0*RATES['time'], 0*RATES['time'], CCs['extent'], CCs['dt'])
+_, CCs['time_shift'] = crosscorrel(0*RATES['time'][::CCs['subsampling']], 0*RATES['time'][::CCs['subsampling']], CCs['extent'], CCs['dt'])
 
 np.save(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natural_movies.npy'), CCs)
 
@@ -469,44 +475,58 @@ CCs = np.load(os.path.join('..', 'data', 'visual_coding', 'CC_per_session_natura
 fig11, ax11 = pt.figure(figsize=(.6,1.))
 fig12, ax12 = pt.figure(figsize=(0.85,0.85))
 fig2, ax2 = plt.subplots(1, figsize=(1.3, 0.8))
+fig2b, ax2b = plt.subplots(1, figsize=(1.3, 0.8))
 fig3, ax3 = plt.subplots(1, figsize=(1.3, 0.8))
 
-i0 = int(len(CCs['time_shift'])/2) # index of 0-lag correl
+i0 = int(len(CCs['time_shift'])/2)+1 # index of 0-lag correl
 
 for k, cellType, color1, color2 in zip(range(2),
                                   ['PV', 'SST'],
                                   ['tab:red','tab:orange'],
                                   ['tab:grey', 'lightgray']):
+
+    fit_cond = np.arange(i0+1, len(CCs['time_shift']))
     
-    for i, pn, color in zip(range(2), ['pos', 'neg'], [color1, color2]):
+    # 0-lag correl of positive units
+    CCs['%s_pos0CC' % cellType] = np.array([cc[i0] for cc in CCs['%s_posUnits' % cellType]])
+    ax11.bar([k], [np.mean(CCs['%s_pos0CC' % cellType])], yerr=[stats.sem(CCs['%s_pos0CC' % cellType])], color=color1)
 
-        # 0-lag correl
-        CCs['%s_%s0CC' % (cellType,pn)] = np.array([cc[i0] for cc in CCs['%s_%sUnits' % (cellType, pn)]])
-        if not i:
-            ax11.bar([k], [np.mean(CCs['%s_%s0CC' % (cellType,pn)])], 
-                      yerr=[stats.sem(CCs['%s_%s0CC' % (cellType,pn)])],
-                      color=color)
+    # positive CCs
+    CCs['%s_posWidths' % cellType] = np.array([fit_half_width(CCs['time_shift'][fit_cond], norm(CCF[fit_cond]))[0]\
+                                                    for CCF in CCs['%s_posUnits' % cellType]])
+    ax12.bar([k], [np.mean(CCs['%s_posWidths' % cellType])],  yerr=[stats.sem(CCs['%s_posWidths' % cellType])], color=color1)
 
-        # gaussian fit for width
-        fit_cond = (CCs['time_shift']>0) & (CCs['time_shift']<1)
-        CCs['%s_%sWidths' % (cellType,pn)] = np.array([fit_half_width(CCs['time_shift'][fit_cond], CCF[fit_cond]/np.max(CCF))[0]\
-                                                        for CCF in CCs['%s_%sUnits' % (cellType, pn)]])
-        ax12.bar([k+2*i], [1e3*np.mean(CCs['%s_%sWidths' % (cellType,pn)])], 
-                  yerr=[1e3*stats.sem(CCs['%s_%sWidths' % (cellType,pn)])],
-                  color=color)
-            
+    #fit_cond = CCs['time_shift']>0.01
+    # negative CCs - Autocorrelations
+    CCs['%s_negWidths' % cellType] = np.array([fit_half_width(CCs['time_shift'][fit_cond], norm(CCF[fit_cond]))[0]\
+                                                    for CCF in CCs['%s_negUnits' % cellType]])
+    ax12.bar([k+2], [np.mean(CCs['%s_negWidths' % cellType])],  yerr=[stats.sem(CCs['%s_negWidths' % cellType])], color=color2)
+
+    # negative CCs - Cross-Correlations with subsampling    
+    CCs['%s_negUnits' % cellType] = [np.mean([CCs['%s_negUnits_subsampled%i' % (cellType,ii)][k] for ii in range(10)], axis=0)\
+                                     for k in range(len(CCs['%s_negUnits' % cellType]))]
+    
+    CCs['%s_negWidths' % cellType] = np.array([fit_half_width(CCs['time_shift'][fit_cond], norm(CCF[fit_cond]))[0]\
+                                                    for CCF in CCs['%s_negUnits' % cellType]])
+    ax12.bar([k+4], [np.mean(CCs['%s_negWidths' % cellType])],  yerr=[stats.sem(CCs['%s_negWidths' % cellType])], color=color2)
+    
+
     mean = np.mean(CCs[cellType+'_posUnits'], axis=0)
     pt.plot(CCs['time_shift'], mean/np.max(mean),
-            sy=stats.sem(CCs[cellType+'_negUnits'], axis=0)/np.max(mean),
+            sy=stats.sem(CCs[cellType+'_posUnits'], axis=0)/np.max(mean),
             color=color1, ax=ax3)
     
-    mean = np.mean(CCs[cellType+'_negUnits'], axis=0)
-    pt.plot(CCs['time_shift'], mean/np.max(mean), 
+    pt.plot(CCs['time_shift'], np.mean(CCs[cellType+'_negUnits'], axis=0), 
             sy=stats.sem(CCs[cellType+'_negUnits'], axis=0)/np.max(mean),
-            color=color2, lw=0.5, ax=ax2)
+            color=color2, ax=ax2)
     pt.plot(CCs['time_shift'], np.mean(CCs[cellType+'_posUnits'], axis=0), 
             sy=stats.sem(CCs[cellType+'_posUnits'], axis=0)/np.max(mean),
             color=color1, ax=ax2)
+    
+    pt.plot(CCs['time_shift'], norm(np.mean(CCs[cellType+'_posUnits'], axis=0)),
+            color=color1, lw=1, ax=ax2b)
+    pt.plot(CCs['time_shift'], norm(np.mean(CCs[cellType+'_negUnits'], axis=0)),
+            color=color2, lw=1, ax=ax2b)
 
 # statistic
 pt.annotate(ax11, 'PV+ SST+, p=%.1e' % stats.mannwhitneyu(CCs['PV_pos0CC'], CCs['SST_pos0CC']).pvalue,
@@ -527,17 +547,21 @@ pt.annotate(ax12, '\n\n\n\n SST+ SST-, p=%.0e\n' % stats.mannwhitneyu(CCs['SST_p
 
 pt.set_plot(ax11, ['left'], #yticks=[0,0.2,0.4],
             ylabel='corr. coeff.')
-pt.set_plot(ax12, ['left'], #yticks=[0,200,400],
-            ylabel=u'\u00bd' + ' width\n(ms)')
-pt.set_plot(ax2, xlabel='jitter (s) of "+" units ', 
-            ylabel='corr. coefs',
-            xlim=[-1.5,1.5])
+pt.set_plot(ax12, ['left'], #yticks=[0,0.1,0.2,0.3],
+            ylabel=u'\u00bd' + ' width (s)')
+pt.set_plot(ax2, xlabel='jitter (s)', 
+            ylabel='corr. coefs', xlim=[-1.5,1.5])
+pt.set_plot(ax2b, xlabel='jitter (s)', yticks=[0,1],
+            ylabel='corr. coef\n(norm.)', xlim=[-1.5,1.5])
 pt.set_plot(ax3, xlabel='jitter (s) of "+" units ', 
-            ylabel='norm. corr.',
+            ylabel='corr. coefs\n(peak norm.)',
             xlim=[-1.5,1.5], yticks=[0,1])
 
 fig12.savefig('../figures/visual_coding/decays_per_session.svg')
 fig12.savefig('../figures/Figure5/decays_per_session.svg')
+
+# %%
+CCs['time_shift']
 
 # %% [markdown]
 # ## Cross-correlation per cell 
