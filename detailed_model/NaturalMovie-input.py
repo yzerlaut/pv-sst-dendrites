@@ -32,46 +32,69 @@ import matplotlib.pylab as plt
 sys.path.append('../analyz')
 from analyz.processing.signanalysis import autocorrel, crosscorrel
 
+
+##################################################
+## computing trial-averaged firing rates (psth) ##
+##################################################
+from scipy.ndimage import gaussian_filter1d
+rate_smoothing = 10. # ms
+def compute_rate_psth(sim, tstop, dt, seeds,
+                      rate_smoothing=rate_smoothing):
+
+    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+    for i, spikes in enumerate(sim.spikes):
+        spikes_matrix[i,(spikes/dt).astype('int')] = True
+    return 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                 int(rate_smoothing/dt))
+
+
+# %% [markdown]
+# # Rate dynamics of PV, SST and ~Pyr populations
+
 # %%
 RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
                 allow_pickle=True).item()
 
-fig1, ax = pt.figure(figsize=(1.5,1), left=0.2)
+fig, AX = pt.figure(axes=(2,1), figsize=(1.5,1), left=0.2)
 
-tlim = [-1.1, 6.]
-cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
-
-neg_rates = 0.5*(\
-        np.mean(RATES['PV_negUnits'], axis=0)+\
-        np.mean(RATES['SST_negUnits'], axis=0))
-scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
-
-
-pt.annotate(ax, '%.1fHz' % np.std(4.*neg_rates), (0,1),
-            ha='right', va='top', color='gray')
-
-ax.fill_between(RATES['time'][cond], 
-                np.min(scaled_neg_rates),
-                scaled_neg_rates[cond],
-                color='gray', lw=0, alpha=.5)
-
-for k, key, pos_color in zip(range(2),
-                            ['SST', 'PV'], 
-                            ['tab:orange', 'tab:red']):
-
-    pos_rates = np.mean(RATES['%s_posUnits' % key], axis=0)
-    pt.annotate(ax, (k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
-                ha='right', va='top', color=pos_color)
-    ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
-            color=pos_color)
-
-ax.plot([tlim[1],tlim[1]-1], [8, 8], 'k-')
-ax.annotate('1s',(tlim[1]-.5,8.5), ha='center') 
-ax.plot(-1*np.ones(2), [4, 8], 'k-')
-pt.set_plot(ax, [], xlim=tlim, title='"visual_coding" data')
+for tlim, ax, label in zip([[-1.1, 6.], [27.9, 35.]], AX,
+                           ['onset', 'offset']):
+                           
+    cond = (RATES['time']>tlim[0]) & (RATES['time']<tlim[1])
+    
+    neg_rates = 0.5*(\
+            np.mean(RATES['PV_negUnits'], axis=0)+\
+            np.mean(RATES['SST_negUnits'], axis=0))
+    scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
+    
+    
+    pt.annotate(ax, '%.1fHz' % np.std(4.*neg_rates), (0,1),
+                ha='right', va='top', color='gray')
+    
+    ax.fill_between(RATES['time'][cond], 
+                    np.min(scaled_neg_rates),
+                    scaled_neg_rates[cond],
+                    color='gray', lw=0, alpha=.5)
+    
+    for k, key, pos_color in zip(range(2),
+                                ['SST', 'PV'], 
+                                ['tab:orange', 'tab:red']):
+    
+        pos_rates = np.mean(RATES['%s_posUnits' % key], axis=0)
+        pt.annotate(ax, (k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
+                    ha='right', va='top', color=pos_color)
+        ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
+                color=pos_color)
+    
+    ax.plot([tlim[1],tlim[1]-1], [8, 8], 'k-')
+    ax.annotate('1s',(tlim[1]-.5,8.5), ha='center') 
+    ax.plot((tlim[0]+.1)*np.ones(2), [4, 8], 'k-')
+    pt.set_plot(ax, [], xlim=tlim, title=label)
+pt.set_common_ylims(AX)
+#fig.savefig('../figures/visual_coding/natMovie-stim-repetition.svg') # ADDED DRAWINGS, DON'T OVERWRITE !
 
 # %% [markdown]
-# # Single trial example
+# # Simulations -> Single trial example
 #
 # ```
 # python natMovie_sim.py --test --with_STP  -c Basket --tstop 500 --synapse_subsampling 20 --with_presynaptic_spikes
@@ -88,7 +111,6 @@ AX[0].plot(t, results['Vm_soma'], 'tab:brown', label='soma')
 AX[0].plot(t, -60+0*t, 'k:')
 pt.annotate(AX[0], '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
 pt.draw_bar_scales(AX[0], Xbar=100, Xbar_label='100ms', Ybar=10, Ybar_label='10mV')
-AX[0].legend(frameon=False, loc=(1, 0.3))
 for i, events in enumerate(results['presynaptic_exc_events']):
     AX[1].scatter(events, i*np.ones(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=3)
 for i, events in enumerate(results['presynaptic_inh_events']):
@@ -105,23 +127,70 @@ for ax in AX:
     ax.axis('off')
 
 # %% [markdown]
+# # Simulations -> finding input parameters to get ~15Hz output firing
+
+# %%
+results = {}
+#for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
+Nss, Nif = 3, 3
+with_traces = True
+for cellType in ['BasketInputRange_noSTP', 'BasketInputRange_noSTP']:
+    
+    results['oRate_%s' % cellType] = np.zeros((6, Nss, Nif))
+        
+    for iBranch in range(6):
+
+        filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' % (iBranch,cellType)
+        try:
+            print('processing ', filename, ' [...]')
+            sim = Parallel(filename=filename)
+            sim.load()
+
+            sim.fetch_quantity_on_grid('spikes', dtype=list)
+            seeds = np.unique(sim.spikeSeed)
+            results['Inh_fraction_%s' % cellType] = np.unique(sim.Inh_fraction)
+            results['synapse_subsampling_%s' % cellType] = np.unique(sim.Inh_fraction)
+
+            dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+            tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+            if with_traces and ('traceRate_%s' % cellType not in results):
+                results['traceRate_%s' % cellType] = np.zeros((6, Nss, Nif, int(tstop/dt)))
+
+            for i, iF in enumerate(results['Inh_fraction_%s' % cellType]):
+                for s, ss in enumerate(results['synapse_subsampling_%s' % cellType]):
+                    # compute RATE !
+                    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                    for i, spikes in enumerate(sim.spikes[:][i][s]):
+                        print(spikes.max())
+                        spikes_matrix[i,(spikes/dt).astype('int')] = True
+                    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                  int(100./dt))
+                    # store !
+                    t = np.arange(len(rate))*dt
+                    results['oRate_%s' % cellType][iBranch,s,i] = np.mean(rate[t>0.1e3])
+                    if with_traces:
+                        results['traceRate_%s' % cellType][iBranch,s,i,:] = rate
+                    
+        except BaseException as be:
+            print(be)
+            print(filename, ' not working')
+
+# %%
+results['oRate_BasketInputRange']
+
+# %%
+pt.plot(results['traceRate_MartinottiInputRange_noSTP'][:,2,2,:].mean(axis=0))
+Rate = sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=list)
+
+CCF, tS = crosscorrel(Rate[::10], results['traceRate_MartinottiInputRange_noSTP'][:,2,2,:].mean(axis=0)[1:][::10], tmax=1.5e3, dt=10*dt)
+pt.plot(tS, CCF)
+
+# %% [markdown]
 # # Multiple trials to compute PSTH
 
 # %%
-from scipy.ndimage import gaussian_filter1d
 
-##################################################
-## computing trial-averaged firing rates (psth) ##
-##################################################
-rate_smoothing = 10. # ms
-def compute_rate_psth(sim, tstop, dt, seeds,
-                      rate_smoothing=rate_smoothing):
-
-    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-    for i, spikes in enumerate(sim.spikes):
-        spikes_matrix[i,(spikes/dt).astype('int')] = True
-    return 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                 int(rate_smoothing/dt))
 
 
 #for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
@@ -146,23 +215,15 @@ for cellType in ['Martinotti', 'Basket']:
     rate = compute_rate_psth(sim, tstop, dt, seeds)
     
     sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
-    RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
-    RESULTS['pre_exc_%s' % cellType] = sim.presynaptic_exc_events[RESULTS['%s_example_index' % cellType]]
     syn_exc_rates = [np.mean([1e3*len(E)/tstop for E in sim.presynaptic_exc_events[i]]) for i in range(len(seeds))]
     print(' exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
     print(' --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/np.mean(sim.Rate[0])))
     sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
-    RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
         
     t = np.arange(len(rate))*dt
-    RESULTS['dt'] = dt
     print(' output rate: %.2f Hz' % np.mean(rate[t>0.1e3]))
 
-
-# %%
-
-# %%
 
 # %%
 
@@ -238,7 +299,7 @@ show_single_and_trial_average('Martinotti', RESULTS, color='tab:orange', figsize
 # %%
 for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
                            ['tab:orange', 'tab:red']):
-    show_single_and_trial_average(cellType, color=color, zoom=[0.1e3, 12e3], figsize=(2.5,0.8))
+    show_single_and_trial_average(cellType, RESULTS, color=color, zoom=[0.1e3, 12e3], figsize=(2.5,0.8))
 
 # %%
 fig, ax = pt.figure(figsize=(1.1,0.85))
@@ -291,23 +352,21 @@ from scipy.optimize import minimize
 
 # Lorentzian Fit of decay
 
-def gaussian(t, X):
-    #return (1-X[2])*np.exp(-(t-X[1])**2/2./X[0]**2)+X[2]
-    return (1-X[2])*(1/(1+(((t-X[1])/X[0])**2)))+X[2]
-                 
-def fit_gaussian_width(shift, array,
-                       min_time=10,
-                       max_time=1000):
-    #i0 = np.argmax(array)
-    def func(X):
-        return np.sum(np.abs(gaussian(shift, X)-array))
-        #return np.sum(np.abs(gaussian(shift[i0:]-shift[i0], X)-array[i0:]))
+def lorentzian(t, X):
+    return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
     
-    res = minimize(func, [3*min_time,0,0],
+def fit_half_width(shift, array,
+                       min_time=100e-3,
+                       max_time=1000e-3):
+    def func(X):
+        #return np.sum(np.abs(gaussian(shift, X)-array))
+        return np.sum(np.abs(lorentzian(shift, X)-array))
+    res = minimize(func, [3*min_time,0,1],
                    bounds=[[min_time, max_time],
                            [-max_time, max_time],
-                           [-1,1]], method='L-BFGS-B')
+                           [0,1]], method='L-BFGS-B')
     return res.x
+
     
 fig, ax = pt.figure(figsize=(0.8,0.85))
 
@@ -318,11 +377,11 @@ for k, cellType, color in zip(range(3),
     i0 = int(len(CCs['time_shift'])/2)
     
     #tau = fit_exponential_decay(CCs['time_shift'][i0:], CCs['%s_CC' % cellType][i0:]/CCs['%s_CC' % cellType][i0])
-    tau = fit_gaussian_width(CCs['time_shift'], CCs['%s_CC' % cellType]/np.max(CCs['%s_CC' % cellType]))[0]
+    tau = fit_half_width(CCs['time_shift'], CCs['%s_CC' % cellType]/np.max(CCs['%s_CC' % cellType]))[0]
     ax.bar([1+k], [1e-3*tau], color=color)
 
     if cellType=='Basket':
-        tau = fit_gaussian_width(CCs['time_shift'], CCs['Input_CC']/np.max(CCs['Input_CC']))[0]
+        tau = fit_half_width(CCs['time_shift'], CCs['Input_CC']/np.max(CCs['Input_CC']))[0]
         ax.bar([0], [1e-3*tau], color='tab:grey')
     
 
@@ -331,10 +390,12 @@ for k, cellType, color in zip(range(3),
     #plt.plot(ts, np.exp(-ts/tau), color=color)
 #pt.set_plot(ax, yticks=[0,50,100])
 
-pt.set_plot(ax, ['left'], yticks=[0, 0.2, 0.4],
-            title='single seed',
+pt.set_plot(ax, ['left'],             title='single seed',
             #ylabel=u'\u00bd' + ' width\n(ms)',
             ylabel='width (ms)')
+pt.set_plot(ax12, ['left'], #yticks=[0,0.2,0.4],
+            ylabel=u'\u00bd' + ' width (ms)')
+
 #fig.savefig('../figures/detailed_model/Widths.svg')
 
 # %% [markdown]
