@@ -33,18 +33,13 @@ def run_sim(cellType='Basket',
     ########################################################
     # Import Natural Movie Spiking Activity
     ########################################################
-    RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'RATES_natural_movie_one.npy'),
+    RATES = np.load(os.path.join('..', 'data', 'visual_coding', 'avRATES_natural_movie_one.npy'),
                     allow_pickle=True).item()
     t = 1e3*(RATES['time']-RATES['time'][0]) # s to ms
     if tstop<=0.:
         tstop = t[-1]
-    neg_rates = 0.5*(\
-            np.mean(RATES['PV_negUnits'], axis=0)+\
-            np.mean(RATES['SST_negUnits'], axis=0))
-    # scaled_neg_rates = (neg_rates-np.mean(neg_rates))/np.std(neg_rates)
-    # scaled_neg_rates = np.clip(scaled_neg_rates, 0, np.inf) # IF ABOVE, need to clip
-    # scaled_neg_rates = neg_rates/np.std(neg_rates)
-    scaled_neg_rates = neg_rates
+    # average of PV- and SST- units:
+    neg_rates = 0.5*(RATES['PV_negUnits']+RATES['SST_negUnits'])
 
 
     ######################################################
@@ -98,7 +93,7 @@ def run_sim(cellType='Basket',
     # Time-Varying Rate 
     Rate = np.interp(np.arange(0, tstop, dt), 
                                 t[t<=tstop],
-                                  scaled_neg_rates[t<=tstop])
+                                  neg_rates[t<=tstop])
 
     # -- background activity 
     np.random.seed(spikeSeed)

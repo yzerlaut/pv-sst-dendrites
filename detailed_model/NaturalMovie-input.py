@@ -65,9 +65,8 @@ Averaged = {
     'SST_negUnits':np.array(np.mean(RATES['SST_negUnits'], axis=0)[subsampling], dtype=dtype),
 }        
 for key in ['PV', 'SST']:
-    pos_rates = [np.mean(r) for r in RATES['%s_posUnits' % key], a
-        if label=='onset':
-            print(' - mean rate of "%s" cells: %.1f Hz' % (key, np.mean(pos_rates)))
+    pos_rates = [np.mean(r) for r in RATES['%s_posUnits' % key]]
+    print(' - mean rate of "%s" cells: %.1f +/- %.1f Hz' % (key, np.mean(pos_rates), np.std(pos_rates)))
 
 np.save(os.path.join('..', 'data', 'visual_coding', 'avRATES_natural_movie_one.npy'), 
         Averaged)
@@ -99,6 +98,7 @@ for tlim, ax, label in zip([[-1.1, 6.], [27.9, 35.]], AX,
                                 ['SST', 'PV'], 
                                 ['tab:orange', 'tab:red']):
     
+        pos_rates = RATES['%s_posUnits' % key]
         pt.annotate(ax, (k+1)*'\n'+'%.1fHz' % np.std(4.*pos_rates), (0,1),
                     ha='right', va='top', color=pos_color)
         ax.plot(RATES['time'][cond], (pos_rates[cond]-np.mean(pos_rates))/np.std(pos_rates), 
