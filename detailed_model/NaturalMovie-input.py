@@ -145,8 +145,6 @@ pt.set_common_xlims(AX, lims=[t[0], t[-1]])
 for ax in AX:
     ax.axis('off')
 
-# %%
-
 # %% [markdown]
 # # Simulations -> finding input parameters to get ~15Hz output firing
 
@@ -158,20 +156,18 @@ with_traces = False
 for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
     
     results['oRate_%s' % cellType] = np.zeros((6, Nss, Nif))
-    results['Inh_fraction'], results['synapse_subsampling'] = np.zeros((Nss, Nif)), np.zeros((Nss, Nif))
+    results['Inh_fraction_%s' % cellType], results['synapse_subsampling_%s' % cellType] = np.zeros((Nss, Nif)), np.zeros((Nss, Nif))
         
     for iBranch in range(6):
 
         filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' % (iBranch,cellType)
         try:
-            print('processing ', filename, ' [...]')
+            #print('processing ', filename, ' [...]')
             sim = Parallel(filename=filename)
             sim.load()
 
             sim.fetch_quantity_on_grid('spikes', dtype=list)
             seeds = np.unique(sim.spikeSeed)
-            results['Inh_fraction_%s' % cellType] = np.unique(sim.Inh_fraction)
-            results['synapse_subsampling_%s' % cellType] = np.unique(sim.Inh_fraction)
 
             dt = sim.fetch_quantity_on_grid('dt', return_last=True)
             tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
@@ -179,15 +175,13 @@ for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
             if with_traces and ('traceRate_%s' % cellType not in results):
                 results['traceRate_%s' % cellType] = np.zeros((6, Nss, Nif, int(tstop/dt)+1))
 
-            for i, iF in enumerate(results['Inh_fraction_%s' % cellType]):
-                for s, ss in enumerate(results['synapse_subsampling_%s' % cellType]):
+            for i, iF in enumerate(np.unique(sim.Inh_fraction)):
+                for s, ss in enumerate(np.unique(sim.synapse_subsampling)):
                     
-                    # store !
-                    t = np.arange(len(rate))*dt
                     results['oRate_%s' % cellType][iBranch,s,i] = 1e3/tstop*\
                                 np.mean([len(sim.spikes[n][i][s]) for n in range(len(seeds))])
-                    results['Inh_fraction'][s,i] = sim.Inh_fraction[0][i][s]
-                    results['synapse_subsampling'][s,i] = sim.synapse_subsampling[0][i][s]
+                    results['Inh_fraction_%s' % cellType][s,i] = sim.Inh_fraction[0][i][s]
+                    results['synapse_subsampling_%s' % cellType][s,i] = sim.synapse_subsampling[0][i][s]
                     
                     if with_traces:
                         # compute time-varying RATE !
@@ -197,6 +191,7 @@ for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
                             spikes_matrix[i,(spikes/dt).astype('int')] = True
                         rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                       int(100./dt))
+                        t = np.arange(len(rate))*dt
                         results['traceRate_%s' % cellType][iBranch,s,i,:] = rate
                     
         except BaseException as be:
@@ -204,6 +199,14 @@ for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
             print(filename, ' not working')
 
 # %%
+for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
+    fig, ax, _ = pt.twoD_plot(100*results['Inh_fraction_%s' % cellType].flatten(),
+                 100./results['synapse_subsampling_%s' % cellType].flatten(),
+                 results['oRate_%s' % cellType].mean(axis=0).flatten(),
+                             bar_legend_args={'label':'firing (Hz)'})
+    pt.set_plot(ax, title=cellType.replace('InputRange', ''), xlabel='Inh. syn. %', ylabel='syn. # (% total)',
+                xticks=np.unique(100*results['Inh_fraction_%s' % cellType]), xticks_rotation=60,
+                yticks=100./np.unique(results['synapse_subsampling_%s' % cellType]))
 
 # %%
 results['oRate_BasketInputRange_noSTP'][5,:,:]
@@ -281,6 +284,8 @@ def show_single_and_trial_average(cellType, RESULTS,
     synapses = sim.synapses[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=np.ndarray)
     sim.fetch_quantity_on_grid('spikes', dtype=list)
+    Inh_frac = sim.fetch_quantity_on_grid('Inh_fraction', return_last=True)
+    print(cellType, 'InhF', Inh_frac)
     RESULTS['rate_%s' % cellType] = compute_rate_psth(sim, tstop, dt, seeds)
     RESULTS['Input_%s' % cellType] = sim.Rate[0]
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
