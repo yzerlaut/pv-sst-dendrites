@@ -203,8 +203,6 @@ if __name__=='__main__':
     parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
-    parser.add_argument("--test_uniform", action="store_true")
-    parser.add_argument("--test_NMDA", action="store_true")
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
     parser.add_argument("--from_uniform", action="store_true")
@@ -261,12 +259,6 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
-        if args.test_uniform:
-            grid = dict(from_uniform=[False, True], **grid)
-
-        if args.test_NMDA:
-            grid = dict(with_NMDA=[False, True], **grid)
-
         sim.build(grid)
 
         sim.run(run_sim,
@@ -281,6 +273,9 @@ if __name__=='__main__':
         for b in range(args.nBranch):
 
             params['iBranch'] = b
+
+            print('\n running: natMovieStim_simBranch%i_%s.zip \n' %\
+                                (b, args.cellType+args.suffix))
             
             sim = Parallel(\
                 filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
@@ -289,12 +284,6 @@ if __name__=='__main__':
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
                         Inh_fraction=args.Inh_fraction,
                         synapse_subsampling=args.synapse_subsampling)
-
-            if args.test_uniform:
-                grid = dict(from_uniform=[False, True], **grid)
-
-            if args.test_NMDA:
-                grid = dict(with_NMDA=[False, True], **grid)
 
             sim.build(grid)
 
