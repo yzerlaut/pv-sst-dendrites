@@ -214,7 +214,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
 then
-    nSpikeSeed=20
+    nSpikeSeed=40
     dt=0.1
     tstop=20000
     ## Basket Cell
