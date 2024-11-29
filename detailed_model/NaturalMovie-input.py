@@ -42,7 +42,7 @@ def compute_rate_psth(sim, tstop, dt, seeds,
                       rate_smoothing=rate_smoothing):
 
     spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-    for i, spikes in enumerate(sim.spikes):
+    for i, spikes in enumerate(sim.spikes.flatten()):
         spikes_matrix[i,(spikes/dt).astype('int')] = True
     return 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                  int(rate_smoothing/dt))
@@ -223,11 +223,8 @@ pt.plot(tS, CCF)
 # # Multiple trials to compute PSTH
 
 # %%
-
-
-
-#for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
-for cellType in ['Martinotti', 'Basket']:
+#for cellType in ['Martinotti', 'Basket']:
+for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
 
     sim = Parallel(\
             filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
@@ -259,11 +256,11 @@ for cellType in ['Martinotti', 'Basket']:
 
 
 # %%
-
 def show_single_and_trial_average(cellType, RESULTS,
-                                  zoom = [100, 4000],
+                                  zoom = [450, 4000],
                                   example_index=0,
-                                  color='k', figsize=(1.5,0.8)):
+                                  color='k', 
+                                  with_inset=False, figsize=(1.8,0.6)):
 
     RESULTS['%s_example_index' % cellType] = example_index
     sim = Parallel(filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
@@ -285,16 +282,15 @@ def show_single_and_trial_average(cellType, RESULTS,
     sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=np.ndarray)
     sim.fetch_quantity_on_grid('spikes', dtype=list)
     Inh_frac = sim.fetch_quantity_on_grid('Inh_fraction', return_last=True)
-    print(cellType, 'InhF', Inh_frac)
     RESULTS['rate_%s' % cellType] = compute_rate_psth(sim, tstop, dt, seeds)
-    RESULTS['Input_%s' % cellType] = sim.Rate[0]
+    RESULTS['Input'] = sim.Rate[0]
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt
     
     fig, AX = pt.figure(axes_extents=[[(1,1)],[(1,1)],[(1,2)],[(1,1)]],
-                        figsize=figsize, left=0, bottom=0., hspace=0.)
+                        figsize=figsize, left=0, bottom=0., hspace=0., right=5)
     # input
-    AX[0].fill_between(RESULTS['t'][:-1][::20], 0*RESULTS['t'][:-1][::20], RESULTS['Input_%s' % cellType][::20],
+    AX[0].fill_between(RESULTS['t'][:-1][::20], 0*RESULTS['t'][:-1][::20], RESULTS['Input'][::20],
                        color='tab:grey', lw=0)
     # Vm
     AX[2].plot(RESULTS['t'][::10], RESULTS['Vm_%s' % cellType][::10], color=color, lw=0.5)
@@ -322,65 +318,48 @@ def show_single_and_trial_average(cellType, RESULTS,
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r', fontsize=7)
     pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g', fontsize=7)
-    pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=6)
+    #pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=6)
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
 
-RESULTS = {}
-show_single_and_trial_average('Basket', RESULTS, color='tab:red', figsize=(1.5,0.8))
-show_single_and_trial_average('Martinotti', RESULTS, color='tab:orange', figsize=(1.5,0.8))
-
-# %%
-for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
-                           ['tab:orange', 'tab:red']):
-    show_single_and_trial_average(cellType, RESULTS, color=color, zoom=[0.1e3, 12e3], figsize=(2.5,0.8))
-
-# %%
-fig, ax = pt.figure(figsize=(1.1,0.85))
-subsampling = 100
-width = 1100
-CCs = {}
-
-for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
-                           ['tab:orange', 'tab:red']):
-
-    # input
-    """
-    """
-    if 'Input_CC' not in CCs:
+    if with_inset:
+        inset = pt.inset(fig, [0.85,0.6,0.1,0.3])
+        inset2 = pt.inset(fig, [0.85,0.2,0.1,0.3])
+        cond, subsampling, width = RESULTS['t']>0.1e3, 100, 1500
         cond = RESULTS['t']>0.1e3
-        CCF, time_shift = crosscorrel(RESULTS['Input_%s' % cellType][cond[1:]][::subsampling], 
-                              RESULTS['Input_%s' % cellType][cond[1:]][::subsampling], 
-                              width, subsampling*RESULTS['dt'])
-        CCs['Input_CC'] = CCF
-        
-    cond = RESULTS['t']>1e3
-    CCF, time_shift = crosscorrel(RESULTS['Input_%s' % cellType][cond[1:]][::subsampling], 
-                          RESULTS['rate_%s' % cellType][1:][cond[1:]][::subsampling], 
-                          width, subsampling*RESULTS['dt'])
-    """
-    # gaussian fit
-    ax.plot(time_shift/1e3, 
-            gaussian(time_shift,
-                     fit_gaussian_width(time_shift, CCF/np.max(CCF))), '--', lw=0.5)
-    """
-    
-    if not 'noNMDA' in cellType:
-        ax.plot(time_shift/1e3, CCF, color=color, lw=1.5)
-    CCs['%s_CC' % cellType] = CCF
-    
-    CCs['time_shift'] = time_shift
-    
-#ax.legend(loc=(1,1))
-pt.set_plot(ax, xlabel='jitter (s)',
-            xticks=[-0.9,0,0.9],
-            #yticks=[0.,0.5,1.0],
-            #ylim=[-0.15,1.08],
-            #xlim=[-0.21,0.27], 
-            title='model',
-            ylabel='corr. coef.')
-#fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
+        CCF, time_shift = crosscorrel(RESULTS['Input'][cond[1:]][::subsampling], RESULTS['Input'][cond[1:]][::subsampling], 
+                                      width, subsampling*RESULTS['dt'])
+        inset.plot(time_shift/1e3, CCF, color='tab:grey', lw=0.5)
+        inset2.plot(time_shift/1e3, CCF/np.max(CCF), color='tab:grey', lw=0.5)
+        CCF, time_shift = crosscorrel(RESULTS['Input'][cond[1:]][::subsampling], 
+                                      RESULTS['rate_%s' % cellType][1:][cond[1:]][::subsampling], 
+                                      width, subsampling*RESULTS['dt'])
+        inset.plot(time_shift/1e3, CCF, color=color, lw=1.5)
+        inset2.plot(time_shift/1e3, CCF/np.max(CCF), color=color, lw=1.5)
+        pt.set_plot(inset, ['left'], xlabel='jitter (s)', xticks=[-0.9,0,0.9],
+                    xlim=[-0.95,1.2], yticks=[0.,0.5,1.0], ylabel='corr. coef.')
+        pt.set_plot(inset2, xlabel='jitter (s)', xticks=[-0.9,0,0.9],
+                    xlim=[-0.95,1.2], yticks=[0.,0.5,1.0], ylabel='norm. C.C.')
+
+    return fig, AX
+
+RESULTS = {}
+#fig, _ = show_single_and_trial_average('Basket', RESULTS, color='tab:red')
+#fig.savefig(
+#fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=6, color='tab:orange')
+
+# %%
+#for cellType, color, id in zip(['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
+#                               ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold'], [0,0,6,0,0,0]):
+for cellType, color, id in zip(['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
+                               ['tab:red', 'tab:orange', 'tab:purple', 'gold'], [0,0,6,0,0,0]):
+    fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
+                                  color=color, zoom=[0.1e3, 12e3], with_inset=True, figsize=(3.3,0.8))
+
+
+# %% [markdown]
+# ## Compute Half-Widths of Cross-Correlation Functions
 
 # %%
 from scipy.optimize import minimize
@@ -388,14 +367,12 @@ from scipy.optimize import minimize
 # Lorentzian Fit of decay
 
 def lorentzian(t, X):
-    #return (1-X[2])*(1./(1+(t-X[1])**2/2/X[0]**2))+X[2]
-    #return 1./(1+(t-X[1])**2/2/X[0]**2)
-    return 1./(1+(t)**2/2/X[0]**2)
+    return 1./(1+(t/X[0])**2)
 
 Func = lorentzian # Change here !
 def fit_half_width(shift, array,
-                   min_time=100,
-                   max_time=1000):
+                   min_time=10,
+                   max_time=2000):
     def to_minimize(X):
         return np.sum(np.abs(Func(shift, X)-array))
     res = minimize(to_minimize, [3*min_time],
@@ -404,14 +381,54 @@ def fit_half_width(shift, array,
 
 def norm(trace):
     return (trace-np.min(trace))/(np.max(trace)-np.min(trace))
-    
 
+
+# %%
+fig, ax = pt.figure(figsize=(1.1,0.85))
+subsampling = 100
+width = 1500
+CCs = {}
+
+for cellType, color in zip(['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
+                            ['tab:red', 'tab:orange', 'tab:purple', 'gold']):
+
+    # input
+    """
+    """
+    if 'Input_CC' not in CCs:
+        cond = RESULTS['t']>0.1e3
+        CCF, time_shift = crosscorrel(RESULTS['Input'][cond[1:]][::subsampling],  RESULTS['Input'][cond[1:]][::subsampling], 
+                              width, subsampling*RESULTS['dt'])
+        CCs['Input_CC'] = CCF
+        #ax.plot(time_shift/1e3, CCF, color='tab:grey', lw=0.5)
+        
+    cond = RESULTS['t']>0.1e3
+    CCF, time_shift = crosscorrel(RESULTS['Input'][cond[1:]][::subsampling], 
+                                  RESULTS['rate_%s' % cellType][1:][cond[1:]][::subsampling], 
+                          width, subsampling*RESULTS['dt'])
+    ax.plot(time_shift/1e3, CCF, color=color, lw=1.5)
+    CCs['%s_CC' % cellType] = CCF
     
+    CCs['time_shift'] = time_shift
+    
+#ax.legend(loc=(1,1))
+pt.set_plot(ax, xlabel='jitter (s)',
+            xticks=[-0.9,0,0.9],
+            xlim=[-0.95,1.2],
+            yticks=[0.,0.5,1.0],
+            #ylim=[-0.15,1.08],
+            #xlim=[-0.21,0.27], 
+            title='model',
+            ylabel='corr. coef.')
+#fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
+
+# %%
+  
 fig, ax = pt.figure(figsize=(0.8,0.85))
 
-for k, cellType, color in zip(range(3),
-                              ['Basket', 'Martinotti', 'MartinottinoNMDA'],
-                              ['tab:red', 'tab:orange']):
+for k, cellType, color in zip(range(4),
+                              ['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
+                              ['tab:red', 'tab:orange', 'tab:purple', 'gold']):
 
     i0 = int(len(CCs['time_shift'])/2)
     fit_cond = (CCs['time_shift']>0) 
@@ -431,107 +448,97 @@ for k, cellType, color in zip(range(3),
 #pt.set_plot(ax, yticks=[0,50,100])
 
 pt.set_plot(ax, ['left'], title='single seed',
-            ylabel=u'\u00bd' + ' width (s)')
+            ylabel=u'\u00bd' + ' width$^{+}$ (s)')
 
 #fig.savefig('../figures/detailed_model/Widths.svg')
 
 # %% [markdown]
-# ## Analysis over different seeds
+# # Simulations over Multiple Branches 
 
 # %%
 from scipy.ndimage import gaussian_filter1d
 
 rate_smoothing = 10. # ms
-subsampling = 100
+subsampling, tmax = 100, 1500
 
 RESULTS = {} # 4, 11 ok, 13 good
 
-for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA']:
+for cellType in ['Martinotti', 'Basket', 'MartinottinoSTP']:
 
     RESULTS['rate_%s' % cellType] = []
     RESULTS['Input_%s' % cellType] = []
     RESULTS['CC_%s' % cellType] = [] # cross-correl
-    RESULTS['AC_%s' % cellType] = [] # auto-correl
     
     for iBranch in range(6):
         
         try:
             sim = Parallel(\
-                    filename='../data/detailed_model/tvRateStim_simBranch%i_%s.zip' % (iBranch,cellType))
+                    filename='../data/detailed_model/natMovieStim_simBranch%i_%sFull.zip' % (iBranch, cellType))
             sim.load()
-
-            sim.fetch_quantity_on_grid('spikes', dtype=list)
-            sim.fetch_quantity_on_grid('Rate', dtype=np.ndarray)
-
-            spikeSeeds = np.unique(sim.spikeSeed)
-            stochProcSeeds = np.unique(sim.stochProcSeed)
-
+       
             dt = sim.fetch_quantity_on_grid('dt', return_last=True)
             tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-            t = np.arange(int(tstop/dt)+1)*dt
+            seeds = np.unique(sim.spikeSeed)
+            
+            sim.fetch_quantity_on_grid('Rate', dtype=np.ndarray)
+            RESULTS['Input_Rate'] = sim.Rate[0].flatten()[0]
+            sim.fetch_quantity_on_grid('spikes', dtype=list)
+            RESULTS['rate_%s' % cellType].append(compute_rate_psth(sim, tstop, dt, seeds))
+            
+            # compute Cross-Correl
+            CCF, time_shift = crosscorrel(RESULTS['Input_Rate'][::subsampling], 
+                                          RESULTS['rate_%s' % cellType][-1][1:][::subsampling], 
+                                          tmax, subsampling*dt)
+            RESULTS['CC_%s' % cellType].append(CCF)
 
-            for stochProcSeed in stochProcSeeds:
-                cond = sim.stochProcSeed==stochProcSeed
+            RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType][-1]))*dt
 
-                # fetch input
-                RESULTS['Input_%s' % cellType].append(sim.OU[cond][0])
-                # compute rate
-                spikes_matrix= np.zeros((len(spikeSeeds), int(tstop/dt)+1))
-                for i, spikes in enumerate(sim.spikes[cond]):
-                    spikes_matrix[i,(spikes/dt).astype('int')] = True
-                # store rate
-                RESULTS['rate_%s' % cellType].append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                                                           int(rate_smoothing/dt)))
-
-                tCond = t[1:]>1e3 # remove initial transients
-
-                # compute Cross-Correl
-                CCF, time_shift = crosscorrel(RESULTS['Input_%s' % cellType][-1][tCond][::subsampling], 
-                                              RESULTS['rate_%s' % cellType][-1][1:][tCond][::subsampling], 
-                                              400, subsampling*dt)
-                RESULTS['CC_%s' % cellType].append(CCF)
-
-                # compute Auto-Correl
-                CCF, time_shift = crosscorrel(RESULTS['Input_%s' % cellType][-1][tCond][::subsampling], 
-                                              RESULTS['Input_%s' % cellType][-1][tCond][::subsampling], 
-                                              400, subsampling*dt)
-                RESULTS['AC_%s' % cellType].append(CCF)
+            # compute Auto-Correl
+            if 'ACF' not in RESULTS:
+                CCF, time_shift = crosscorrel(RESULTS['Input_Rate'][::subsampling], 
+                                              RESULTS['Input_Rate'][::subsampling], 
+                                              tmax, subsampling*dt)
+                RESULTS['ACF'] = CCF
+                RESULTS['time_shift'] = time_shift
         except BaseException as be:
             print(cellType, 'branch', iBranch, 'no data')
+    print(' %s: mean output rate: %.1f Hz' % (cellType, np.mean(RESULTS['rate_%s' % cellType],axis=0).mean()))
 
-    """
-    print('%s, mean rate %.1f +/- %.1f Hz' % (cellType,
-                                              np.mean(np.mean(RESULTS['rate_%s' % cellType], axis=0)),
-                                              np.std(np.mean(RESULTS['rate_%s' % cellType], axis=0))))
-    """
-        
-    RESULTS['t'] = t
-    RESULTS['dt'] = dt
-    RESULTS['time_shift'] = time_shift
 
 # %%
-from scipy.optimize import minimize
+fig, ax = pt.figure(figsize=(1.,0.85))
 
-# Lorentzian Fit of decay
+pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Martinotti'], axis=0), 
+        sy=np.std(RESULTS['CC_Martinotti'], axis=0),
+        ax=ax, color='tab:orange')
+pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Basket'], axis=0),
+        sy=np.std(RESULTS['CC_Basket'], axis=0),
+        ax=ax, color='tab:red')
+pt.set_plot(ax, xlabel='jitter (s)',
+            xticks=[-0.9,0,0.9], xlim=[-0.95,1.2],
+            ylim = [-0.35, 0.95],
+            ylabel='corr. coef.')
 
-def gaussian(t, X):
-    #return (1-X[2])*np.exp(-(t-X[1])**2/2./X[0]**2)+X[2]
-    return (1-X[2])*(1/(1+(((t-X[1])/X[0])**2)))+X[2]
-                 
-def fit_gaussian_width(shift, array,
-                       min_time=10,
-                       max_time=1000):
-    #i0 = np.argmax(array)
-    def func(X):
-        return np.sum(np.abs(gaussian(shift, X)-array))
-        #return np.sum(np.abs(gaussian(shift[i0:]-shift[i0], X)-array[i0:]))
+# %%
+fig, ax = pt.figure(figsize=(0.8,0.85))
+
+for k, cellType, color in zip(range(3),
+                              ['Basket', 'Martinotti', 'MartinottinoNMDA'],
+                              ['tab:red', 'tab:orange', 'tab:purple']):
+
     
-    res = minimize(func, [3*min_time,0,0],
-                   bounds=[[min_time, max_time],
-                           [-max_time, max_time],
-                           [-1,1]], method='L-BFGS-B')
-    return res.x
+    fit_cond = RESULTS['time_shift']>0
+    RESULTS['tau_%s' % cellType] = [fit_half_width(RESULTS['time_shift'][fit_cond], norm(cc)[fit_cond])[0]\
+                 for cc in RESULTS['CC_%s' % cellType]]
+    ax.bar([1+k], [1e-3*np.mean(RESULTS['tau_%s' % cellType])],
+           yerr=[1e-3*np.std(RESULTS['tau_%s' % cellType])], color=color)
 
+RESULTS['tau_ACF'] = fit_half_width(RESULTS['time_shift'][fit_cond], norm(RESULTS['ACF'])[fit_cond])[0]
+ax.bar([0], [1e-3*tau], color='tab:grey')
+    
+pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)')
+
+#fig.savefig('../figures/detailed_model/Widths.svg')
 
 # %%
 from scipy import stats
