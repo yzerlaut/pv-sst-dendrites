@@ -160,28 +160,40 @@ if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
 then
     nSpikeSeed=56
     dt=0.05
+    tstop=100000
     ## Basket Cell
     python natMovie_sim.py --test_with_repeats\
                             -c Basket\
                             --with_presynaptic_spikes\
                             --iBranch 1\
-                            --tstop 40000.\
                             --Inh_fraction 0.05\
                             --synapse_subsampling 2\
                             --with_STP\
                             --dt $dt\
+                            --tstop $tstop\
                             --nSpikeSeed $nSpikeSeed
+    ## Basket Cell
+    python natMovie_sim.py --test_with_repeats\
+                            -c Basket\
+                            --with_presynaptic_spikes\
+                            --iBranch 1\
+                            --Inh_fraction 0.05\
+                            --synapse_subsampling 2\
+                            --dt $dt\
+                            --tstop $tstop\
+                            --nSpikeSeed $nSpikeSeed\
+                            --suffix noSTP
     # -----------------------
     # Martinotti Cell
     python natMovie_sim.py --test_with_repeats\
                              -c Martinotti\
                              --with_presynaptic_spikes\
                              --Inh_fraction 0.15\
-                             --tstop 40000.\
                              --iBranch 1\
                              --synapse_subsampling 12\
                              --nSpikeSeed $nSpikeSeed\
                              --dt $dt\
+                             --tstop $tstop\
                              --with_NMDA\
                              --with_STP
     # -----------------------
@@ -190,11 +202,11 @@ then
                              -c Martinotti\
                              --with_presynaptic_spikes\
                              --Inh_fraction 0.15\
-                             --tstop 40000.\
                              --iBranch 1\
                              --synapse_subsampling 12\
                              --nSpikeSeed $nSpikeSeed\
                              --dt $dt\
+                             --tstop $tstop\
                              --with_NMDA\
                              --suffix noSTP
     # -----------------------
@@ -202,21 +214,33 @@ then
     python natMovie_sim.py --test_with_repeats\
                              -c Martinotti\
                              --with_presynaptic_spikes\
-                             --Inh_fraction 0.1\
-                             --tstop 40000\
+                             --Inh_fraction 0.15\
                              --iBranch 1\
-                             --synapse_subsampling 12\
+                             --synapse_subsampling 8\
                              --nSpikeSeed $nSpikeSeed\
                              --dt $dt\
+                             --tstop $tstop\
                              --with_STP\
                              --suffix noNMDA
+    # -----------------------
+    # Martinotti Cell, no STP no NMDA
+    python natMovie_sim.py --test_with_repeats\
+                             -c Martinotti\
+                             --with_presynaptic_spikes\
+                             --Inh_fraction 0.1\
+                             --iBranch 1\
+                             --synapse_subsampling 8\
+                             --nSpikeSeed $nSpikeSeed\
+                             --dt $dt\
+                             --tstop $tstop\
+                             --suffix noSTPnoNMDA
 fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
 then
     nSpikeSeed=40
-    dt=0.1
-    tstop=20000
+    dt=0.05
+    tstop=100000
     ## Basket Cell
     python natMovie_sim.py -c Basket\
                             --Inh_fraction 0.05\
@@ -241,12 +265,47 @@ then
                              --suffix Full
     # -----------------------
     # Basket Cell -- NO STP
+    python natMovie_sim.py -c Basket\
+                            --Inh_fraction 0.05\
+                            --synapse_subsampling 2\
+                            --with_STP\
+                            --no_Vm\
+                            --dt $dt\
+                            --tstop $tstop\
+                            --nSpikeSeed $nSpikeSeed\
+                            --suffix FullnoSTP
     # -----------------------
     # Martinotti Cell -- NO STP
+    python natMovie_sim.py -c Martinotti\
+                             --Inh_fraction 0.15\
+                             --synapse_subsampling 12\
+                             --with_NMDA\
+                             --no_Vm\
+                             --dt $dt\
+                             --tstop $tstop\
+                             --nSpikeSeed $nSpikeSeed\
+                             --suffix FullnoSTP
     # -----------------------
     # Martinotti Cell, no NMDA
+    python natMovie_sim.py -c Martinotti\
+                             --Inh_fraction 0.15\
+                             --synapse_subsampling 8\
+                             --with_STP
+                             --no_Vm\
+                             --dt $dt\
+                             --tstop $tstop\
+                             --nSpikeSeed $nSpikeSeed\
+                             --suffix FullnoNMDA
     # -----------------------
     # Martinotti Cell, no NMDA - no STP
+    python natMovie_sim.py -c Martinotti\
+                             --Inh_fraction 0.1\
+                             --synapse_subsampling 8\
+                             --no_Vm\
+                             --dt $dt\
+                             --tstop $tstop\
+                             --nSpikeSeed $nSpikeSeed\
+                             --suffix FullnoSTPnoNMDA
     # -----------------------
 fi
 
