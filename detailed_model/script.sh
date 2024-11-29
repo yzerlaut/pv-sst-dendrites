@@ -218,6 +218,7 @@ then
     dt=0.1
     tstop=20000
     ## Basket Cell
+    """
     python natMovie_sim.py -c Basket\
                             --Inh_fraction 0.05\
                             --synapse_subsampling 2\
@@ -227,13 +228,14 @@ then
                             --tstop $tstop\
                             --nSpikeSeed $nSpikeSeed\
                             --suffix Full
+    """
     # -----------------------
     # Martinotti Cell
     python natMovie_sim.py -c Martinotti\
                              --Inh_fraction 0.15\
                              --synapse_subsampling 12\
                              --with_NMDA\
-                             --with_STP
+                             --with_STP\
                              --no_Vm\
                              --dt $dt\
                              --tstop $tstop\
