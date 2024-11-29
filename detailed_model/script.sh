@@ -214,9 +214,9 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
 then
-    nSpikeSeed=40
+    nSpikeSeed=20
     dt=0.1
-    tstop=10000
+    tstop=20000
     ## Basket Cell
     python natMovie_sim.py -c Basket\
                             --Inh_fraction 0.05\
