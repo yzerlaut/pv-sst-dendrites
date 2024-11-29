@@ -149,12 +149,12 @@ class Parallel:
 
                 # Run processes
                 for i in range(len(PROCESSES)//Nmax_simultaneous_processes+1):
+                    print(' - running multiprocessing loop: %i/%i [...]' % (i+1, len(PROCESSES)//Nmax_simultaneous_processes))
                     for p in PROCESSES[Nmax_simultaneous_processes*i:Nmax_simultaneous_processes*(i+1)]:
                         p.start()
                     # # Exit the completed processes
                     for p in PROCESSES[Nmax_simultaneous_processes*i:Nmax_simultaneous_processes*(i+1)]:
                         p.join()
-                    print('multiprocessing loop: %i/%i' % (i+1, len(PROCESSES)//Nmax_simultaneous_processes))
                     # print('   n=%i/%i' % (i*len(PROCESSES), len(PROCESSES)))
 
             # CHECK SUCCESS !
