@@ -225,7 +225,7 @@ then
                             --no_Vm\
                             --dt $dt\
                             --tstop $tstop\
-                            --nSpikeSeed $nSpikeSeed
+                            --nSpikeSeed $nSpikeSeed\
                             --suffix Full
     # -----------------------
     # Martinotti Cell
@@ -235,8 +235,8 @@ then
                              --with_NMDA\
                              --with_STP
                              --no_Vm\
-                             --tstop $tstop\
                              --dt $dt\
+                             --tstop $tstop\
                              --nSpikeSeed $nSpikeSeed\
                              --suffix Full
     # -----------------------
