@@ -312,9 +312,10 @@ if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
     nSpikeSeed=5
     tstop=20000
+    tstop=500
     dt=0.1
-    Inh_range=(0.025 0.05 0.1 0.15)
-    SS_range=(1 2 4 8 12)
+    Inh_range='0.025 0.05 0.1 0.15'
+    SS_range='1 2 4 8 12'
     # -----------------------
     ## Basket Cell
     python natMovie_sim.py -c Basket\

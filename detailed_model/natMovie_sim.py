@@ -268,43 +268,24 @@ if __name__=='__main__':
 
     else:
    
-        filename='../data/detailed_model/natMovieStim_%s.zip' %\
-                        (args.cellType+args.suffix)
-        print('\n running:_%s.zip \n' % filename)
-        
-        sim = Parallel(filename=filename)
+        for b in range(args.nBranch):
 
-        # run the simulation with parameter variations:
-        grid = dict(iBranch = np.arange(args.nBranch),
-                    spikeSeed=np.arange(args.nSpikeSeed),
-                    Inh_fraction=args.Inh_fraction,
-                    synapse_subsampling=args.synapse_subsampling)
+            params['iBranch'] = b
 
-        sim.build(grid)
-
-        sim.run(run_sim,
-                single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}),
-                fix_missing_only=args.fix_missing_only)
-
-        # for b in range(args.nBranch):
-
-            # params['iBranch'] = b
-
-            # print('\n running: natMovieStim_simBranch%i_%s.zip \n' %\
-                                # (b, args.cellType+args.suffix))
+            print('\n running: natMovieStim_simBranch%i_%s.zip \n' %\
+                                (b, args.cellType+args.suffix))
             
-            # sim = Parallel(\
-                # filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
-                                # (b, args.cellType+args.suffix))
+            sim = Parallel(\
+                filename='../data/detailed_model/natMovieStim_simBranch%i_%s.zip' %\
+                                (b, args.cellType+args.suffix))
 
-            # grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
-                        # Inh_fraction=args.Inh_fraction,
-                        # synapse_subsampling=args.synapse_subsampling)
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
+                        Inh_fraction=args.Inh_fraction,
+                        synapse_subsampling=args.synapse_subsampling)
 
-            # sim.build(grid)
+            sim.build(grid)
 
-            # sim.run(run_sim,
-                    # single_run_args=\
-                        # dict({k:v for k,v in params.items() if k not in grid}),
-                    # fix_missing_only=args.fix_missing_only)
+            sim.run(run_sim,
+                    single_run_args=\
+                        dict({k:v for k,v in params.items() if k not in grid}),
+                    fix_missing_only=args.fix_missing_only)
