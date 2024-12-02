@@ -268,7 +268,6 @@ then
     python natMovie_sim.py -c Basket\
                             --Inh_fraction 0.05\
                             --synapse_subsampling 2\
-                            --with_STP\
                             --no_Vm\
                             --dt $dt\
                             --tstop $tstop\
@@ -290,7 +289,7 @@ then
     python natMovie_sim.py -c Martinotti\
                              --Inh_fraction 0.15\
                              --synapse_subsampling 8\
-                             --with_STP
+                             --with_STP\
                              --no_Vm\
                              --dt $dt\
                              --tstop $tstop\
@@ -312,63 +311,67 @@ fi
 if [[ $1 == 'all' || $1 == 'input-range-natMovie' ]]
 then
     nSpikeSeed=5
+    tstop=20000
+    dt=0.1
+    Inh_range=(0.025 0.05 0.1 0.15)
+    SS_range=(1 2 4 8 12)
     # -----------------------
     ## Basket Cell
     python natMovie_sim.py -c Basket\
-                             --tstop 20000\
-                             --Inh_fraction 0.02 0.04 0.06 0.08\
-                             --synapse_subsampling 1 2 4 8\
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
                             --nSpikeSeed $nSpikeSeed\
-                             --with_STP\
+                            --with_STP\
                             --no_Vm\
                             --suffix InputRange
     # -----------------------
     # Martinotti Cell
     python natMovie_sim.py -c Martinotti\
-                             --tstop 20000\
-                             --Inh_fraction 0.1 0.15 0.2 0.25\
-                             --synapse_subsampling 6 8 10 12\
-                             --nSpikeSeed $nSpikeSeed\
-                             --with_STP\
-                             --with_NMDA\
-                             --no_Vm\
-                             --suffix InputRange
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
+                            --nSpikeSeed $nSpikeSeed\
+                            --with_STP\
+                            --with_NMDA\
+                            --no_Vm\
+                            --suffix InputRange
     # -----------------------
     # -----------------------
     ## Basket Cell -- no STP
     python natMovie_sim.py -c Basket\
-                             --tstop 20000\
-                             --Inh_fraction 0.04 0.06 0.08\
-                             --synapse_subsampling 1 2 4\
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
                             --nSpikeSeed $nSpikeSeed\
                             --no_Vm\
                             --suffix InputRange_noSTP
     # -----------------------
     # Martinotti Cell -- no NMDA
     python natMovie_sim.py -c Martinotti\
-                             --tstop 20000\
-                             --Inh_fraction 0.05 0.1 0.15\
-                             --synapse_subsampling 4 8 12\
-                             --nSpikeSeed $nSpikeSeed\
-                             --with_STP\
-                             --no_Vm\
-                             --suffix InputRange_noNMDA
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
+                            --nSpikeSeed $nSpikeSeed\
+                            --with_STP\
+                            --no_Vm\
+                            --suffix InputRange_noNMDA
     # Martinotti Cell -- no STP
     python natMovie_sim.py -c Martinotti\
-                             --tstop 20000\
-                             --Inh_fraction 0.05 0.1 0.15\
-                             --synapse_subsampling 4 8 12\
-                             --nSpikeSeed $nSpikeSeed\
-                             --with_NMDA\
-                             --no_Vm\
-                             --suffix InputRange_noSTP
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
+                            --nSpikeSeed $nSpikeSeed\
+                            --with_NMDA\
+                            --no_Vm\
+                            --suffix InputRange_noSTP
     # Martinotti Cell -- no STP -- no NMDA
     python natMovie_sim.py -c Martinotti\
-                             --tstop 20000\
-                             --Inh_fraction 0.05 0.1 0.15\
-                             --synapse_subsampling 2 4 8 12\
-                             --nSpikeSeed $nSpikeSeed\
-                             --no_Vm\
-                             --suffix InputRange_noNMDAnoSTP
+                            --tstop $tstop --dt $dt\
+                            --Inh_fraction $Inh_range\
+                            --synapse_subsampling $SS_range\
+                            --nSpikeSeed $nSpikeSeed\
+                            --no_Vm\
+                            --suffix InputRange_noNMDAnoSTP
 fi
 
