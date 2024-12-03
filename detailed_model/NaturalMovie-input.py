@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -365,10 +365,10 @@ def show_single_and_trial_average(cellType, RESULTS,
     return fig, AX
 
 RESULTS = {}
-fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
-fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
-fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=14, color='tab:orange')
-fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg')
+#fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
+#fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
+fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=7, color='tab:orange')
+#fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg')
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
