@@ -366,8 +366,9 @@ def show_single_and_trial_average(cellType, RESULTS,
 
 RESULTS = {}
 fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
-fig.savefig(
+fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
 fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=14, color='tab:orange')
+fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg')
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
@@ -376,6 +377,7 @@ for cellType, color, id in zip(TYPES, COLORS, [6,0,14,0,0,0,0]):
     fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
                                   color=color, zoom=[0.1e3, 12e3], with_inset=True, figsize=(3.3,0.8))
     fig.suptitle(cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST - '), color=color)
+    fig.savefig('../figures/detailed_model/natMovie-%s-raw-short.svg' % cellType)
 
 
 # %% [markdown]
