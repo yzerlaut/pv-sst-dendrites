@@ -115,7 +115,7 @@ pt.set_common_ylims(AX)
 # # Simulations -> Single trial example
 #
 # ```
-# python natMovie_sim.py --test --with_STP  -c Basket --tstop 500 --synapse_subsampling 20 --with_presynaptic_spikes
+# python natMovie_sim.py --test --with_STP  -c Basket --tstop 3000 --synapse_subsampling 2 --Inh_fraction 0.05 --with_presynaptic_spikes
 # ```
 
 # %%
@@ -150,10 +150,12 @@ for ax in AX:
 
 # %%
 results = {}
-Nss, Nif = 3, 3
+Nss, Nif = 4, 4
 with_traces = False
-#for cellType in ['MartinottiInputRange', 'BasketInputRange']:
-for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
+#for cellType in :
+TYPES = ['BasketInputRange', 'BasketInputRange_noSTP',
+         'MartinottiInputRange', 'MartinottiInputRange_noSTP', 'MartinottiInputRange_noNMDA', 'MartinottiInputRange_noNMDAnoSTP']
+for cellType in TYPES:
     
     results['oRate_%s' % cellType] = np.zeros((6, Nss, Nif))
     results['Inh_fraction_%s' % cellType], results['synapse_subsampling_%s' % cellType] = np.zeros((Nss, Nif)), np.zeros((Nss, Nif))
@@ -180,6 +182,7 @@ for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
                     
                     results['oRate_%s' % cellType][iBranch,s,i] = 1e3/tstop*\
                                 np.mean([len(sim.spikes[n][i][s]) for n in range(len(seeds))])
+                    
                     results['Inh_fraction_%s' % cellType][s,i] = sim.Inh_fraction[0][i][s]
                     results['synapse_subsampling_%s' % cellType][s,i] = sim.synapse_subsampling[0][i][s]
                     
@@ -193,49 +196,66 @@ for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
                                                       int(100./dt))
                         t = np.arange(len(rate))*dt
                         results['traceRate_%s' % cellType][iBranch,s,i,:] = rate
-                    
+            results['Inh_fraction'] = np.unique(sim.Inh_fraction[0])
+            results['synapse_subsampling'] = np.unique(sim.synapse_subsampling[0])
+ 
         except BaseException as be:
             print(be)
             print(filename, ' not working')
 
 # %%
-for cellType in ['BasketInputRange_noSTP', 'MartinottiInputRange_noNMDA']:
-    fig, ax, _ = pt.twoD_plot(100*results['Inh_fraction_%s' % cellType].flatten(),
-                 100./results['synapse_subsampling_%s' % cellType].flatten(),
-                 results['oRate_%s' % cellType].mean(axis=0).flatten(),
-                             bar_legend_args={'label':'firing (Hz)'})
-    pt.set_plot(ax, title=cellType.replace('InputRange', ''), xlabel='Inh. syn. %', ylabel='syn. # (% total)',
-                xticks=np.unique(100*results['Inh_fraction_%s' % cellType]), xticks_rotation=60,
-                yticks=100./np.unique(results['synapse_subsampling_%s' % cellType]))
-
-# %%
-results['oRate_BasketInputRange_noSTP'][5,:,:]
-results['Inh_fraction']
-
-# %%
-pt.plot(results['traceRate_MartinottiInputRange_noSTP'][:,2,2,:].mean(axis=0))
-Rate = sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=list)
-
-CCF, tS = crosscorrel(Rate[::10], results['traceRate_MartinottiInputRange_noSTP'][:,2,2,:].mean(axis=0)[1:][::10], tmax=1.5e3, dt=10*dt)
-pt.plot(tS, CCF)
+ticks = np.arange(5)*5
+for cellType in TYPES:
+    print(cellType)
+    fig, ax = pt.figure(figsize=(1., 1.4), right=8)
+    Max = np.max(results['oRate_%s' % cellType].mean(axis=0))
+    means = results['oRate_%s' % cellType].mean(axis=0)
+    means[means>20] = 20
+    Ticks = ticks[ticks<=np.max([5,Max])]
+    Ticks_labels = [str(t) if t!=20 else '>20' for t in Ticks]
+    fig, ax, acb = pt.matrix(means.T, aspect='auto',
+                             origin='upper', ax=ax, bar_legend_args={'label':'firing (Hz)', 'bounds':[0, min([20,max([5,Max])])],
+                                                                     'ticks':Ticks, 'ticks_labels':Ticks_labels})
+    #acb[1].set_ylim([0,11])
+    fig.suptitle(cellType.replace('Basket', 'PV -').replace('Martinotti', 'SST -').replace('InputRange','').replace('_',' ')+' model')
+    pt.set_plot(ax, 
+                xticks=np.linspace(0.4,Nif-1.3,Nif), yticks=np.linspace(0.4,Nss-1.4,Nss),
+                #xticks=np.arange(Nss)+0.5,
+                #xticks_labels=['%.1f' for f in 100*results['Inh_fraction_%s' % cellType]],
+                xticks_labels=['%.1f'%f for f in 100*results['Inh_fraction']],
+                yticks_labels=['%.1f'%f for f in 100/results['synapse_subsampling'][::-1]],
+                xticks_rotation=60,
+                #xlim = [1., 20], ylim=[5,100],
+                xlabel='$F_{inh}$ (%)', ylabel='$F_{syn}$ (%)')
+    # find the best parameter to reach Fobjective
+    iS = np.flatnonzero((means.flatten()>2) & (means.flatten()<15))
+    for i in iS:
+        print(' Inh_fraction = %.3f, synapse_subsampling=%i -->   output rate : %.1f +/- %.1f Hz ' %\
+                    (results['Inh_fraction_%s' % cellType].flatten()[i],
+                     results['synapse_subsampling_%s' % cellType].flatten()[i],
+                     results['oRate_%s' % cellType].mean(axis=0).flatten()[i],
+                     results['oRate_%s' % cellType].std(axis=0).flatten()[i]))
 
 # %% [markdown]
 # # Multiple trials to compute PSTH
 
 # %%
 #for cellType in ['Martinotti', 'Basket']:
-for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+for cellType in TYPES:
 
     sim = Parallel(\
             filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
 
     
-    print('\n', cellType)
+    print('\n', cellType, ' == from params: Inh. Frac.: %.2f, Syn. Subsmpl.: %i' % (\
+                                            sim.fetch_quantity_on_grid('Inh_fraction', return_last=True),
+                                            sim.fetch_quantity_on_grid('synapse_subsampling', return_last=True)))
     sim.fetch_quantity_on_grid('spikes', dtype=list)
     sim.fetch_quantity_on_grid('synapses', dtype=list)
     sim.fetch_quantity_on_grid('Rate', return_last=True, dtype=np.ndarray)
-    print(' input rate: %.1f  Hz' % (np.mean(sim.Rate[0])))
+    #print(' input rate: %.1f  Hz' % (np.mean(sim.Rate[0])))
     seeds = np.unique(sim.spikeSeed)
 
     dt = sim.fetch_quantity_on_grid('dt', return_last=True)
@@ -247,12 +267,12 @@ for cellType in ['Martinotti', 'Basket', 'MartinottinoNMDA', 'MartinottinoSTP']:
     sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
     syn_exc_rates = [np.mean([1e3*len(E)/tstop for E in sim.presynaptic_exc_events[i]]) for i in range(len(seeds))]
-    print(' exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
-    print(' --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/np.mean(sim.Rate[0])))
+    print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
+    print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/np.mean(sim.Rate[0])))
     sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
         
     t = np.arange(len(rate))*dt
-    print(' output rate: %.2f Hz' % np.mean(rate[t>0.1e3]))
+    print('     => output rate: %.2f Hz' % np.mean(rate[t>0.1e3]))
 
 
 # %%
@@ -345,17 +365,17 @@ def show_single_and_trial_average(cellType, RESULTS,
     return fig, AX
 
 RESULTS = {}
-#fig, _ = show_single_and_trial_average('Basket', RESULTS, color='tab:red')
-#fig.savefig(
-#fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=6, color='tab:orange')
+fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
+fig.savefig(
+fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=14, color='tab:orange')
 
 # %%
-#for cellType, color, id in zip(['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
-#                               ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold'], [0,0,6,0,0,0]):
-for cellType, color, id in zip(['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
-                               ['tab:red', 'tab:orange', 'tab:purple', 'gold'], [0,0,6,0,0,0]):
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
+for cellType, color, id in zip(TYPES, COLORS, [6,0,14,0,0,0,0]):
     fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
                                   color=color, zoom=[0.1e3, 12e3], with_inset=True, figsize=(3.3,0.8))
+    fig.suptitle(cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST - '), color=color)
 
 
 # %% [markdown]
@@ -389,8 +409,7 @@ subsampling = 100
 width = 1500
 CCs = {}
 
-for cellType, color in zip(['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
-                            ['tab:red', 'tab:orange', 'tab:purple', 'gold']):
+for cellType, color in zip(TYPES, COLORS):
 
     # input
     """
@@ -424,11 +443,9 @@ pt.set_plot(ax, xlabel='jitter (s)',
 
 # %%
   
-fig, ax = pt.figure(figsize=(0.8,0.85))
+fig, ax = pt.figure(figsize=(1.1,0.85))
 
-for k, cellType, color in zip(range(4),
-                              ['Basket', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP'],
-                              ['tab:red', 'tab:orange', 'tab:purple', 'gold']):
+for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
 
     i0 = int(len(CCs['time_shift'])/2)
     fit_cond = (CCs['time_shift']>0) 
@@ -463,7 +480,7 @@ subsampling, tmax = 100, 1500
 
 RESULTS = {} # 4, 11 ok, 13 good
 
-for cellType in ['Martinotti', 'Basket', 'MartinottinoSTP']:
+for cellType in TYPES:
 
     RESULTS['rate_%s' % cellType] = []
     RESULTS['Input_%s' % cellType] = []
@@ -472,8 +489,9 @@ for cellType in ['Martinotti', 'Basket', 'MartinottinoSTP']:
     for iBranch in range(6):
         
         try:
-            sim = Parallel(\
-                    filename='../data/detailed_model/natMovieStim_simBranch%i_%sFull.zip' % (iBranch, cellType))
+            fn = '../data/detailed_model/natMovieStim_simBranch%i_%s.zip' % (iBranch,
+                         cellType.replace('Basket', 'BasketFull').replace('Martinotti', 'MartinottiFull'))
+            sim = Parallel(filename=fn)
             sim.load()
        
             dt = sim.fetch_quantity_on_grid('dt', return_last=True)
@@ -501,38 +519,48 @@ for cellType in ['Martinotti', 'Basket', 'MartinottinoSTP']:
                 RESULTS['ACF'] = CCF
                 RESULTS['time_shift'] = time_shift
         except BaseException as be:
-            print(cellType, 'branch', iBranch, 'no data')
-    print(' %s: mean output rate: %.1f Hz' % (cellType, np.mean(RESULTS['rate_%s' % cellType],axis=0).mean()))
+            print(cellType, 'branch', iBranch, 'no data', be)
+    print(' %s: output rate: %.1f +/- %.1f Hz' % (cellType,
+                                                 np.mean(RESULTS['rate_%s' % cellType],axis=1).mean(),
+                                                 np.mean(RESULTS['rate_%s' % cellType],axis=1).std()))
+    print('   ', np.mean(RESULTS['rate_%s' % cellType],axis=1))
 
+
+# %%
+np.mean(RESULTS['rate_%s' % cellType], axis=1).mean()
 
 # %%
 fig, ax = pt.figure(figsize=(1.,0.85))
 
-pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Martinotti'], axis=0), 
-        sy=np.std(RESULTS['CC_Martinotti'], axis=0),
+#pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Martinotti'], axis=0), 
+#        sy=np.std(RESULTS['CC_Martinotti'], axis=0),
+pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Martinotti'][3], 
         ax=ax, color='tab:orange')
-pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Basket'], axis=0),
+#pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Basket'], axis=0),
+#        sy=np.std(RESULTS['CC_Basket'], axis=0),
+pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Basket'][1]
         sy=np.std(RESULTS['CC_Basket'], axis=0),
         ax=ax, color='tab:red')
 pt.set_plot(ax, xlabel='jitter (s)',
             xticks=[-0.9,0,0.9], xlim=[-0.95,1.2],
-            ylim = [-0.35, 0.95],
+            #ylim = [-0.35, 0.95],
             ylabel='corr. coef.')
 
 # %%
-fig, ax = pt.figure(figsize=(0.8,0.85))
+fig, ax = pt.figure(figsize=(1.1,0.85))
 
-for k, cellType, color in zip(range(3),
-                              ['Basket', 'Martinotti', 'MartinottinoNMDA'],
-                              ['tab:red', 'tab:orange', 'tab:purple']):
-
+for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
     
     fit_cond = RESULTS['time_shift']>0
-    RESULTS['tau_%s' % cellType] = [fit_half_width(RESULTS['time_shift'][fit_cond], norm(cc)[fit_cond])[0]\
-                 for cc in RESULTS['CC_%s' % cellType]]
-    ax.bar([1+k], [1e-3*np.mean(RESULTS['tau_%s' % cellType])],
-           yerr=[1e-3*np.std(RESULTS['tau_%s' % cellType])], color=color)
-
+    try:
+        RESULTS['tau_%s' % cellType] = [fit_half_width(RESULTS['time_shift'][fit_cond], norm(cc)[fit_cond])[0]\
+                     for cc in RESULTS['CC_%s' % cellType]]
+        ax.bar([1+k], [1e-3*np.nanmean(RESULTS['tau_%s' % cellType])],
+               yerr=[1e-3*np.nanstd(RESULTS['tau_%s' % cellType])], color=color)
+    except BaseException as be:
+        print(cellType)
+        print(be)
+        
 RESULTS['tau_ACF'] = fit_half_width(RESULTS['time_shift'][fit_cond], norm(RESULTS['ACF'])[fit_cond])[0]
 ax.bar([0], [1e-3*tau], color='tab:grey')
     

@@ -162,6 +162,7 @@ then
     dt=0.025
     tstop=15000
     ## Basket Cell
+    : '
     python natMovie_sim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
                             --iBranch 1\
@@ -171,10 +172,11 @@ then
     ## Basket Cell - no STP
     python natMovie_sim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --iBranch 3\
+                            --iBranch 1\
                             --Inh_fraction 0.05 --synapse_subsampling 2\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --suffix noSTP
+    '
     # -----------------------
     # Martinotti Cell
     python natMovie_sim.py --test_with_repeats -c Martinotti\
@@ -186,6 +188,7 @@ then
                             --with_STP
     # -----------------------
     # Martinotti Cell -- NO STP
+    : '
     python natMovie_sim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --iBranch 3\
@@ -198,7 +201,7 @@ then
     python natMovie_sim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --iBranch 3\
-                            --Inh_fraction 0.1 --synapse_subsampling 8\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_STP\
                             --suffix noNMDA
@@ -207,14 +210,15 @@ then
     python natMovie_sim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --iBranch 3\
-                            --Inh_fraction 0.05 --synapse_subsampling 8\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                              --suffix noSTPnoNMDA
+    '
 fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
 then
-    nSpikeSeed=80
+    nSpikeSeed=40
     dt=0.05
     tstop=50000
     ## Basket Cell
@@ -243,19 +247,18 @@ then
                             --Inh_fraction 0.15 --synapse_subsampling 12\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_NMDA\
-                            --suffix Full
                             --suffix FullnoSTP
     # -----------------------
     # Martinotti Cell, no NMDA
     python natMovie_sim.py -c Martinotti --no_Vm\
-                            --Inh_fraction 0.1 --synapse_subsampling 8\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_STP\
                             --suffix FullnoNMDA
     # -----------------------
     # Martinotti Cell, no NMDA - no STP
     python natMovie_sim.py -c Martinotti --no_Vm\
-                            --Inh_fraction 0.05 --synapse_subsampling 8\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --suffix FullnoSTPnoNMDA
     # -----------------------
