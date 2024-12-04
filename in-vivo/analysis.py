@@ -43,6 +43,7 @@ def compute_tuning_response_per_cells(data,
                                       response_significance_threshold = response_significance_threshold,
                                       contrast=1,
                                       protocol_name='ff-gratings-8orientation-2contrasts-10repeats',
+                                      force_significant=None,
                                       return_significant_waveforms=False,
                                       verbose=True):
 
@@ -60,7 +61,12 @@ def compute_tuning_response_per_cells(data,
                             EPISODES.varied_parameters['angle'][1]
 
     significant_waveforms= []
-    significant = np.zeros(data.nROIs, dtype=bool)
+
+    if force_significant is not None:
+        significant = force_significant
+    else:
+        significant = np.zeros(data.nROIs, dtype=bool)
+
 
     for roi in np.arange(data.nROIs):
 
@@ -71,7 +77,7 @@ def compute_tuning_response_per_cells(data,
         condition = (cell_resp['contrast']==contrast)
 
         # if significant in at least one orientation
-        if np.sum(cell_resp['significant'][condition]):
+        if np.sum(cell_resp['significant'][condition]) or significant[roi]:
 
             significant[roi] = True
 
