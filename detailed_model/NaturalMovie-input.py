@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -235,6 +235,7 @@ for cellType in TYPES:
                      results['synapse_subsampling_%s' % cellType].flatten()[i],
                      results['oRate_%s' % cellType].mean(axis=0).flatten()[i],
                      results['oRate_%s' % cellType].std(axis=0).flatten()[i]))
+    fig.savefig('../figures/detailed_model/natMovie-input-space-%s.svg' % cellType)
 
 # %% [markdown]
 # # Multiple trials to compute PSTH
@@ -280,9 +281,10 @@ def show_single_and_trial_average(cellType, RESULTS,
                                   zoom = [450, 4000],
                                   example_index=0,
                                   color='k', 
-                                  with_inset=False, figsize=(1.8,0.6)):
+                                  with_inset=False, figsize=(1.8,0.9)):
 
     RESULTS['%s_example_index' % cellType] = example_index
+    
     sim = Parallel(filename='../data/detailed_model/natMovieStim_demo_%s.zip' % cellType)
     sim.load()
 
@@ -313,21 +315,28 @@ def show_single_and_trial_average(cellType, RESULTS,
     AX[0].fill_between(RESULTS['t'][:-1][::20], 0*RESULTS['t'][:-1][::20], RESULTS['Input'][::20],
                        color='tab:grey', lw=0)
     # Vm
-    AX[2].plot(RESULTS['t'][::10], RESULTS['Vm_%s' % cellType][::10], color=color, lw=0.5)
-    AX[2].plot(RESULTS['t'][::100], -60+0*RESULTS['t'][::100], 'k:', lw=0.3)
+    cond = (RESULTS['t']>zoom[0]) & (RESULTS['t']<zoom[1])
+    AX[2].plot(RESULTS['t'][cond][::10], RESULTS['Vm_%s' % cellType][cond][::10], color=color, lw=0.5)
+    AX[2].plot(RESULTS['t'][cond][::100], -60+0*RESULTS['t'][cond][::100], 'k:', lw=0.3)
+
+    
     # rate
-    AX[3].fill_between(RESULTS['t'][::20], 0*RESULTS['t'][::20], RESULTS['rate_%s' % cellType][::20],
+    AX[3].fill_between(RESULTS['t'][cond][::20], 0*RESULTS['t'][cond][::20], RESULTS['rate_%s' % cellType][cond][::20],
                        color=color, lw=0)
         
     # events
     if 'pre_inh_%s'%cellType in RESULTS:
-        subsampling = 2 if cellType=='Basket' else 1
+        subsampling = 4 if cellType=='Basket' else 1
         # 1/4 for display
         for i, events in enumerate(RESULTS['pre_exc_%s' % cellType][::subsampling]):
-            AX[1].scatter(events, i%len(synapses)+np.zeros(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=.5)
+            events = np.array(events)
+            cond = (events>zoom[0]) & (events<zoom[1])
+            AX[1].scatter(events[cond], i%len(synapses)+np.zeros(len(events[cond])), facecolor='g', edgecolor=None, alpha=.35, s=.5)
         for i, events in enumerate(RESULTS['pre_inh_%s' % cellType][::subsampling]):
-            AX[1].scatter(events,
-                       len(RESULTS['pre_exc_%s' % cellType])/subsampling+i*np.ones(len(events)), 
+            events = np.array(events)
+            cond = (events>zoom[0]) & (events<zoom[1])
+            AX[1].scatter(events[cond],
+                       len(RESULTS['pre_exc_%s' % cellType])/subsampling+i*np.ones(len(events[cond])), 
                        facecolor='r', edgecolor=None, alpha=.35, s=.5)
 
     pt.set_common_xlims(AX, lims=zoom)
@@ -365,19 +374,19 @@ def show_single_and_trial_average(cellType, RESULTS,
     return fig, AX
 
 RESULTS = {}
-#fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
-#fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
+fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
+fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
 fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=7, color='tab:orange')
-#fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg')
+fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg') # 1 , 6, 7, 9
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
 COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
-for cellType, color, id in zip(TYPES, COLORS, [6,0,14,0,0,0,0]):
+for cellType, color, id in zip(TYPES, COLORS, [6,0,7,7,7,7,7]):
     fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
                                   color=color, zoom=[0.1e3, 12e3], with_inset=True, figsize=(3.3,0.8))
     fig.suptitle(cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST - '), color=color)
-    fig.savefig('../figures/detailed_model/natMovie-%s-raw-short.svg' % cellType)
+    fig.savefig('../figures/detailed_model/natMovie-%s-raw-long.svg' % cellType)
 
 
 # %% [markdown]
@@ -411,7 +420,8 @@ subsampling = 100
 width = 1500
 CCs = {}
 
-for cellType, color in zip(TYPES, COLORS):
+for cellType, color in zip(['Martinotti', 'Basket'], ['tab:orange', 'tab:red']):
+
 
     # input
     """
@@ -436,11 +446,12 @@ for cellType, color in zip(TYPES, COLORS):
 pt.set_plot(ax, xlabel='jitter (s)',
             xticks=[-0.9,0,0.9],
             xlim=[-0.95,1.2],
-            yticks=[0.,0.5,1.0],
+            #yticks=[0.,0.5,1.0],
             #ylim=[-0.15,1.08],
             #xlim=[-0.21,0.27], 
             title='model',
             ylabel='corr. coef.')
+fig.savefig('../figures/detailed_model/natMovie-CrossCorrel-Func-Example.svg')
 #fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
 
 # %%
@@ -529,9 +540,6 @@ for cellType in TYPES:
 
 
 # %%
-np.mean(RESULTS['rate_%s' % cellType], axis=1).mean()
-
-# %%
 fig, ax = pt.figure(figsize=(1.,0.85))
 
 #pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Martinotti'], axis=0), 
@@ -540,7 +548,7 @@ pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Martinotti'][3],
         ax=ax, color='tab:orange')
 #pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Basket'], axis=0),
 #        sy=np.std(RESULTS['CC_Basket'], axis=0),
-pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Basket'][1]
+pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Basket'][1],
         sy=np.std(RESULTS['CC_Basket'], axis=0),
         ax=ax, color='tab:red')
 pt.set_plot(ax, xlabel='jitter (s)',
@@ -552,7 +560,7 @@ pt.set_plot(ax, xlabel='jitter (s)',
 fig, ax = pt.figure(figsize=(1.1,0.85))
 
 for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
-    
+    pt.annotate(ax, cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST -'), (k+1, 0), rotation=90, xycoords='data', va='top', ha='center', color=color)
     fit_cond = RESULTS['time_shift']>0
     try:
         RESULTS['tau_%s' % cellType] = [fit_half_width(RESULTS['time_shift'][fit_cond], norm(cc)[fit_cond])[0]\
@@ -564,11 +572,23 @@ for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
         print(be)
         
 RESULTS['tau_ACF'] = fit_half_width(RESULTS['time_shift'][fit_cond], norm(RESULTS['ACF'])[fit_cond])[0]
-ax.bar([0], [1e-3*tau], color='tab:grey')
+ax.bar([0], [1e-3*RESULTS['tau_ACF']], color='tab:grey')
     
 pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)')
 
-#fig.savefig('../figures/detailed_model/Widths.svg')
+fig.savefig('../figures/detailed_model/natMovie-Widths-Summary.svg')
+
+# %%
+import itertools
+from scipy import stats
+keys = TYPES
+for i, j in itertools.product(range(len(keys)), range(len(keys))):
+    if i>j:
+        try:
+            print(keys[i], keys[j], ', p=%.0e' % stats.mannwhitneyu(RESULTS['tau_%s' % keys[i]],
+                                                                    RESULTS['tau_%s' % keys[j]]).pvalue)
+        except BaseException:
+            pass
 
 # %%
 from scipy import stats

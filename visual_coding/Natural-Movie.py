@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -308,7 +308,7 @@ for k, key, pos_color, neg_color in zip(range(2),
     
     CCF1, time_shift = crosscorrel(neg_rates_All-np.mean(neg_rates_All), neg_rates-np.mean(neg_rates),
                                   1.4, RATES['time'][1]-RATES['time'][0])
-    ax2.plot(time_shift, CCF1, color=neg_color)
+    #ax2.plot(time_shift, CCF1, color=neg_color)
     # ax3.plot(time_shift, CCF/np.max(CCF), color=neg_color)
     ax3.plot(time_shift, norm(CCF1), color=neg_color)
     ax11.bar([2*k], [CCF1[int(len(time_shift)/2)]], color=neg_color)
@@ -344,15 +344,18 @@ pt.set_plot(ax12, ['left'], yticks=[0,0.2,0.4],
 pt.set_plot(ax2, xlabel='jitter (s)', 
             ylabel='corr. coef.',
             yticks=[0.1,0.4,0.7],
-            xlim=[-1.1,1.5], xticks=[-0.9,0,0.9])
+            xlim=[-0.95,1.3], xticks=[-0.9,0,0.9])
 for ax in [ax3,ax2b]:
     pt.set_plot(ax, xlabel='jitter (s)', title='fits' if ax==ax2b else '',
                 ylabel='norm. corr.\n(peak-baseline)',
                 xlim=[-1.5,1.5], yticks=[0,1])
 
-#fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
+fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
 #fig3.savefig('../figures/visual_coding/normCC_movie1_units_pooled.svg')
 #fig2.savefig('../figures/Figure5/CC_movie1_units_pooled.pdf')
+
+# %%
+fig2.savefig('../figures/visual_coding/CC_movie1_units_pooled.svg')
 
 # %% [markdown]
 # # 6) Same but analyzing per session
