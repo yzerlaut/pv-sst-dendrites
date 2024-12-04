@@ -344,13 +344,13 @@ def show_single_and_trial_average(cellType, RESULTS,
                        #Ybar_label2='%.0fHz/syn.' % (2*RESULTS['bgFreqInhFactor_%s' % cellType]),
                        Ybar_label='%.0fHz ' % (4))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
-    pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
+    pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV ')
     pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r', fontsize=7)
     pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g', fontsize=7)
     #pt.annotate(AX[1], '%i syn.' % len(synapses), (0,.5), ha='right', va='center', color='k', fontsize=6)
     for ax in AX:
         ax.axis('off')
-    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
+    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz ')
 
     if with_inset:
         inset = pt.inset(fig, [0.85,0.6,0.1,0.3])
@@ -375,18 +375,18 @@ def show_single_and_trial_average(cellType, RESULTS,
 
 RESULTS = {}
 fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
-fig.savefig('../figures/detailed_model/natMovie-PV-raw-short.svg')
+fig.savefig('../figures/detailed_model/natMovie-raw-short-PV.svg')
 fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=7, color='tab:orange')
-fig.savefig('../figures/detailed_model/natMovie-SST-raw-short.svg') # 1 , 6, 7, 9
+fig.savefig('../figures/detailed_model/natMovie-raw-short-SST.svg') # 1 , 6, 7, 9
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
 COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
-for cellType, color, id in zip(TYPES, COLORS, [6,0,7,7,7,7,7]):
+for cellType, color, id in zip(TYPES, COLORS, [6,6,7,7,7,7,7]):
     fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
-                                  color=color, zoom=[0.1e3, 12e3], with_inset=True, figsize=(3.3,0.8))
+                                  color=color, zoom=[0.1e3, 12e3], figsize=(3.,0.8)) #with_inset=True, figsize=(3.3,0.8))
     fig.suptitle(cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST - '), color=color)
-    fig.savefig('../figures/detailed_model/natMovie-%s-raw-long.svg' % cellType)
+    fig.savefig('../figures/detailed_model/natMovie-raw-long-%s.svg' % cellType)
 
 
 # %% [markdown]
