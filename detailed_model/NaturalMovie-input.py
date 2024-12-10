@@ -607,7 +607,7 @@ for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
     cond = RESULTS['t']>1
 
     # input
-    if cellType=='Martinotti':
+    if cellType=='Msdfartinotti':
         pt.plot(RESULTS['time_shift']/1e3, 
                 np.nanmean(RESULTS['AC_%s' % cellType], axis=0),
                 sy=stats.sem(RESULTS['AC_%s' % cellType], axis=0),
@@ -620,8 +620,9 @@ for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
 
     ts = RESULTS['time_shift']
     ccc = np.nanmean(RESULTS['CC_%s' % cellType], axis=0)
-    ax.plot(ts/1e3, np.max(ccc)*gaussian(ts, 
-                             fit_gaussian_width(ts, ccc/np.max(ccc))), lw=3, color=color, alpha=.3)
+    
+    #ax.plot(ts/1e3, np.max(ccc)*gaussian(ts, 
+    #                         fit_gaussian_width(ts, ccc/np.max(ccc))), lw=3, color=color, alpha=.3)
 
     
 pt.set_plot(ax, xlabel='jitter (s)', 

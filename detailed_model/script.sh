@@ -201,12 +201,13 @@ then
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_NMDA\
                             --suffix noSTP
+    '
     # -----------------------
     # Martinotti Cell, no NMDA
     python natMovie_sim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --iBranch 3\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_STP\
                             --suffix noNMDA
@@ -215,10 +216,9 @@ then
     python natMovie_sim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --iBranch 3\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                              --suffix noSTPnoNMDA
-    '
 fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
