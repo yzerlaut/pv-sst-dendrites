@@ -161,6 +161,7 @@ then
     nSpikeSeed=64
     dt=0.025
     tstop=15000
+    : '
     ## Basket Cell
     python natMovie_sim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
@@ -210,6 +211,7 @@ then
                             --Inh_fraction 0.1 --synapse_subsampling 2\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                              --suffix noSTPnoNMDA
+    '
 fi
 
 if [[ $1 == 'all' || $1 == 'full-natMovie' ]]
@@ -217,8 +219,8 @@ then
     nSpikeSeed=40
     dt=0.05
     tstop=50000
-    ## Basket Cell
     : '
+    ## Basket Cell
     python natMovie_sim.py -c Basket --no_Vm\
                             --Inh_fraction 0.05 --synapse_subsampling 2\
                             --with_STP\
@@ -230,7 +232,6 @@ then
                             --Inh_fraction 0.05 --synapse_subsampling 2\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --suffix FullnoSTP
-    '
     # -----------------------
     # Martinotti Cell
     python natMovie_sim.py -c Martinotti --no_Vm\
@@ -246,17 +247,18 @@ then
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_NMDA\
                             --suffix FullnoSTP
+    '
     # -----------------------
     # Martinotti Cell, no NMDA
     python natMovie_sim.py -c Martinotti --no_Vm\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_STP\
                             --suffix FullnoNMDA
     # -----------------------
     # Martinotti Cell, no NMDA - no STP
     python natMovie_sim.py -c Martinotti --no_Vm\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
+                            --Inh_fraction 0.1 --synapse_subsampling 4\
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --suffix FullnoSTPnoNMDA
     # -----------------------

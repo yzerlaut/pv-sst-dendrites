@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -420,7 +420,10 @@ subsampling = 100
 width = 1500
 CCs = {}
 
-for cellType, color in zip(['Martinotti', 'Basket'], ['tab:orange', 'tab:red']):
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
+
+for cellType, color in zip(TYPES, COLORS):
 
 
     # input
@@ -455,7 +458,9 @@ fig.savefig('../figures/detailed_model/natMovie-CrossCorrel-Func-Example.svg')
 #fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
 
 # %%
-  
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
+ 
 fig, ax = pt.figure(figsize=(1.1,0.85))
 
 for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
@@ -574,7 +579,7 @@ for k, cellType, color in zip(range(len(TYPES)), TYPES, COLORS):
 RESULTS['tau_ACF'] = fit_half_width(RESULTS['time_shift'][fit_cond], norm(RESULTS['ACF'])[fit_cond])[0]
 ax.bar([0], [1e-3*RESULTS['tau_ACF']], color='tab:grey')
     
-pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)')
+pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)', yticks=[0,0.2,0.4])
 
 fig.savefig('../figures/detailed_model/natMovie-Widths-Summary.svg')
 
