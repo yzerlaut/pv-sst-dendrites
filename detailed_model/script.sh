@@ -75,14 +75,14 @@ then
                             --with_presynaptic_spikes\
                             --stimFreq 10e-3\
                             --bgFreqInhFactor 1\
-                            --iBranch 1 --nSpikeSeed 12 
+                            --iBranch 1 --nSpikeSeed 120
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
                             --stimFreq 4e-4\
                             --bgFreqInhFactor 1\
-                            --iBranch 1 --nSpikeSeed 12 
+                            --iBranch 1 --nSpikeSeed 120
 fi
 
 ##########################################################

@@ -219,7 +219,7 @@ for c, contrast in enumerate([0.5, 1.0]):
 SUMMARY
 
 # %%
-TAU_DECONVOLUTION = 1.2
+TAU_DECONVOLUTION = 0.8
 
 dFoF_parameters['smoothing'] = 1
 
@@ -313,7 +313,7 @@ for i, case in enumerate(cases):
     Widths[case] = []
     
     c1 = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=1.0'] if len(r)>0]
-    for c, contrast in enumerate([0.5, 1.0]):
+    for c, contrast in enumerate([1.0]):
 
         resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
         #resp = np.divide(resp, np.max(resp, axis=1, keepdims=True))
@@ -340,16 +340,16 @@ pt.set_plot(inset, ['left'],
             title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
             ylabel=u'\u00bd' + ' width (s)')
 
-for c, contrast in enumerate([0.5, 1.0]):
+for c, contrast in enumerate([1.0]):
     AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
     pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                xlim=[-1,6], yticks=[0,1], xticks=[0,2,4],
+                xlim=[-1,5], yticks=[0,1], xticks=[0,2,4],
                 yticks_labels=['0','1'] if c==0 else [],
                 #ylim=[0,1], 
-                #ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
+                ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
                 title='c=%.1f' % contrast,
                 xlabel=20*' '+'time from stim. (s)' if c==0 else '')
-#fig.savefig('../figures/in-vivo/PV-SST-summary-evoked-resp.svg')
+fig.savefig('../figures/in-vivo/PV-SST-summary-evoked-resp.svg')
 #fig.savefig('../figures/Figure7/PV-SST-summary-evoked-resp.pdf')
 
 # %%
