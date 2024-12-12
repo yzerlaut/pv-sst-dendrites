@@ -75,21 +75,34 @@ then
                             --with_presynaptic_spikes\
                             --stimFreq 10\
                             --bgFreqInhFactor 1\
-                            --iBranch 1 --nSpikeSeed 12
+                            --iBranch 1 --nSpikeSeed 80
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
                             --stimFreq 10\
                             --bgFreqInhFactor 1\
                             --with_STP\
                             --suffix withSTP\
-                            --iBranch 1 --nSpikeSeed 12
+                            --iBranch 1 --nSpikeSeed 80
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
                             --stimFreq 2\
                             --bgFreqInhFactor 1\
-                            --iBranch 5 --nSpikeSeed 12
+                            --iBranch 5 --nSpikeSeed 80
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --stimFreq 2\
+                            --bgFreqInhFactor 1\
+                            --suffix noNMDA\
+                            --iBranch 5 --nSpikeSeed 80
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA --with_STP\
+                            --with_presynaptic_spikes\
+                            --stimFreq 2\
+                            --bgFreqInhFactor 1\
+                            --suffix withSTP\
+                            --iBranch 5 --nSpikeSeed 80
 fi
 
 ##########################################################
