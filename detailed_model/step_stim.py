@@ -20,6 +20,7 @@ def run_sim(cellType='Basket',
             stimFreq=1e-3,
             bgFreqInhFactor=4.,
             spikeSeed=2,
+            with_STP=False,
             # biophysical props
             with_NMDA=False,
             filename='single_sim.npy',
@@ -29,7 +30,8 @@ def run_sim(cellType='Basket',
             dt= 0.01):
 
     from cell_template import Cell, h, np
-    from synaptic_input import add_synaptic_input, PoissonSpikeTrain
+    from synaptic_input import add_synaptic_input, PoissonSpikeTrain,\
+                                    STP_release_filter
 
     tstop = 4*interstim+2*step1Width+step2Width
 
@@ -37,13 +39,25 @@ def run_sim(cellType='Basket',
     ##   simulation preparation  #########################
     ######################################################
 
+    STP_model = {'P0':1.00, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+
     # create cell
     if cellType=='Basket':
         ID = '864691135396580129_296758' # Basket Cell example
         params_key='BC'
+        if with_STP:
+            STP_model = np.load('../data/detailed_model/PV_stp.npy',
+                                allow_pickle=True).item()
+        else:
+            STP_model = {'P0':0.80, 'P1':0.80, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
+        if with_STP:
+            STP_model = np.load('../data/detailed_model/SST_stp.npy',
+                                allow_pickle=True).item()
+        else:
+            STP_model = {'P0':0.60, 'P1':0.60, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     else:
         raise Exception(' cell type not recognized  !')
 
@@ -64,7 +78,8 @@ def run_sim(cellType='Basket',
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
-                                                       with_NMDA=with_NMDA)
+                                            Nmax_release=STP_model['Nmax'],
+                                            with_NMDA=with_NMDA)
 
     # Step Function
     t = np.arange(int(tstop/dt))*dt
@@ -81,25 +96,29 @@ def run_sim(cellType='Basket',
 
     # -- background activity 
     np.random.seed(spikeSeed)
-    TRAINS = []
+    TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
     for i, syn in enumerate(synapses):
         if excitatory[i]:
-            TRAINS.append(list(PoissonSpikeTrain(stimFreq*Stim, 
-                                                 dt=dt,
-                                                 tstop=tstop)))
+            # we draw one spike train:
+            train_s = np.array(PoissonSpikeTrain(stimFreq*Stim,
+                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            # STP only in excitatory
+            N = STP_release_filter(train_s, **STP_model)
+            for n in range(1, STP_model['Nmax']+1):
+                # we split according to release number ++ train to ** ms **
+                TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
-            TRAINS.append(list(PoissonSpikeTrain(\
-                                    bgFreqInhFactor*stimFreq*Stim,
-                                                 dt=dt,
-                                                 tstop=tstop)))
+            # GABA -> only single release
+            train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*stimFreq*Stim,
+                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            TRAINS[i] += list(1e3*train_s) # to ** ms **
 
     # -- reordering spike trains
-    for i, syn in enumerate(synapses):
+    for i in range(len(TRAINS)):
         TRAINS[i] = np.sort(TRAINS[i])
 
     # -- link events to synapses
-    for i, syn in enumerate(synapses):
-
+    for i in range(len(TRAINS)):
         STIMS.append(h.Vector(TRAINS[i]))
         VECSTIMS[i].play(STIMS[-1])
 
@@ -175,6 +194,7 @@ if __name__=='__main__':
     parser.add_argument("--passive", action="store_true")
     parser.add_argument("--with_NMDA", action="store_true")
     parser.add_argument("--from_uniform", action="store_true")
+    parser.add_argument("--with_STP", action="store_true")
 
     parser.add_argument("--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
@@ -204,6 +224,7 @@ if __name__=='__main__':
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
+                  with_STP=args.with_STP,
                   from_uniform=args.from_uniform,
                   no_Vm=args.no_Vm,
                   dt=args.dt)
