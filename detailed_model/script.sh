@@ -70,39 +70,40 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
+    nSeed=16
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
                             --stimFreq 10\
                             --bgFreqInhFactor 1\
-                            --iBranch 1 --nSpikeSeed 80
+                            --iBranch 1 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
                             --stimFreq 10\
                             --bgFreqInhFactor 1\
                             --with_STP\
                             --suffix withSTP\
-                            --iBranch 1 --nSpikeSeed 80
+                            --iBranch 1 --nSpikeSeed $nSeed
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
-                            --stimFreq 2\
+                            --stimFreq 6\
                             --bgFreqInhFactor 1\
-                            --iBranch 5 --nSpikeSeed 80
+                            --iBranch 5 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
-                            --stimFreq 2\
+                            --stimFreq 6\
                             --bgFreqInhFactor 1\
                             --suffix noNMDA\
-                            --iBranch 5 --nSpikeSeed 80
+                            --iBranch 5 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
-                            --stimFreq 2\
+                            --stimFreq 6\
                             --bgFreqInhFactor 1\
                             --suffix withSTP\
-                            --iBranch 5 --nSpikeSeed 80
+                            --iBranch 5 --nSpikeSeed $nSeed
 fi
 
 ##########################################################
