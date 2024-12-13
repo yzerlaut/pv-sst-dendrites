@@ -118,6 +118,8 @@ from synaptic_input import PoissonSpikeTrain
 from scipy.optimize import minimize
 sys.path.append('../analyz')
 from analyz.processing.signanalysis import crosscorrel, autocorrel
+sys.path.append('..')
+import plot_tools as pt
 
 # %%
 SIMS = {\
@@ -507,6 +509,58 @@ PV_model = {'P0':res.x[0], 'P1':res.x[1], 'dP':res.x[2], 'tauP':tauP, 'Nmax':2}
 fig = sim_release(events=0.1+np.arange(9)/20., tstop=0.65, release_proba_params=PV_model, seed=0)
 fig.savefig('../figures/detailed_model/STPsupp_model_PV.svg')
 np.save('../data/detailed_model/PV_stp.npy', PV_model)
+
+
+# %%
+def sim_release_pretty(release_proba_params={},
+                events = np.concatenate([0.1+np.arange(7)/10., [1.1]]),
+                tstop=1.3, nTrials=10,
+                dt = 5e-4,
+                seed=0,
+                with_title=True, figsize=(1,1)):
+
+    np.random.seed(seed)
+    
+    pre_Events = [events for i in range(nTrials)]
+    
+    release_Events = [\
+        get_release_events(pre, **release_proba_params) for pre in pre_Events]
+    
+    fig, AX = pt.figure(axes=(3,1), figsize=figsize, wspace=0.6)
+
+    # simulations
+    Rs, t = [], np.arange(tstop/dt)*dt
+    for i in range(nTrials):
+        AX[0].scatter(pre_Events[i], i*np.ones(len(pre_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=6)
+        AX[1].scatter(release_Events[i], i*np.ones(len(release_Events[i])), facecolor='k', edgecolor=None, alpha=.35, lw=0, s=10)
+        Rs.append(rough_release_dynamics(release_Events[i], tstop=tstop, dt=dt))
+        AX[2].plot(t, i+Rs[-1], color='k', lw=0.5, alpha=0.7)
+    # we add some more
+    for i in range(20*nTrials):
+        release_Events = get_release_events(pre_Events[i%nTrials], **release_proba_params)
+        Rs.append(rough_release_dynamics(release_Events, tstop=tstop, dt=dt))
+    
+    for ax in AX:
+        ax.plot([0,0.05], (nTrials+0.5)*np.ones(2), 'k-', lw=1)
+        pt.set_plot(ax, [], ylim=[-0.5,nTrials+1.5], xlim=[0,tstop])
+    pt.annotate(AX[0], '50ms ', (0, nTrials+0.5), ha='right', va='center', fontsize=5, xycoords='data')
+    pt.annotate(AX[0], 'trials', (0, nTrials/2.), rotation=90, ha='right', va='center', fontsize=5, xycoords='data')
+
+    AX[2].plot([t[-1],t[-1]], [-0.5,0.5], color='k', lw=2)
+    pt.annotate(AX[2], '  1 vesicle', (t[-1],0.5), xycoords='data', fontsize=5, rotation=90)
+            
+    return fig
+
+
+# %%
+PV_model = np.load('../data/detailed_model/PV_stp.npy', allow_pickle=True).item()
+fig = sim_release_pretty(events=0.1+np.arange(9)/20., tstop=0.65, release_proba_params=PV_model, seed=1)
+fig.savefig('../figures/Figure5/STP_PV.svg')
+
+# %%
+SST_model = np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item()
+fig = sim_release_pretty(events=0.1+np.arange(9)/20., tstop=0.65, release_proba_params=SST_model, seed=3)
+fig.savefig('../figures/Figure5/STP_SST.svg')
 
 # %% [markdown]
 # # Impact on Temporal Signal Integration

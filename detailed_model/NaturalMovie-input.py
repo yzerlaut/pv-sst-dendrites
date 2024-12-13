@@ -147,6 +147,8 @@ for ax in AX:
 
 # %% [markdown]
 # # Simulations -> finding input parameters to get ~15Hz output firing
+#
+# run simulations with: `bash script.sh input-range-natMovie`
 
 # %%
 results = {}
@@ -309,8 +311,8 @@ def show_single_and_trial_average(cellType, RESULTS,
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt
     
-    fig, AX = pt.figure(axes_extents=[[(1,1)],[(1,1)],[(1,2)],[(1,1)]],
-                        figsize=figsize, left=0, bottom=0., hspace=0., right=5)
+    fig, AX = pt.figure(axes_extents=[[(1,1)],[(1,1)],[(1,4)],[(1,2)]],
+                        figsize=figsize, left=0, bottom=0., hspace=0., right=0)
     # input
     AX[0].fill_between(RESULTS['t'][:-1][::20], 0*RESULTS['t'][:-1][::20], RESULTS['Input'][::20],
                        color='tab:grey', lw=0)
@@ -326,7 +328,7 @@ def show_single_and_trial_average(cellType, RESULTS,
         
     # events
     if 'pre_inh_%s'%cellType in RESULTS:
-        subsampling = 4 if cellType=='Basket' else 1
+        subsampling = 4 if ('Basket' in cellType) else 1
         # 1/4 for display
         for i, events in enumerate(RESULTS['pre_exc_%s' % cellType][::subsampling]):
             events = np.array(events)
@@ -374,19 +376,21 @@ def show_single_and_trial_average(cellType, RESULTS,
     return fig, AX
 
 RESULTS = {}
-fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red')
-fig.savefig('../figures/detailed_model/natMovie-raw-short-PV.svg')
-fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=7, color='tab:orange')
-fig.savefig('../figures/detailed_model/natMovie-raw-short-SST.svg') # 1 , 6, 7, 9
+zoom = [450, 7000]
+figsize=(1.8,0.35)
+fig, _ = show_single_and_trial_average('Basket', RESULTS, example_index=6, color='tab:red', zoom=zoom, figsize=figsize)
+fig.savefig('../figures/Natural-Movie/model-raw-short-PV.svg')
+fig, _ = show_single_and_trial_average('Martinotti', RESULTS, example_index=7, color='tab:orange', zoom=zoom, figsize=figsize)
+fig.savefig('../figures/Natural-Movie/model-raw-short-SST.svg') # 1 , 6, 7, 9
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
 COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
 for cellType, color, id in zip(TYPES, COLORS, [6,6,7,7,7,7,7]):
     fig, AX = show_single_and_trial_average(cellType, RESULTS, example_index=id,
-                                  color=color, zoom=[0.1e3, 12e3], figsize=(3.,0.8)) #with_inset=True, figsize=(3.3,0.8))
+                                  color=color, zoom=[0.1e3, 12e3], figsize=(3.,0.3)) #with_inset=True, figsize=(3.3,0.8))
     fig.suptitle(cellType.replace('Basket', 'PV - ').replace('Martinotti', 'SST - '), color=color)
-    fig.savefig('../figures/detailed_model/natMovie-raw-long-%s.svg' % cellType)
+    fig.savefig('../figures/Natural-Movie/model-raw-long-%s.svg' % cellType)
 
 
 # %% [markdown]
@@ -429,7 +433,7 @@ for cellType, color in zip(TYPES, COLORS):
     # input
     """
     """
-    if 'Input_CC' not in CCs:
+    if cellType==TYPES[0]:
         cond = RESULTS['t']>0.1e3
         CCF, time_shift = crosscorrel(RESULTS['Input'][cond[1:]][::subsampling],  RESULTS['Input'][cond[1:]][::subsampling], 
                               width, subsampling*RESULTS['dt'])
@@ -445,17 +449,29 @@ for cellType, color in zip(TYPES, COLORS):
     
     CCs['time_shift'] = time_shift
     
-#ax.legend(loc=(1,1))
-pt.set_plot(ax, xlabel='jitter (s)',
-            xticks=[-0.9,0,0.9],
-            xlim=[-0.95,1.2],
-            #yticks=[0.,0.5,1.0],
-            #ylim=[-0.15,1.08],
-            #xlim=[-0.21,0.27], 
-            title='model',
-            ylabel='corr. coef.')
-fig.savefig('../figures/detailed_model/natMovie-CrossCorrel-Func-Example.svg')
-#fig.savefig('../figures/Figure5/CrossCorrel-Model.pdf')
+pt.set_plot(ax, xlabel='jitter (s)', xticks=[-0.9,0,0.9], xlim=[-0.95,1.2], title='models', ylabel='corr. coef.')
+
+# %%
+from scipy import stats
+
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
+
+fig, AX = pt.figure(axes=(6,1), figsize=(1.,0.85), wspace=0.6)
+
+
+for ax, pair in zip(AX, [(0,2), (0,1),(2,3),(2,4),(3,4),(2,5)]):
+
+    pt.plot(1e-3*CCs['time_shift'], CCs['%s_CC' % TYPES[pair[0]]]/np.max(CCs['%s_CC' % TYPES[pair[0]]]),
+            ax=ax, color=COLORS[pair[0]])
+    pt.plot(1e-3*CCs['time_shift'], CCs['%s_CC' % TYPES[pair[1]]]/np.max(CCs['%s_CC' % TYPES[pair[1]]]),
+            ax=ax, color=COLORS[pair[1]])
+    
+    pt.set_plot(ax, xlabel='jitter (s)',
+                xticks=[-0.6,0,0.6], xlim=[-0.65,0.9], #yticks=[0,0.5,1],
+                #ylim = [-0.35, 0.95],
+                ylabel='corr. coef.\n(peak norm.)'if ax==AX[0] else '')
+fig.savefig('../figures/Natural-Movie/model-CrossCorrel-Func-Effect.svg')
 
 # %%
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
@@ -545,21 +561,19 @@ for cellType in TYPES:
 
 
 # %%
-fig, ax = pt.figure(figsize=(1.,0.85))
+from scipy import stats
+fig, ax = pt.figure(figsize=(1.06,0.85))
 
-#pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Martinotti'], axis=0), 
-#        sy=np.std(RESULTS['CC_Martinotti'], axis=0),
-pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Martinotti'][3], 
+pt.plot(1e-3*RESULTS['time_shift'][::3], RESULTS['CC_Martinotti'][3][::3],
         ax=ax, color='tab:orange')
-#pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_Basket'], axis=0),
-#        sy=np.std(RESULTS['CC_Basket'], axis=0),
-pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_Basket'][1],
-        sy=np.std(RESULTS['CC_Basket'], axis=0),
+pt.plot(1e-3*RESULTS['time_shift'][::3], RESULTS['CC_Basket'][1][::3],
         ax=ax, color='tab:red')
+
 pt.set_plot(ax, xlabel='jitter (s)',
-            xticks=[-0.9,0,0.9], xlim=[-0.95,1.2],
+            xticks=[-0.9,0,0.9], xlim=[-0.95,1.1],
             #ylim = [-0.35, 0.95],
             ylabel='corr. coef.')
+fig.savefig('../figures/Natural-Movie/model-CrossCorrel-Func-Example.svg')
 
 # %%
 fig, ax = pt.figure(figsize=(1.1,0.85))
@@ -581,7 +595,7 @@ ax.bar([0], [1e-3*RESULTS['tau_ACF']], color='tab:grey')
     
 pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)', yticks=[0,0.2,0.4])
 
-fig.savefig('../figures/detailed_model/natMovie-Widths-Summary.svg')
+fig.savefig('../figures/Natural-Movie/model-Widths-Summary.svg')
 
 # %%
 import itertools
@@ -595,109 +609,32 @@ for i, j in itertools.product(range(len(keys)), range(len(keys))):
         except BaseException:
             pass
 
+# %% [markdown]
+# ## Illustrate different cases
+
 # %%
 from scipy import stats
 
-fig, ax = pt.figure(figsize=(1.1,0.85))
-subsampling = 100
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
 
-for cellType, color in zip(['Martinotti', 'Basket', 'MartinottinoNMDA'],
-                           ['tab:orange', 'tab:red', 'tab:purple']):
 
-    cond = RESULTS['t']>1
+fig, AX = pt.figure(axes=(5,1), figsize=(1.,0.85), wspace=0.7)
 
-    # input
-    if cellType=='Martinotti':
-        pt.plot(RESULTS['time_shift']/1e3, 
-                np.nanmean(RESULTS['AC_%s' % cellType], axis=0),
-                sy=stats.sem(RESULTS['AC_%s' % cellType], axis=0),
-                ax=ax, no_set=True, color='tab:grey')
+
+for ax, pair in zip(AX, [(0,1),(2,3),(2,4),(3,4),(2,5)]):
+
+    pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_%s' % TYPES[pair[0]]], axis=0)/np.mean(RESULTS['CC_%s' % TYPES[pair[0]]], axis=0).max(),
+    #pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_%s' % TYPES[pair[0]]][3]/np.max(RESULTS['CC_%s' % TYPES[pair[0]]][3]),
+            ax=ax, color=COLORS[pair[0]])
+    pt.plot(1e-3*RESULTS['time_shift'], np.mean(RESULTS['CC_%s' % TYPES[pair[1]]], axis=0)/np.mean(RESULTS['CC_%s' % TYPES[pair[1]]], axis=0).max(),
+    #pt.plot(1e-3*RESULTS['time_shift'], RESULTS['CC_%s' % TYPES[pair[1]]][1]/np.max(RESULTS['CC_%s' % TYPES[pair[1]]][1]),
+            ax=ax, color=COLORS[pair[1]])
     
-    pt.plot(RESULTS['time_shift']/1e3, 
-            np.nanmean(RESULTS['CC_%s' % cellType], axis=0),
-            sy=stats.sem(RESULTS['CC_%s' % cellType], axis=0, nan_policy='omit'),
-            ax=ax, no_set=True, color=color, lw=0.5)
-
-    ts = RESULTS['time_shift']
-    ccc = np.nanmean(RESULTS['CC_%s' % cellType], axis=0)
-    ax.plot(ts/1e3, np.max(ccc)*gaussian(ts, 
-                             fit_gaussian_width(ts, ccc/np.max(ccc))), lw=3, color=color, alpha=.3)
-
-    
-pt.set_plot(ax, xlabel='jitter (s)', 
-            ylabel='corr. coef.',
-            yticks=[0.,0.5,1.0],
-            xlim=[-0.35,0.35],
-            xticks=[-0.3,0,0.3])
-#fig.savefig('../figures/detailed_model/CrossCorrel.pdf')
+    pt.set_plot(ax, xlabel='jitter (s)',
+                xticks=[-0.9,0,0.9], xlim=[-0.95,1.1], yticks=[0,0.5,1],
+                #ylim = [-0.35, 0.95],
+                ylabel='corr. coef.\n(peak norm.)'if ax==AX[0] else '')
+fig.savefig('../figures/Natural-Movie/model-CrossCorrel-Func-Effect.svg')
 
 # %%
-# Gaussian fit to quantify the decay
-
-fig, ax = pt.figure(figsize=(0.8,0.9))
-
-RESULTS['tauAC'] = [] # auto-correl
-for k, cellType, color in zip(range(3),
-                              ['Basket', 'Martinotti', 'MartinottinoNMDA'],
-                              ['tab:red', 'tab:orange', 'tab:purple']):
-
-    
-    RESULTS['tauCC_%s' % cellType] = [] # cross-correl
-
-    if k==0:
-        for AC in RESULTS['AC_%s' % cellType]:
-            tau = fit_gaussian_width(RESULTS['time_shift'],
-                                     AC/np.max(AC))[0]
-            RESULTS['tauAC'].append(tau)
-        print("Input -> half-width= %.1f +/- %.1f ms" % (np.mean(RESULTS['tauAC']),
-                                                      stats.sem(RESULTS['tauAC'])))
-    ax.bar([0], 
-           [np.mean(RESULTS['tauAC'])],
-           yerr=[stats.sem(RESULTS['tauAC'])],
-           color='tab:grey')
-    
-    for CC in RESULTS['CC_%s' % cellType]:
-        tau = fit_gaussian_width(RESULTS['time_shift'],
-                                 CC/np.max(CC))[0]
-        RESULTS['tauCC_%s' % cellType].append(tau)
-        
-    ax.bar([1+k], 
-           [np.mean(RESULTS['tauCC_%s' % cellType])],
-           yerr=[stats.sem(RESULTS['tauCC_%s' % cellType])],
-           color=color)
-    print("%s -> half-width= %.1f +/- %.1f ms" % (cellType, np.mean(RESULTS['tauCC_%s' % cellType]), stats.sem(RESULTS['tauCC_%s' % cellType])))
-
-print('')
-
-keys = ['tauAC', 'tauCC_Basket', 'tauCC_Martinotti', 'tauCC_MartinottinoNMDA']
-
-import itertools
-for i, j in itertools.product(range(len(keys)), range(len(keys))):
-    if i>j:
-        print(keys[i], keys[j], ', p=%.0e' % stats.mannwhitneyu(RESULTS[keys[i]], RESULTS[keys[j]]).pvalue)
-    
-    
-pt.set_plot(ax, ['left'], 
-            ylabel=u'\u00bd width (s)',
-            #ylabel='width (ms)',
-            yticks=[0,100], yticks_labels=['0.0', '0.1'])
-#fig.savefig('../figures/Figure5/Half-Widths-Summary.pdf')
-
-# %% [markdown]
-# ## Compute cross-correlation functions
-
-# %%
-subsampling = 20
-for c, cellType, color in zip(range(2), ['Martinotti', 'Basket'], ['tab:orange', 'tab:red']):
-    RESULTS['%s_CCs' % cellType] = []
-    for s in range(len(seeds)):
-        CCF, ts = crosscorrel(RESULTS['%s_rates' % cellType][s][1:][::subsampling],
-                              RESULTS['StochProc'][s][::subsampling], 
-                              1e3, subsampling*dt)
-        RESULTS['%s_CCs' % cellType].append(CCF)
-    
-RESULTS['CC_StochProc'] = []
-for sc in RESULTS['StochProc']:
-    CCF, ts = crosscorrel(sc[::subsampling], sc[::subsampling],
-                          1e3, subsampling*dt)
-    RESULTS['CC_StochProc'].append(CCF)
