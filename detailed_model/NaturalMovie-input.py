@@ -457,10 +457,10 @@ from scipy import stats
 TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
 COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
 
-fig, AX = pt.figure(axes=(6,1), figsize=(1.,0.85), wspace=0.6)
+fig, AX = pt.figure(axes=(5,1), figsize=(1.,0.85), wspace=0.6)
 
 
-for ax, pair in zip(AX, [(0,2), (0,1),(2,3),(2,4),(3,4),(2,5)]):
+for ax, pair in zip(AX, [(0,2), (0,1),(2,3),(3,5),(2,5)]):
 
     pt.plot(1e-3*CCs['time_shift'], CCs['%s_CC' % TYPES[pair[0]]]/np.max(CCs['%s_CC' % TYPES[pair[0]]]),
             ax=ax, color=COLORS[pair[0]])
