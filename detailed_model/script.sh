@@ -56,11 +56,11 @@ then
     #python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8
     #python clustered_input_stim.py -c Basket --test_uniform --sparsening 2 4 6 8 --fix_missing
     python clustered_input_stim.py -c Basket --test_uniform\
-                                                 --sparsening 8\
-                                                 --nReleaseSeed 16\
-                                                 --p_release 0.5\
-                                                 --Nmax_release 2\
-                                                 --suffix Stochastic --fix_missing
+                                         --sparsening 8\
+                                         --nReleaseSeed 16\
+                                         --p_release 0.5\
+                                         --Nmax_release 2\
+                                         --suffix Stochastic --fix_missing
 fi
 
 

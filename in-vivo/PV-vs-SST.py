@@ -30,14 +30,24 @@ from analysis import compute_tuning_response_per_cells, shift_orientation_accord
 
 root_folder = os.path.join(os.path.expanduser('~'), 'DATA', 'PV-SST-GCaMP8s-ffGratings-2024')
 
+# %%
+# scan_folder_for_NWBfiles?
+
 # %% [markdown]
 # ## Build the dataset from the NWB files
 
 # %%
 DATASET = {\
-    'PV':scan_folder_for_NWBfiles(os.path.join(root_folder, 'PV')),
-    'SST':scan_folder_for_NWBfiles(os.path.join(root_folder, 'SST')),
+    'PV':scan_folder_for_NWBfiles(os.path.join(root_folder, 'PV', 'NWBs', for_protocol='ff-gratings-8orientation-2contrasts-15repeats')),
+    'SST':scan_folder_for_NWBfiles(os.path.join(root_folder, 'SST', 'NWBs', for_protocol='ff-gratings-8orientation-2contrasts-15repeats')),
 }
+
+# %%
+for f in DATASET['SST']['files']:
+    data = Data(f)
+    print(f)
+    print(data.protocols)
+    print('')
 
 # %%
 # -------------------------------------------------- #
@@ -129,9 +139,11 @@ def compute_summary_responses(DATASET,
     
     return SUMMARY
 
-SUMMARY = compute_summary_responses(DATASET,
-                                    verbose=False)
-np.save('../data/in-vivo/summary-episodes-PV-SST.npy', SUMMARY)
+if False:
+    # swith to true to redo the analysis
+    SUMMARY = compute_summary_responses(DATASET,
+                                        verbose=False)
+    np.save('../data/in-vivo/summary-episodes-PV-SST.npy', SUMMARY)
 
 # %% [markdown]
 # # Responsiveness to visual stimulation
@@ -161,62 +173,12 @@ for c, contrast in enumerate([0.5, 1.0]):
                   x=i, color=colors[i], ax=AX2[c])
     pt.set_plot(AX2[c], ['left'], ylabel='% responsive', yticks=[0,50,100])
 #stats.mannwhitneyu(SUMMARY['PV']['FRAC_RESP_c=1.0'], SUMMARY['KO']['FRAC_RESP_c=1.0'])
-
-fig1.savefig('../figures/in-vivo/PV-SST-summary-responsiveness.svg')
-fig1.savefig('../figures/Figure7/PV-SST-summary-responsiveness.pdf')
+#
+#fig1.savefig('../figures/in-vivo/PV-SST-summary-responsiveness.svg')
+#fig1.savefig('../figures/Figure7/PV-SST-summary-responsiveness.pdf')
 
 # %% [markdown]
 # # Temporal Dynamics of Visually-Evoked Responses
-
-# %%
-SUMMARY = np.load('../data/in-vivo/summary-episodes-PV-SST.npy', allow_pickle=True).item()
-#SUMMARY['t'] 
-fig, AX = pt.figure(axes=(2,1),figsize=(1.1,1.),wspace=0.1, right=7.)
-
-cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
-
-inset = pt.inset(AX[1], [1.6,0.,0.3,1.1])
-
-fitInterval = [0.7, 2.5]
-Widths = {}
-for i, case in enumerate(cases):
-    Widths[case] = []
-
-    for c, contrast in enumerate([0.5, 1.0]):
-
-        resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
-        print(len(np.mean(resp, axis=0)))
-        pt.plot(np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
-                sy=stats.sem(resp, axis=0),
-                #sy=np.std(resp, axis=0),
-                color=colors[i], ax=AX[c])
-        if c:
-            pt.annotate(AX[i],'N=%i sess.' % len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
-                        (1,1), va='top', ha='right', color=colors[i])
-            
-    print(case, '%.2f +/- %.2f ms' % (np.mean(Widths[case]), stats.sem(Widths[case])))
-    inset.bar([i], [np.mean(Widths[case])], yerr=[stats.sem(Widths[case])], color=colors[i])
-
-AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
-
-pt.set_plot(inset, ['left'], 
-            title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
-            ylabel=u'\u00bd' + ' width (s)')
-
-for c, contrast in enumerate([0.5, 1.0]):
-    AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
-    pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                #xlim=[-1,6], yticks=[0,1], xticks=[0,2,4],
-                yticks_labels=['0','1'] if c==0 else [],
-                ylim=[0,1], 
-                ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
-                title='c=%.1f' % contrast,
-                xlabel=20*' '+'time from stim. (s)' if c==0 else '')
-
-
-
-# %%
-SUMMARY
 
 # %%
 TAU_DECONVOLUTION = 0.8
@@ -276,9 +238,55 @@ def compute_summary_responses(DATASET,
     
     return SUMMARY
 
-SUMMARY = compute_summary_responses(DATASET,
-                                    verbose=False)
-np.save('../data/in-vivo/summary-deconvolved-PV-SST.npy', SUMMARY)
+if False:
+    SUMMARY = compute_summary_responses(DATASET,
+                                        verbose=False)
+    np.save('../data/in-vivo/summary-deconvolved-PV-SST.npy', SUMMARY)
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-episodes-PV-SST.npy', allow_pickle=True).item()
+#SUMMARY['t'] 
+fig, AX = pt.figure(axes=(2,1),figsize=(1.1,1.),wspace=0.1, right=7.)
+
+cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
+
+inset = pt.inset(AX[1], [1.6,0.,0.3,1.1])
+
+fitInterval = [0.7, 2.5]
+Widths = {}
+for i, case in enumerate(cases):
+    Widths[case] = []
+
+    for c, contrast in enumerate([0.5, 1.0]):
+
+        resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+        print(len(np.mean(resp, axis=0)))
+        pt.plot(np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
+                sy=stats.sem(resp, axis=0),
+                #sy=np.std(resp, axis=0),
+                color=colors[i], ax=AX[c])
+        if c:
+            pt.annotate(AX[i],'N=%i sess.' % len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
+                        (1,1), va='top', ha='right', color=colors[i])
+            
+    print(case, '%.2f +/- %.2f ms' % (np.mean(Widths[case]), stats.sem(Widths[case])))
+    inset.bar([i], [np.mean(Widths[case])], yerr=[stats.sem(Widths[case])], color=colors[i])
+
+AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
+
+pt.set_plot(inset, ['left'], 
+            title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
+            ylabel=u'\u00bd' + ' width (s)')
+
+for c, contrast in enumerate([0.5, 1.0]):
+    AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
+    pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
+                #xlim=[-1,6], yticks=[0,1], xticks=[0,2,4],
+                yticks_labels=['0','1'] if c==0 else [],
+                ylim=[0,1], 
+                ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
+                title='c=%.1f' % contrast,
+                xlabel=20*' '+'time from stim. (s)' if c==0 else '')
 
 # %%
 from scipy.optimize import minimize
