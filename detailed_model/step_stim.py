@@ -49,7 +49,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.90, 'P1':0.90, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.50, 'P1':0.50, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
@@ -57,7 +57,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/SST_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.20, 'P1':0.20, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.30, 'P1':0.30, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     else:
         raise Exception(' cell type not recognized  !')
 
@@ -263,14 +263,13 @@ if __name__=='__main__':
 
         for i in range(args.nBranch):
 
-            args.suffix += 'Branch%i'%i
             params['iBranch'] = i
             
             sim = Parallel(\
-                filename='../data/detailed_model/StepStim_sim%s_%s.zip' %\
-                                (args.suffix, args.cellType))
+                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' %\
+                                        (i, args.cellType, args.suffix))
 
-            grid = dict(spikeSeed=np.arange(20))
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
             if args.test_uniform:
                 grid = dict(from_uniform=[False, True], **grid)

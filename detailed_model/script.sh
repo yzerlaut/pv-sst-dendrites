@@ -70,40 +70,71 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
-    nSeed=16
+    nSeed=32
+    : '
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --stimFreq 10\
-                            --bgFreqInhFactor 1\
+                            --stimFreq 12\
                             --iBranch 1 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --stimFreq 10\
-                            --bgFreqInhFactor 1\
+                            --stimFreq 12\
                             --with_STP\
                             --suffix withSTP\
                             --iBranch 1 --nSpikeSeed $nSeed
+    '
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
-                            --stimFreq 6\
-                            --bgFreqInhFactor 1\
-                            --iBranch 5 --nSpikeSeed $nSeed
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --stimFreq 6\
-                            --bgFreqInhFactor 1\
-                            --suffix noNMDA\
+                            --stimFreq 4\
                             --iBranch 5 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
-                            --stimFreq 6\
-                            --bgFreqInhFactor 1\
+                            --stimFreq 4\
                             --suffix withSTP\
                             --iBranch 5 --nSpikeSeed $nSeed
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --stimFreq 5\
+                            --suffix noNMDA\
+                            --iBranch 5 --nSpikeSeed $nSeed
+fi
+
+if [[ $1 == 'all' || $1 == 'full-step' ]]
+then
+    nSeed=16
+    ## Basket Cell
+    python step_stim.py --no_Vm -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 12\
+                            --nSpikeSeed $nSeed
+    python step_stim.py --no_Vm -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 12\
+                            --with_STP\
+                            --suffix withSTP\
+                            --nSpikeSeed $nSeed
+    # Martinotti Cell
+    python step_stim.py --no_Vm -c Martinotti\
+                            --with_NMDA\
+                            --with_presynaptic_spikes\
+                            --stimFreq 6\
+                            --nSpikeSeed $nSeed
+    : '
+    python step_stim.py --no_Vm -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --stimFreq 6\
+                            --suffix noNMDA\
+                            --nSpikeSeed $nSeed
+    '
+    python step_stim.py --no_Vm -c Martinotti\
+                            --with_NMDA --with_STP\
+                            --stimFreq 6\
+                            --suffix withSTP\
+                            --nSpikeSeed $nSeed
 fi
 
 ##########################################################
