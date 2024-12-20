@@ -30,30 +30,6 @@ from analysis import compute_tuning_response_per_cells, shift_orientation_accord
 
 root_folder = os.path.join(os.path.expanduser('~'), 'DATA', 'PV-SST-GCaMP8s-ffGratings-2024')
 
-# %%
-# scan_folder_for_NWBfiles?
-
-# %% [markdown]
-# ## Build the dataset from the NWB files
-
-# %%
-DATASET = {\
-    'PV':scan_folder_for_NWBfiles(os.path.join(root_folder, 'PV', 'NWBs', for_protocol='ff-gratings-8orientation-2contrasts-15repeats')),
-    'SST':scan_folder_for_NWBfiles(os.path.join(root_folder, 'SST', 'NWBs', for_protocol='ff-gratings-8orientation-2contrasts-15repeats')),
-}
-
-# %%
-for f in DATASET['SST']['files']:
-    data = Data(f)
-    print(f)
-    print(data.protocols)
-    print('')
-
-# %%
-# -------------------------------------------------- #
-# ----   Loop over datafiles               --------- #
-# -------------------------------------------------- #
-
 dFoF_parameters = dict(\
         roi_to_neuropil_fluo_inclusion_factor=1.15,
         neuropil_correction_factor = 0.7,
@@ -69,6 +45,22 @@ stat_test_props=dict(interval_pre=[-1.,0],
 
 response_significance_threshold=5e-2
 
+# %% [markdown]
+# ## Build the dataset from the NWB files
+
+# %%
+DATASET = {\
+    'PV':scan_folder_for_NWBfiles(os.path.join(root_folder, 'PV', 'NWBs'),
+                                  for_protocol='ff-gratings-8orientation-2contrasts-15repeats'),
+    'SST':scan_folder_for_NWBfiles(os.path.join(root_folder, 'SST', 'NWBs'),
+                                   for_protocol='ff-gratings-8orientation-2contrasts-15repeats'),
+}
+
+
+# %%
+# -------------------------------------------------- #
+# ----   Loop over datafiles               --------- #
+# -------------------------------------------------- #
 
 def orientation_selectivity_index(resp_pref, resp_90):
     """                                                                         
@@ -93,8 +85,6 @@ def compute_summary_responses(DATASET,
             SUMMARY[key]['FRAC_RESP_c=%.1f' % contrast], SUMMARY[key]['SIGNIFICANT_c=%.1f' % contrast] = [], []
             
         for f, s in zip(DATASET[key]['files'][:Nmax], DATASET[key]['subjects'][:Nmax]):
-
-            
             
             data = Data(f, verbose=False)
            
@@ -183,7 +173,7 @@ for c, contrast in enumerate([0.5, 1.0]):
 # %%
 TAU_DECONVOLUTION = 0.8
 
-dFoF_parameters['smoothing'] = 1
+dFoF_parameters['smoothing'] = 0.5
 
 def compute_summary_responses(DATASET,
                               Nmax=999, # max datafiles (for debugging)
@@ -244,13 +234,13 @@ if False:
     np.save('../data/in-vivo/summary-deconvolved-PV-SST.npy', SUMMARY)
 
 # %%
-SUMMARY = np.load('../data/in-vivo/summary-episodes-PV-SST.npy', allow_pickle=True).item()
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
 #SUMMARY['t'] 
 fig, AX = pt.figure(axes=(2,1),figsize=(1.1,1.),wspace=0.1, right=7.)
 
 cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
 
-inset = pt.inset(AX[1], [1.6,0.,0.3,1.1])
+inset = pt.inset(AX[1], [1.6, 0., 0.3, 1.1])
 
 fitInterval = [0.7, 2.5]
 Widths = {}
@@ -260,33 +250,181 @@ for i, case in enumerate(cases):
     for c, contrast in enumerate([0.5, 1.0]):
 
         resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
-        print(len(np.mean(resp, axis=0)))
-        pt.plot(np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
+
+        # Z-score:
+        #norm = np.array([np.std(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+        #resp = np.transpose((resp.T-np.mean(resp,axis=1))/norm)
+        
+        pt.plot(SUMMARY['t'], np.mean(resp, axis=0),
                 sy=stats.sem(resp, axis=0),
-                #sy=np.std(resp, axis=0),
                 color=colors[i], ax=AX[c])
         if c:
             pt.annotate(AX[i],'N=%i sess.' % len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
                         (1,1), va='top', ha='right', color=colors[i])
-            
+
+    # fit here, i.e. at full contrast
+    cond = (SUMMARY['t']>fitInterval[0]) & (SUMMARY['t']<fitInterval[1]) 
+    for iSession in range(len(resp)):
+        Widths[case].append(fit_gaussian_width(SUMMARY['t'][cond]-fitInterval[0],
+                            resp[iSession][cond]/np.max(resp[iSession]
+                                                        [cond]))[0])
     print(case, '%.2f +/- %.2f ms' % (np.mean(Widths[case]), stats.sem(Widths[case])))
     inset.bar([i], [np.mean(Widths[case])], yerr=[stats.sem(Widths[case])], color=colors[i])
 
-AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
+#AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
 
 pt.set_plot(inset, ['left'], 
             title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
             ylabel=u'\u00bd' + ' width (s)')
 
 for c, contrast in enumerate([0.5, 1.0]):
-    AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
+    #AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
     pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                #xlim=[-1,6], yticks=[0,1], xticks=[0,2,4],
-                yticks_labels=['0','1'] if c==0 else [],
-                ylim=[0,1], 
+                xlim=[-1,6], xticks=[0,2,4], yticks=[],
+                #yticks_labels=['0','1'] if c==0 else [],
+                #ylim=[0,1], 
                 ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
                 title='c=%.1f' % contrast,
                 xlabel=20*' '+'time from stim. (s)' if c==0 else '')
+
+# %%
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
+
+fig, ax = pt.figure(figsize=(1.,1.),wspace=0.1, right=7.)
+
+contrast = 1.0
+cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
+
+inset = pt.inset(ax, [1.15, 0., 0.45, 1.0])
+fitInterval = [0.5, 1.8]
+Levels = {}
+
+for i, case in enumerate(cases):
+
+    resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    nROIs = np.sum([len(r) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
+    
+    # peak norm:
+    peak = np.array([np.max(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    through = np.array([np.min(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    resp = np.transpose((resp.T-through)/(peak-through))
+    
+    pt.plot(SUMMARY['t'], np.mean(np.transpose(resp.T-np.min(resp, axis=1)), axis=0),
+            sy=stats.sem(resp, axis=0),
+            color=colors[i], ax=ax)
+    pt.annotate(ax, 'N=%i sess. (n=%i ROIs, %i mice)' % (\
+                        len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
+                        nROIs, len(np.unique(SUMMARY[case]['subjects'])))+i*'\n',
+                (0.6,1.1), ha='right', color=colors[i], fontsize=6)
+    pt.plot(SUMMARY['t'], np.mean(np.transpose(resp.T-np.min(resp, axis=1)), axis=0), 
+               sy=stats.sem(resp, axis=0), 
+               color=colors[i], ax=inset)
+    cond = (SUMMARY['t']>fitInterval[0]) & (SUMMARY['t']<fitInterval[1])
+    Levels[case] = np.mean(resp[:,cond], axis=1)
+
+
+ax.annotate(pt.from_pval_to_star(stats.mannwhitneyu(Levels['PV'], Levels['SST']).pvalue),
+            (np.sum(fitInterval)/2., 0.05), ha='center')
+        
+ax.plot(fitInterval, [0,0], '-', color='tab:grey', lw=4)
+
+pt.set_plot(inset, xlim=[-0.15,0.32], xticks=[0, 0.3], xticks_labels=['0', '0.3'], yticks=[0,1], yticks_labels=[], ylim=[0,1])
+#pt.draw_bar_scales(inset, Xbar=0.2, Xbar_label='0.2s', Ybar=1e-12, fontsize=7, lw=0.5)
+    
+ax.fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
+pt.set_plot(ax, ['left','bottom'],
+            xlim=[-1,5], xticks=[0,2,4], yticks=[0,1], ylim=[0,1],
+            ylabel='deconv. resp.\n (peak norm.)',
+            xlabel=20*' '+'time from stim. (s)')
+fig.savefig('../figures/in-vivo/PV-SST-summary-evoked-resp.svg')
+
+# %% [markdown]
+# ## Post-Stim Level
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
+
+contrast = 1.0
+cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
+
+Delays = {}
+for i, case in enumerate(cases):
+    
+    resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    nROIs = np.sum([len(r) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
+
+    Delays[case] = [SUMMARY['t'][np.argmax(resp[r,:])] for r in range(resp.shape[0])]
+    print(case, ' %.2f +/- %.2f (N=%i sess.) ' % (np.mean(Delays[case]), stats.sem(Delays[case]), resp.shape[0] ) )
+    
+print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Delays['SST'], Delays['PV']).pvalue)
+
+# %% [markdown]
+# ## Peak Delay
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
+
+contrast = 1.0
+cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
+
+Delays = {}
+for i, case in enumerate(cases):
+    
+    resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    nROIs = np.sum([len(r) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
+
+    Delays[case] = [SUMMARY['t'][np.argmax(resp[r,:])] for r in range(resp.shape[0])]
+    print(case, ' %.2f +/- %.2f (N=%i sess.) ' % (np.mean(Delays[case]), stats.sem(Delays[case]), resp.shape[0] ) )
+    
+print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Delays['SST'], Delays['PV']).pvalue)
+
+
+# %%
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
+
+fig, ax = pt.figure(figsize=(1.1,1.),wspace=0.1, right=7.)
+
+cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
+
+
+for i, case in enumerate(cases):
+    contrast = 1.0
+
+    resp = np.concatenate([r for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+
+    # peak norm:
+    peak = np.concatenate([np.max(r, axis=1) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    through = np.concatenate([np.min(r, axis=1) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    resp = np.transpose((resp.T-through)/(peak-through))
+    
+    # Z-score:
+    #norm = np.array([np.std(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    #resp = np.transpose((resp.T-np.mean(resp,axis=1))/norm)
+    
+    pt.plot(SUMMARY['t'], np.mean(resp, axis=0),
+            sy=stats.sem(resp, axis=0),
+            #sy=np.std(resp, axis=0),
+            color=colors[i], ax=ax)
+    pt.annotate(ax, i*'\n'+'n=%i ROIs' % resp.shape[0],
+                (1,1), va='top', ha='right', color=colors[i], fontsize=6)
+
+pt.set_plot(ax, ['left','bottom'] if c==0 else ['bottom'],
+            xlim=[-1,6], xticks=[0,2,4], #yticks=[0,1],
+            #yticks_labels=['0','1'] if c==0 else [],
+            #ylim=[0,1], 
+            ylabel='deconvolved \n resp. (norm.)',
+            title='c=%.1f' % contrast,
+            xlabel='time from stim. (s)')
+
+# %%
+np.transpose(np.ones((10,11)).T/np.ones(10))
+
+# %%
+pt.plot(np.mean(SUMMARY['PV']['WAVEFORMS_c=1.0'][0], axis=0))
 
 # %%
 from scipy.optimize import minimize
