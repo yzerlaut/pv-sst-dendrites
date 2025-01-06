@@ -107,6 +107,7 @@ if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
     nSeed=16
     ## Basket Cell
+    : '
     python step_stim.py --no_Vm -c Basket\
                             --with_presynaptic_spikes\
                             --stimFreq 12\
@@ -117,22 +118,21 @@ then
                             --with_STP\
                             --suffix withSTP\
                             --nSpikeSeed $nSeed
+    '
     # Martinotti Cell
     python step_stim.py --no_Vm -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
-                            --stimFreq 6\
+                            --stimFreq 4\
                             --nSpikeSeed $nSeed
-    : '
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
-                            --stimFreq 6\
+                            --stimFreq 4\
                             --suffix noNMDA\
                             --nSpikeSeed $nSeed
-    '
     python step_stim.py --no_Vm -c Martinotti\
                             --with_NMDA --with_STP\
-                            --stimFreq 6\
+                            --stimFreq 4\
                             --suffix withSTP\
                             --nSpikeSeed $nSeed
 fi
