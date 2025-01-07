@@ -70,7 +70,7 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
-    nSeed=32
+    nSeed=120
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
@@ -103,7 +103,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=16
+    nSeed=120
     ## Basket Cell
     python step_stim.py --no_Vm -c Basket\
                             --with_presynaptic_spikes\
@@ -123,12 +123,12 @@ then
                             --nSpikeSeed $nSeed
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
-                            --stimFreq 4\
+                            --stimFreq 20\
                             --suffix noNMDA\
                             --nSpikeSeed $nSeed
     python step_stim.py --no_Vm -c Martinotti\
                             --with_NMDA --with_STP\
-                            --stimFreq 20\
+                            --stimFreq 4\
                             --suffix withSTP\
                             --nSpikeSeed $nSeed
 fi
