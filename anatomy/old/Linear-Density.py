@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -347,8 +347,8 @@ ax2.set_ylabel('mean linear \n density (syn./$\mu$m)')
 AX[2].legend()
 
 plt.tight_layout()
-fig.savefig('/home/yann.zerlaut/Desktop/figs/lin-density.png', dpi=300)
-fig2.savefig('/home/yann.zerlaut/Desktop/figs/lin-density-summary.png', dpi=300)
+#fig.savefig('/home/yann.zerlaut/Desktop/figs/lin-density.png', dpi=300)
+#fig2.savefig('/home/yann.zerlaut/Desktop/figs/lin-density-summary.png', dpi=300)
 
 # %%
 # np.isfinite?
