@@ -218,14 +218,16 @@ pt.draw_bar_scales(AX, Xbar=20, Xbar_label='20ms',
 
 # %%
 fig, ax = pt.figure(figsize=(1.1,1.4))
-
+import os
 l, loc = 3, BL[3]
 case=str(loc)
-ax.plot(results[case]['depol-linear'], results[case]['depol-real'],
+ax.plot(results[case]['depol-linear'][1:], results[case]['depol-real'][1:],
             'o-', color='k')
-ax.plot(results[case]['depol-linear'], results[case]['depol-linear'],
+ax.plot(results[case]['depol-linear'][1:], results[case]['depol-linear'][1:],
             ':', color='k')
 pt.set_plot(ax, xlabel='expected peak EPSP  (mV)  ', 
-            xticks=[1,5,9],yticks=[1,5,9],
+            xticks=[2,6,10],yticks=[2,6,10],
             ylabel='observed EPSP (mV)    ')
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'fig.svg'))
+fig.savefig(os.path.join(os.path.expanduser('~'), 'fig.svg'))
+
+# %%
