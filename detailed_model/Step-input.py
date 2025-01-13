@@ -168,16 +168,15 @@ for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 
     load_example_index(cellType, RESULTS) 
         
     fig, _ = plot_sim(cellType, color=color, figsize=(2.,0.3))
-    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+#    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %% [markdown]
 # ## Look for traces
 
 # %%
 for cellType, color in zip(['Martinotti'], ['tab:orange']):
-    
     load_sim(cellType, RESULTS) 
-    for example_index in range(0, 32):
+    for example_index in range(0, 1):
         RESULTS['%s_example_index' % cellType] = example_index
         load_example_index(cellType, RESULTS) 
         fig, _ = plot_sim(cellType, color=color)
@@ -230,18 +229,24 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
     return fig, AX
 
 fig, _ = plot_sim(['Martinotti', 'Basket'], ['',''], ['tab:orange', 'tab:red'])
-fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
+#fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
 plot_sim(['Martinotti', 'Martinotti', 'Martinotti'],
          ['', 'withSTP', 'noNMDA'],
          ['tab:orange', 'k', 'tab:purple'],
          lines=['-','--', '-'])
-fig.savefig('../figures/Temp-Properties-Pred/SST-models.svg')
+#fig.savefig('../figures/Temp-Properties-Pred/SST-models.svg')
 
 # %%
 plot_sim(['Basket', 'Basket'],
          ['', 'withSTP'],
          ['tab:red', 'tab:grey'])
+
+# %%
+t, input, rates = load_sim('Martinotti', '')
+
+# %%
+pt.plot(t, Y=rates)
 
 # %%
