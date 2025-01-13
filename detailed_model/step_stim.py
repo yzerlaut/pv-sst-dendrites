@@ -11,13 +11,14 @@ def run_sim(cellType='Basket',
             iBranch=0,
             from_uniform=False,
             # stim props
+            stimFreq=1e-3,
             interstim=200.,
             step1Width=50.,
             step1Amp=2.,
             step2Width=200.,
             step2Amp=1.0,
             # bg stim
-            stimFreq=1e-3,
+            bgStimFreq=0.,
             bgFreqInhFactor=4.,
             spikeSeed=2,
             with_STP=False,
@@ -100,7 +101,7 @@ def run_sim(cellType='Basket',
     for i, syn in enumerate(synapses):
         if excitatory[i]:
             # we draw one spike train:
-            train_s = np.array(PoissonSpikeTrain(stimFreq*Stim,
+            train_s = np.array(PoissonSpikeTrain(bgStimFreq+stimFreq*Stim,
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             # STP only in excitatory
             N = STP_release_filter(train_s, **STP_model)
@@ -109,7 +110,8 @@ def run_sim(cellType='Basket',
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
-            train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*stimFreq*Stim,
+            train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*(\
+                                                    bgStimFreq+stimFreq*Stim),
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 
@@ -147,6 +149,7 @@ def run_sim(cellType='Basket',
                                     (Vm[:-1]<=spike_threshold)),
               'dt': dt, 
               'synapses':synapses,
+              'bgStimFreq':bgStimFreq,
               'stimFreq':stimFreq,
               'bgFreqInhFactor':bgFreqInhFactor,
               'tstop':tstop}
@@ -180,6 +183,7 @@ if __name__=='__main__':
     
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
+    parser.add_argument("--bgStimFreq", type=float, default=1e-2)
     parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
@@ -219,6 +223,7 @@ if __name__=='__main__':
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
                   stimFreq=args.stimFreq,
+                  bgStimFreq=args.bgStimFreq,
                   bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
