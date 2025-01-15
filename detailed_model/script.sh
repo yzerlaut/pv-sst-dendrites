@@ -378,3 +378,61 @@ then
                             --no_Vm\
                             --suffix InputRange_noNMDAnoSTP
 fi
+
+
+#########################################
+######## grating stim. rate (Fig. 8) ####
+#########################################
+#
+if [[ $1 == 'all' || $1 == 'demo-grating' ]]
+then
+    nSeed=36
+    ## Basket Cell
+    python grating_stim.py --test_with_repeats -c Basket\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 8\
+                            --stimFreq 20\
+                            --with_STP\
+                            --suffix withSTP\
+                            --iBranch 1 --nSpikeSeed $nSeed
+    # Martinotti Cell
+    python grating_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA --with_STP\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
+                            --suffix withSTP\
+                            --iBranch 5 --nSpikeSeed $nSeed
+fi
+
+if [[ $1 == 'all' || $1 == 'full-grating' ]]
+then
+    nSeed=120
+    ## Basket Cell
+    python grating_stim.py --no_Vm -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 12\
+                            --nSpikeSeed $nSeed
+    python grating_stim.py --no_Vm -c Basket\
+                            --with_presynaptic_spikes\
+                            --stimFreq 12\
+                            --with_STP\
+                            --suffix withSTP\
+                            --nSpikeSeed $nSeed
+    # Martinotti Cell
+    python grating_stim.py --no_Vm -c Martinotti\
+                            --with_NMDA\
+                            --with_presynaptic_spikes\
+                            --stimFreq 4\
+                            --nSpikeSeed $nSeed
+    python grating_stim.py --no_Vm -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --stimFreq 20\
+                            --suffix noNMDA\
+                            --nSpikeSeed $nSeed
+    python grating_stim.py --no_Vm -c Martinotti\
+                            --with_NMDA --with_STP\
+                            --stimFreq 4\
+                            --suffix withSTP\
+                            --nSpikeSeed $nSeed
+fi
