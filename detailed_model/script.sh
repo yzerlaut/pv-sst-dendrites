@@ -386,22 +386,39 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=36
+    nSeed=32
     ## Basket Cell
     python grating_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --bgStimFreq 8\
-                            --stimFreq 20\
+                            --bgStimFreq 10\
+                            --stimFreq 30\
                             --with_STP\
                             --suffix withSTP\
                             --iBranch 1 --nSpikeSeed $nSeed
+    python grating_stim.py --test_with_repeats -c Basket\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 10\
+                            --stimFreq 30\
+                            --iBranch 1 --nSpikeSeed $nSeed
     # Martinotti Cell
+    python grating_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA 
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
+                            --iBranch 5 --nSpikeSeed $nSeed
     python grating_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
                             --bgStimFreq 1\
                             --stimFreq 3\
                             --suffix withSTP\
+                            --iBranch 5 --nSpikeSeed $nSeed
+    python grating_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 15\
+                            --stimFreq 45\
+                            --suffix noNMDA\
                             --iBranch 5 --nSpikeSeed $nSeed
 fi
 

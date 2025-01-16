@@ -37,7 +37,7 @@ import matplotlib.pylab as plt
 def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
-P = dict(t1=0.2, t2=0.35, t3=0.7, t4=2.1,
+P = dict(t1=0.2, t2=0.4, t3=0.7, t4=2.1,
          w1=0.05, w2=0.3, w3=0.2, w4=0.2)
 np.save('../data/detailed_model/grating-stim-input-params.npy', P)
 
@@ -152,34 +152,30 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
                        Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
-    #pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
-    #pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
     return fig, AX
-    #fig.savefig('../figures/Figure5/StepSim_example_%s.svg' % cellType)
 
 #for cellType, color, index in zip(['Martinotti', 'Basket'],
-
-for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP'],
-                                  ['tab:orange', 'tab:red'],
-                                  [1, 1]):
+for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'MartinottinoNMDA',],
+                                  ['tab:orange', 'tab:red', 'tab:purple'],
+                                  [1, 9]):
     
     load_sim(cellType, RESULTS) 
     RESULTS['%s_example_index' % cellType] = index # change here !
     load_example_index(cellType, RESULTS) 
         
-    fig, _ = plot_sim(cellType, color=color, figsize=(2.,0.3))
+    fig, _ = plot_sim(cellType, color=color, figsize=(1.2,0.4))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %% [markdown]
 # ## Look for traces
 
 # %%
-for cellType, color in zip(['Martinotti'], ['tab:orange']):
+for cellType, color in zip(['BasketwithSTP'], ['tab:orange']):
     load_sim(cellType, RESULTS) 
-    for example_index in range(0, 1):
+    for example_index in range(0, 10):
         RESULTS['%s_example_index' % cellType] = example_index
         load_example_index(cellType, RESULTS) 
         fig, _ = plot_sim(cellType, color=color)
