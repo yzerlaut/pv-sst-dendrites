@@ -104,7 +104,7 @@ def load_example_index(cellType, RESULTS):
     sim.load()
 
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-    RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]+RESULTS['bgStimFreq_%s' % cellType]
+    RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
     RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
@@ -148,8 +148,8 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
 
     pt.set_common_xlims(AX, lims=zoom)
     
-    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1,
-                       Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
+    pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=RESULTS['bgStimFreq_%s' % cellType],
+                       Ybar_label='%.0fHz' % (RESULTS['bgStimFreq_%s' % cellType]))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     for ax in AX:
@@ -160,7 +160,7 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
 #for cellType, color, index in zip(['Martinotti', 'Basket'],
 for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'MartinottinoNMDA',],
                                   ['tab:orange', 'tab:red', 'tab:purple'],
-                                  [1, 9]):
+                                  [1, 9, 1]):
     
     load_sim(cellType, RESULTS) 
     RESULTS['%s_example_index' % cellType] = index # change here !
@@ -196,7 +196,7 @@ def load_sim(cellType, suffix):
     rates = []
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' % (iBranch, cellType, suffix))
+                filename='../data/detailed_model/GratingStim_sim_iBranch%i_%s_%s.zip' % (iBranch, cellType, suffix))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
