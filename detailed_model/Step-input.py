@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -157,11 +157,10 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
     return fig, AX
     #fig.savefig('../figures/Figure5/StepSim_example_%s.svg' % cellType)
 
-#for cellType, color, index in zip(['Martinotti', 'Basket'],
-
-for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
-                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
-                                  [31, 16, 0, 31, 16]):
+#for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
+for cellType, color, index in zip(['Martinotti', 'Basket'],
+                                 ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
+                                  [0, 0, 0, 0, ]):
     
     load_sim(cellType, RESULTS) 
     RESULTS['%s_example_index' % cellType] = index # change here !
