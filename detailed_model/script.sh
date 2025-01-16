@@ -70,15 +70,17 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
-    nSeed=120
+    nSeed=40
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --stimFreq 12\
+                            --bgStimFreq 4\
+                            --stimFreq 8\
                             --iBranch 1 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --stimFreq 12\
+                            --bgStimFreq 4\
+                            --stimFreq 8\
                             --with_STP\
                             --suffix withSTP\
                             --iBranch 1 --nSpikeSeed $nSeed
@@ -86,24 +88,27 @@ then
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA\
                             --with_presynaptic_spikes\
-                            --stimFreq 4\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
                             --iBranch 5 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
-                            --stimFreq 4\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
                             --suffix withSTP\
                             --iBranch 5 --nSpikeSeed $nSeed
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
-                            --stimFreq 20\
+                            --bgStimFreq 5\
+                            --stimFreq 15\
                             --suffix noNMDA\
                             --iBranch 5 --nSpikeSeed $nSeed
 fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=120
+    nSeed=40
     ## Basket Cell
     python step_stim.py --no_Vm -c Basket\
                             --with_presynaptic_spikes\
