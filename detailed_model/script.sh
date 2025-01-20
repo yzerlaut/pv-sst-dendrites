@@ -416,6 +416,10 @@ then
                             --with_presynaptic_spikes\
                              --iBranch 5 --bgStimFreq 20 --stimFreq 60\
                             --suffix noNMDA --nSpikeSeed $nSeed
+    python grating_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --iBranch 5 --bgStimFreq 20 --stimFreq 60\
+                            --with_STP --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
@@ -436,4 +440,7 @@ then
     python grating_stim.py --no_Vm -c Martinotti\
                             --bgStimFreq 20 --stimFreq 60\
                             --suffix noNMDA --nSpikeSeed $nSeed
+    python grating_stim.py --no_Vm -c Martinotti\
+                            --with_STP --bgStimFreq 20 --stimFreq 60\
+                            --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
