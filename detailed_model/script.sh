@@ -392,69 +392,59 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
     nSeed=40
+    : '
     ## Basket Cell
     python grating_stim.py --test_with_repeats -c Basket\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 12\
-                            --stimFreq 36\
-                            --with_STP\
-                            --suffix withSTP\
+                            --with_presynaptic_spikes \
+                            --bgStimFreq 8 --stimFreq 24\
+                            --with_STP --suffix withSTP\
                             --iBranch 1 --nSpikeSeed $nSeed
     python grating_stim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
-                            --bgStimFreq 12\
-                            --stimFreq 36\
+                            --bgStimFreq 12 --stimFreq 36\
                             --iBranch 1 --nSpikeSeed $nSeed
     # Martinotti Cell
     python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_NMDA 
                             --with_presynaptic_spikes\
-                            --bgStimFreq 1\
-                            --stimFreq 3\
-                            --iBranch 5 --nSpikeSeed $nSeed
+                            --bgStimFreq 1.5 --stimFreq 4.5\
+                            --with_NMDA --iBranch 5 --nSpikeSeed $nSeed
     python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
-                            --bgStimFreq 1\
-                            --stimFreq 3\
-                            --suffix withSTP\
+                            --with_NMDA --with_STP --suffix withSTP\
+                            --bgStimFreq 1 --stimFreq 3\
                             --iBranch 5 --nSpikeSeed $nSeed
     python grating_stim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
-                            --bgStimFreq 20\
-                            --stimFreq 60\
-                            --suffix noNMDA\
-                            --iBranch 5 --nSpikeSeed $nSeed
+                             --iBranch 5 --bgStimFreq 20 --stimFreq 60\
+                            --suffix noNMDA --nSpikeSeed $nSeed
+    '
+    python grating_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --iBranch 5 --bgStimFreq 3 --stimFreq 9\
+                            --with_STP --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=120
+    nSeed=40
+    : '
     ## Basket Cell
     python grating_stim.py --no_Vm -c Basket\
-                            --with_presynaptic_spikes\
-                            --stimFreq 12\
-                            --nSpikeSeed $nSeed
+                            --bgStimFreq 8 --stimFreq 24 --nSpikeSeed $nSeed
     python grating_stim.py --no_Vm -c Basket\
-                            --with_presynaptic_spikes\
-                            --stimFreq 12\
-                            --with_STP\
-                            --suffix withSTP\
-                            --nSpikeSeed $nSeed
+                            --bgStimFreq 12 --stimFreq 36\
+                            --with_STP --suffix withSTP --nSpikeSeed $nSeed
     # Martinotti Cell
     python grating_stim.py --no_Vm -c Martinotti\
-                            --with_NMDA\
-                            --with_presynaptic_spikes\
-                            --stimFreq 4\
-                            --nSpikeSeed $nSeed
+                            --with_NMDA --bgStimFreq 1.5 --stimFreq 4.5 --nSpikeSeed $nSeed
     python grating_stim.py --no_Vm -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --stimFreq 20\
-                            --suffix noNMDA\
-                            --nSpikeSeed $nSeed
+                            --bgStimFreq 1 --stimFreq 3\
+                            --with_NMDA --with_STP --suffix withSTP --nSpikeSeed $nSeed
     python grating_stim.py --no_Vm -c Martinotti\
-                            --with_NMDA --with_STP\
-                            --stimFreq 4\
-                            --suffix withSTP\
-                            --nSpikeSeed $nSeed
+                            --bgStimFreq 20 --stimFreq 60\
+                            --suffix noNMDA --nSpikeSeed $nSeed
+    '
+    python grating_stim.py --no_Vm -c Martinotti\
+                            --with_STP --bgStimFreq 5 --stimFreq 15\
+                            --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
