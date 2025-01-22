@@ -158,9 +158,9 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
     return fig, AX
 
 #for cellType, color, index in zip(['Martinotti', 'Basket'],
-for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'MartinottinoNMDA',],
-                                  ['tab:orange', 'tab:red', 'tab:purple'],
-                                  [1, 9, 1]):
+for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'MartinottinoNMDA','MartinottinoNMDAwithSTP'],
+                                  ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
+                                  [1, 9, 1, 1]):
     
     load_sim(cellType, RESULTS) 
     RESULTS['%s_example_index' % cellType] = index # change here !
@@ -173,7 +173,7 @@ for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'Martin
 # ## Look for traces
 
 # %%
-for cellType, color in zip(['BasketwithSTP'], ['tab:orange']):
+for cellType, color in zip(['Martinotti'], ['tab:orange']):
     load_sim(cellType, RESULTS) 
     for example_index in range(0, 10):
         RESULTS['%s_example_index' % cellType] = example_index
@@ -184,12 +184,9 @@ for cellType, color in zip(['BasketwithSTP'], ['tab:orange']):
 # # Summary Effect
 
 # %%
-rate_smoothing = 5. # ms
+rate_smoothing = 20. # ms
 
 zoom = [150, 1100]
-
-RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
-           'Basket_example_index':2} # 31
 
 def load_sim(cellType, suffix):
 
@@ -214,38 +211,42 @@ def load_sim(cellType, suffix):
 
 def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
 
-    fig, AX = pt.figure(axes_extents=[[(1,6)],[(1,1)]],
+    fig, AX = pt.figure(axes_extents=[[(1,6),(1,6)],[(1,1),(1,1)]],
                         figsize=(1.4,0.2), left=0, bottom=0., hspace=0.)
-    for ax in AX:
+    for ax in pt.flatten(AX):
         ax.axis('off')
     for cellType, suffix, color, line in zip(cellTypes, suffixs, colors, lines):
         t, input, rates = load_sim(cellType, suffix)
-        pt.plot(t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=AX[0], color=color, lw=0)
-        AX[0].plot(t, np.mean(rates, axis=0), color=color, linestyle=line)
-    AX[1].fill_between(t[1:], 0*t[1:], input, color='lightgrey')
-    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
-    pt.set_common_xlims(AX)
+        pt.plot(t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=AX[0][0], color=color, lw=0)
+        AX[0][0].plot(t, np.mean(rates, axis=0), color=color, linestyle=line)
+        baseline = 
+        norm = (np.mean(rates, axis=0)-np.mean(rates, axis=0).min())/(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
+        pt.plot(t, norm, ax=AX[0][1], color=color, lw=0)
+        AX[0][1].plot(t, norm, color=color, linestyle=line)
+        
+    AX[1][0].fill_between(t[1:], 0*t[1:], input, color='lightgrey')
+    AX[1][1].fill_between(t[1:], 0*t[1:], input, color='lightgrey')
+    pt.draw_bar_scales(AX[0][0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
+    pt.draw_bar_scales(AX[1][0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
+    pt.set_common_xlims(AX[0])
     return fig, AX
 
 fig, _ = plot_sim(['Martinotti', 'Basket'], ['',''], ['tab:orange', 'tab:red'])
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
-plot_sim(['Martinotti', 'Martinotti', 'Martinotti'],
-         ['', 'withSTP', 'noNMDA'],
-         ['tab:orange', 'k', 'tab:purple'],
-         lines=['-','--', '-'])
+plot_sim(['Martinotti', 'Martinotti', 'Martinotti', 'Martinotti'],
+         ['', 'withSTP', 'noNMDA', 'noNMDAwithSTP'],
+         ['tab:orange', 'k', 'tab:purple', 'tab:cyan'],
+         lines=['-','--', '-', '-'])
 #fig.savefig('../figures/Temp-Properties-Pred/SST-models.svg')
+
+# %%
+plot_sim(['Basket', 'Basket'],
+         ['', 'noNMDAwithSTP'],
+         ['tab:red', 'tab:grey'])
 
 # %%
 plot_sim(['Basket', 'Basket'],
          ['', 'withSTP'],
          ['tab:red', 'tab:grey'])
-
-# %%
-t, input, rates = load_sim('Martinotti', '')
-
-# %%
-pt.plot(t, Y=rates)
-
-# %%
