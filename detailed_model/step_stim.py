@@ -13,16 +13,16 @@ def run_sim(cellType='Basket',
             # stim props
             stimFreq=1e-3,
             interstim=200.,
-            step1Width=50.,
-            step1Amp=2.,
-            step2Width=200.,
-            step2Amp=1.0,
+            stepWidth=50.,
+            stepAmpFactor=2.,
+            Inh_fraction=15./100.,
+            synapse_subsampling=5,
             # bg stim
             bgStimFreq=0.,
             bgFreqInhFactor=4.,
             spikeSeed=2,
-            with_STP=False,
             # biophysical props
+            with_STP=False,
             with_NMDA=False,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
@@ -34,7 +34,7 @@ def run_sim(cellType='Basket',
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain,\
                                     STP_release_filter
 
-    tstop = 4*interstim+2*step1Width+step2Width
+    tstop = 2*interstim+stepWidth
 
     ######################################################
     ##   simulation preparation  #########################
@@ -50,7 +50,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':1.00, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.80, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
@@ -58,7 +58,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/SST_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.30, 'P1':0.30, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.60, 'P1':0.60, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     else:
         raise Exception(' cell type not recognized  !')
 
@@ -74,26 +74,22 @@ def run_sim(cellType='Basket',
         synapses = cell.set_of_synapses[iBranch]
         # synapses = [cell.set_of_synapses[iBranch]\
                         # for iBranch in range(6)]
+    synapses = synapses[::synapse_subsampling]
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                             Nmax_release=STP_model['Nmax'],
+                                            Inh_fraction=Inh_fraction,
                                             with_NMDA=with_NMDA)
 
     # Step Function
     t = np.arange(int(tstop/dt))*dt
-    Stim = np.zeros(len(t))
-    # +step 1
-    cond = (t>interstim) & (t<(interstim+step1Width))
-    Stim[cond] = step1Amp
-    # +step 2
-    cond = (t>2*interstim+step1Width) & (t<(2*interstim+2*step1Width))
-    Stim[cond] = step2Amp
-    # +step 3
-    cond = (t>3*interstim+2*step1Width) & (t<(3*interstim+2*step1Width+step2Width))
-    Stim[cond] = step2Amp
+    Stim = np.ones(len(t))*stimFreq
+    # +step 
+    cond = (t>interstim) & (t<(interstim+stepWidth))
+    Stim[cond] *= stepAmpFactor
 
     # -- background activity 
     np.random.seed(spikeSeed)
@@ -101,7 +97,7 @@ def run_sim(cellType='Basket',
     for i, syn in enumerate(synapses):
         if excitatory[i]:
             # we draw one spike train:
-            train_s = np.array(PoissonSpikeTrain(bgStimFreq+stimFreq*Stim,
+            train_s = np.array(PoissonSpikeTrain(Stim,
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             # STP only in excitatory
             N = STP_release_filter(train_s, **STP_model)
@@ -110,8 +106,8 @@ def run_sim(cellType='Basket',
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
-            train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*(\
-                                                    bgStimFreq+stimFreq*Stim),
+            # train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*Stim, # REMOVED
+            train_s = np.array(PoissonSpikeTrain(Stim,
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 
@@ -149,9 +145,12 @@ def run_sim(cellType='Basket',
                                     (Vm[:-1]<=spike_threshold)),
               'dt': dt, 
               'synapses':synapses,
-              'bgStimFreq':bgStimFreq,
+              'Inh_fraction':Inh_fraction,
+               'synapse_subsampling':synapse_subsampling,
+              # 'bgStimFreq':bgStimFreq,
               'stimFreq':stimFreq,
-              'bgFreqInhFactor':bgFreqInhFactor,
+              'stepWidth':stepWidth, 'stepAmpFactor':stepAmpFactor,
+              # 'bgFreqInhFactor':bgFreqInhFactor,
               'tstop':tstop}
 
     if not no_Vm:
@@ -181,10 +180,17 @@ if __name__=='__main__':
                         - Martinotti
                         """, default='Basket')
     
-    # bg stim props
-    parser.add_argument("--stimFreq", type=float, default=1e-2)
-    parser.add_argument("--bgStimFreq", type=float, default=1e-2)
-    parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
+    # stim props
+    parser.add_argument("--Inh_fraction", type=float, 
+                        nargs='*', default=[15./100.])
+    parser.add_argument("--synapse_subsampling", type=int, 
+                        nargs='*', default=[1])
+    parser.add_argument("--stimFreq", type=float, 
+                        nargs='*', default=[1.])
+    parser.add_argument("--stepWidth", type=float, 
+                        nargs='*', default=[100.])
+    parser.add_argument("--stepAmpFactor", type=float, 
+                        nargs='*', default=[3.])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
 
@@ -222,9 +228,11 @@ if __name__=='__main__':
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
-                  stimFreq=args.stimFreq,
-                  bgStimFreq=args.bgStimFreq,
-                  bgFreqInhFactor=args.bgFreqInhFactor,
+                  Inh_fraction=args.Inh_fraction[0],
+                  synapse_subsampling=args.synapse_subsampling[0],
+                  stimFreq=args.stimFreq[0],
+                  stepWidth=args.stepWidth[0], 
+                  stepAmpFactor=args.stepAmpFactor[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,

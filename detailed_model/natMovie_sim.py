@@ -189,12 +189,11 @@ if __name__=='__main__':
                         - Martinotti
                         """, default='Basket')
     
-    # bg stim props
+    # stim props
     parser.add_argument("--Inh_fraction", type=float, 
                         nargs='*', default=[15./100.])
     parser.add_argument("--synapse_subsampling", type=int, 
                         nargs='*', default=[5])
-    parser.add_argument("--nStochProcSeed", type=int, default=2)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
 

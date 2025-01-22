@@ -138,6 +138,49 @@ then
                             --nSpikeSeed $nSeed
 fi
 
+if [[ $1 == 'all' || $1 == 'step-range' ]]
+then
+    nSpikeSeed=5
+    dt=0.05
+    Inh_range='0.05 0.1 0.15 0.2'
+    SS_range='2 4 8 12'
+    nSeed=40
+    ## Basket Cell
+    python step_stim.py --test_with_repeats -c Basket\
+                            --with_presynaptic_spikes\
+                            --Inh_fraction $Inh_range\
+                            --stimFreq 1 2 5\
+                            --iBranch 1 --nSpikeSeed $nSeed
+    : '
+    python step_stim.py --test_with_repeats -c Basket\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 4\
+                            --stimFreq 8\
+                            --with_STP\
+                            --suffix withSTP\
+                            --iBranch 1 --nSpikeSeed $nSeed
+    # Martinotti Cell
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
+                            --iBranch 5 --nSpikeSeed $nSeed
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_NMDA --with_STP\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 1\
+                            --stimFreq 3\
+                            --suffix withSTP\
+                            --iBranch 5 --nSpikeSeed $nSeed
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --with_presynaptic_spikes\
+                            --bgStimFreq 5\
+                            --stimFreq 15\
+                            --suffix noNMDA\
+                            --iBranch 5 --nSpikeSeed $nSeed
+    '
+fi
 ##########################################################
 ##### time-varying rate Stochastic Inputs (Fig. 5) #######
 ##########################################################
@@ -214,7 +257,6 @@ then
     nSpikeSeed=64
     dt=0.025
     tstop=15000
-    : '
     ## Basket Cell
     python natMovie_sim.py --test_with_repeats -c Basket\
                             --with_presynaptic_spikes\
@@ -247,7 +289,6 @@ then
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_NMDA\
                             --suffix noSTP
-    '
     # -----------------------
     # Martinotti Cell, no NMDA
     python natMovie_sim.py --test_with_repeats -c Martinotti\
@@ -272,7 +313,6 @@ then
     nSpikeSeed=40
     dt=0.05
     tstop=50000
-    : '
     ## Basket Cell
     python natMovie_sim.py -c Basket --no_Vm\
                             --Inh_fraction 0.05 --synapse_subsampling 2\
@@ -300,7 +340,6 @@ then
                             --dt $dt --tstop $tstop --nSpikeSeed $nSpikeSeed\
                             --with_NMDA\
                             --suffix FullnoSTP
-    '
     # -----------------------
     # Martinotti Cell, no NMDA
     python natMovie_sim.py -c Martinotti --no_Vm\
