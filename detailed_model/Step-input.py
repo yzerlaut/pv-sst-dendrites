@@ -82,7 +82,7 @@ def load_sim(cellType, RESULTS):
     RESULTS['rate_%s' % cellType] = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                            int(rate_smoothing/dt))
     RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
-    RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
+    #RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt    
 
@@ -159,7 +159,7 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
 
 #for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
 for cellType, color, index in zip(['Martinotti', 'Basket'],
-                                 ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
+                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
                                   [0, 0, 0, 0, ]):
     
     load_sim(cellType, RESULTS) 
