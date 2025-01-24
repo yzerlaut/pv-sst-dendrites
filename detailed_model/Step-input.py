@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -32,32 +32,50 @@ sys.path.append('../analyz')
 from analyz.processing.signanalysis import autocorrel, crosscorrel
 
 # %% [markdown]
-# # Run
-#
-# ### Basket Cell
+# # Test Simulation
 # ```
-#     python step_stim.py --test_with_repeats -c Basket\
-#                         --with_presynaptic_spikes\
-#                         --stimFreq 10e-3\
-#                         --bgFreqInhFactor 1\
-#                         --iBranch 1 --nSpikeSeed 102
+# python step_stim.py --test -c Martinotti\
+#         --with_NMDA --with_STP\
+#         --with_presynaptic_spikes\
+#         --stimFreq 1 --stepAmpFactor 3\
+#         --synapse_subsampling 2 --Inh_fraction 0.15\
+#         --iBranch 5
 # ```
-# ### Martinotti Cell
-# ```
-#     python step_stim.py --test_with_repeats -c Martinotti\
-#                         --with_NMDA\
-#                         --with_presynaptic_spikes\
-#                         --stimFreq 4e-4\
-#                         --bgFreqInhFactor 1\
-#                         --iBranch 1 --nSpikeSeed 102
-# ```
+
+# %%
+results = np.load('single_sim.npy', allow_pickle=True).item()
+
+t = np.arange(len(results['Vm_soma']))*results['dt']
+fig, AX = pt.figure(axes_extents=[[(1,4)],[(1,2)],[(1,1)]],
+                    figsize=(2,0.7), left=0, bottom=0., hspace=0.)
+#AX[0].plot(t, results['Vm_dend'], 'k:', lw=0.5, label=' distal\ndendrite')
+AX[2].fill_between(t[1:], 0*t[1:], results['Stim'], color='tab:grey', label='soma')
+AX[0].plot(t, results['Vm_soma'], 'tab:brown', label='soma')
+AX[0].plot(t, -60+0*t, 'k:')
+pt.annotate(AX[0], '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
+pt.draw_bar_scales(AX[0], Xbar=100, Xbar_label='100ms', Ybar=10, Ybar_label='10mV')
+for i, events in enumerate(results['presynaptic_exc_events']):
+    AX[1].scatter(events, i*np.ones(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=3)
+for i, events in enumerate(results['presynaptic_inh_events']):
+    AX[1].scatter(events, len(results['presynaptic_exc_events'])+i*np.ones(len(events)),
+                  facecolor='r', edgecolor=None, alpha=.35, s=3)
+    
+pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
+pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
+
+print('\n - number of excitatory events: %i' %\
+              np.sum([len(E) for E in results['presynaptic_exc_events']]))
+print(' - output rate: %.1f Hz\n' % (1e3*len(results['spikes'].flatten())/results['tstop']))
+pt.set_common_xlims(AX, lims=[t[0], t[-1]])
+for ax in AX:
+    ax.axis('off')
 
 # %% [markdown]
 # # Plot
 
 # %%
-rate_smoothing = 3. # ms
-zoom = [100,1100]
+rate_smoothing = 20. # ms
+zoom = [0,3000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
@@ -158,9 +176,9 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
     #fig.savefig('../figures/Figure5/StepSim_example_%s.svg' % cellType)
 
 #for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
-for cellType, color, index in zip(['Martinotti', 'Basket'],
+for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
                                   ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
-                                  [0, 0, 0, 0, ]):
+                                  [0, 0, 0, 0, 0]):
     
     load_sim(cellType, RESULTS) 
     RESULTS['%s_example_index' % cellType] = index # change here !
@@ -227,7 +245,7 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
     pt.set_common_xlims(AX)
     return fig, AX
 
-fig, _ = plot_sim(['Martinotti', 'Basket'], ['',''], ['tab:orange', 'tab:red'])
+fig, _ = plot_sim(['Martinotti'], ['longFull',''], ['tab:orange', 'tab:red'])
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
@@ -247,5 +265,132 @@ t, input, rates = load_sim('Martinotti', '')
 
 # %%
 pt.plot(t, Y=rates)
+
+# %%
+
+# %%
+for cellType, color in zip(['Martinotti'], ['tab:orange']):
+    load_sim(cellType, RESULTS) 
+    for example_index in range(0, 1):
+        RESULTS['%s_example_index' % cellType] = example_index
+        load_example_index(cellType, RESULTS) 
+        fig, _ = plot_sim(cellType, color=color)
+
+# %% [markdown]
+# # Input Range
+
+# %%
+rate_smoothing = 20. # ms
+
+results = {}
+def load_sim(cellType, suffix):
+
+    sim = Parallel(\
+            filename='../data/detailed_model/StepStim_demo_%siRange%s.zip' % (cellType, suffix))
+
+    sim.load()
+
+    nSS = len(np.unique(sim.synapse_subsampling))
+    nIF = len(np.unique(sim.Inh_fraction))
+    nSF = len(np.unique(sim.stimFreq))
+    nSA = len(np.unique(sim.stepAmpFactor))
+    
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+    results['traceRate'] = np.zeros((nSS, nIF, nSF, nSA, int(tstop/dt)+1))
+
+    for iSS, SS in enumerate(np.unique(sim.synapse_subsampling)):
+        for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+            for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+                for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+                    
+                    # compute time-varying RATE !
+                    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                    for k, spikes in enumerate(\
+                        [np.array(sim.spikes[k][iSS][iIF][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                        spikes_matrix[k,(spikes/dt).astype('int')] = True
+                    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                  int(rate_smoothing/dt))
+                    results['traceRate'][iSS,iIF,iSF,iSA,:] = rate
+                
+    results['t'] = np.arange(len(rate))*dt
+    results['Inh_fraction'] = np.unique(sim.Inh_fraction[0])
+    results['synapse_subsampling'] = np.unique(sim.synapse_subsampling[0])
+    results['stimFreq'] = np.unique(sim.stimFreq[0])
+    results['stepAmpFactor'] = np.unique(sim.stepAmpFactor[0])
+    return results
+
+
+def plot_sim(results):
+
+    fig, AX = pt.figure(axes=(len(results['Inh_fraction']), len(results['synapse_subsampling'])),
+                        figsize=(1,1), right=4., left=0.5, bottom=0., hspace=0., reshape_axes=False)
+    for ax in pt.flatten(AX):
+        ax.axis('off')
+
+    for iIF, IF in enumerate(np.unique(results['Inh_fraction'])):
+        for iSS, SS in enumerate(np.unique(results['synapse_subsampling'])):
+            for iSA, SA in enumerate(np.unique(results['stepAmpFactor'])):
+                for iSF, SF in enumerate(np.unique(results['stimFreq'])):
+    
+                    rate = results['traceRate'][iSS,iIF,iSF,iSA,:]
+                    AX[iSS][iIF].plot(results['t'], rate,
+                                     color=pt.viridis(iSA/(len(results['stepAmpFactor'])-0.99)))
+            pt.draw_bar_scales(AX[iSS][iIF], Ybar=5, Ybar_label='5Hz ', Xbar=1e-12)
+            if iIF==0:
+                pt.annotate(AX[iSS][0], 'ss=%i' % results['synapse_subsampling'][iSS], (-0.3, 0.5), ha='center', rotation=90)
+            if iSS==0:
+                pt.annotate(AX[0][iIF], 'I=%.2f' % results['Inh_fraction'][iIF], (0.5, 1.1), ha='center')
+    pt.bar_legend(AX[0][-1], X=range(len(results['stepAmpFactor'])),
+                  ticks_labels=['%.1f' % f for f in results['stepAmpFactor']],
+                  colorbar_inset={'rect': [1.2, 0.1, 0.07, 0.9], 'facecolor': None},
+                  label='step factor',
+                  colormap=pt.viridis)
+    return fig, AX
+
+results = load_sim('Martinotti', '')
+fig, AX = plot_sim(results)
+
+# %%
+cellType = 'Martinotti'
+sim = Parallel(\
+            filename='../data/detailed_model/StepStim_demo_%siRange.zip' % cellType)
+sim.load()
+
+# %%
+#im.fetch_quantity_on_grid('Stim', dtype=list)
+sim.fetch_quantity_on_grid('Vm_soma', dtype=list)
+
+# %%
+fig, ax = pt.figure(figsize=(2,2))
+for i in range(12):
+    ax.plot(sim.Vm_soma[i][0][1][0])
+
+# %%
+fig, ax = pt.figure(figsize=(2,2))
+
+sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
+sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
+
+Events = sim.presynaptic_exc_events[0][0][0][1]
+for i, events in enumerate(Events):
+    ax.scatter(events, i+np.ones(len(events)),
+                  facecolor='g', edgecolor=None, alpha=.35, s=3)
+    
+Ivents = sim.presynaptic_inh_events[0][0][0][1]
+for i, events in enumerate(Ivents):
+    ax.scatter(events, i+len(Events)+np.ones(len(events)),
+                  facecolor='r', edgecolor=None, alpha=.35, s=3)
+
+
+# %%
+plt.scatter(sim.spikes[0][0][0][0][0], 'o')
+
+# %%
+sim.spikes[0][0][0][3]
 
 # %%

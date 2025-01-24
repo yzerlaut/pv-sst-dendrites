@@ -191,9 +191,9 @@ for cellType in TYPES:
                     if with_traces:
                         # compute time-varying RATE !
                         spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-                        for i, spikes in enumerate(sim.spikes[:][i][s]):
+                        for k, spikes in enumerate(sim.spikes[:][i][s]):
                             print(spikes.max())
-                            spikes_matrix[i,(spikes/dt).astype('int')] = True
+                            spikes_matrix[k,(spikes/dt).astype('int')] = True
                         rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                       int(100./dt))
                         t = np.arange(len(rate))*dt

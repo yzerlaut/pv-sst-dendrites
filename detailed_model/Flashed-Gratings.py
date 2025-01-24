@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Response to Step inputs
 #
-# we feed the neuron with spikes drawn from an inhomogeneous Poisson process whose time-varying rate is set by step functions
+# we feed the neuron with spikes drawn from an inhomogeneous Poisson process whose time-varying rate is set by a waveform ressembling activity evoked by full-field-gratings
 
 # %%
 import sys, os

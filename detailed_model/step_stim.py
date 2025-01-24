@@ -12,7 +12,7 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # stim props
             stimFreq=1e-3,
-            interstim=200.,
+            interstim=500.,
             stepWidth=50.,
             stepAmpFactor=2.,
             Inh_fraction=15./100.,
@@ -91,7 +91,7 @@ def run_sim(cellType='Basket',
     cond = (t>interstim) & (t<(interstim+stepWidth))
     Stim[cond] *= stepAmpFactor
 
-    # -- background activity 
+    # -- synaptic activity 
     np.random.seed(spikeSeed)
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
     for i, syn in enumerate(synapses):
@@ -146,11 +146,9 @@ def run_sim(cellType='Basket',
               'dt': dt, 
               'synapses':synapses,
               'Inh_fraction':Inh_fraction,
-               'synapse_subsampling':synapse_subsampling,
-              # 'bgStimFreq':bgStimFreq,
               'stimFreq':stimFreq,
-              'stepWidth':stepWidth, 'stepAmpFactor':stepAmpFactor,
-              # 'bgFreqInhFactor':bgFreqInhFactor,
+              'stepWidth':stepWidth, 
+              'stepAmpFactor':stepAmpFactor,
               'tstop':tstop}
 
     if not no_Vm:
@@ -184,15 +182,16 @@ if __name__=='__main__':
     parser.add_argument("--Inh_fraction", type=float, 
                         nargs='*', default=[15./100.])
     parser.add_argument("--synapse_subsampling", type=int, 
-                        nargs='*', default=[1])
+                        nargs='*', default=[5])
     parser.add_argument("--stimFreq", type=float, 
-                        nargs='*', default=[1.])
+                        nargs='*', default=[0.5])
     parser.add_argument("--stepWidth", type=float, 
-                        nargs='*', default=[100.])
+                        nargs='*', default=[500.])
     parser.add_argument("--stepAmpFactor", type=float, 
-                        nargs='*', default=[3.])
+                        nargs='*', default=[4.])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
+    parser.add_argument("--interstim", type=float, default=500)
 
     # Branch number
     parser.add_argument("--iBranch", type=int, default=2)
@@ -229,16 +228,17 @@ if __name__=='__main__':
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
                   Inh_fraction=args.Inh_fraction[0],
-                  synapse_subsampling=args.synapse_subsampling[0],
                   stimFreq=args.stimFreq[0],
                   stepWidth=args.stepWidth[0], 
                   stepAmpFactor=args.stepAmpFactor[0],
+                  synapse_subsampling=args.synapse_subsampling[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   with_STP=args.with_STP,
                   from_uniform=args.from_uniform,
+                  interstim=args.interstim,
                   no_Vm=args.no_Vm,
                   dt=args.dt)
 
@@ -256,12 +256,10 @@ if __name__=='__main__':
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-
-        if args.test_uniform:
-            grid = dict(from_uniform=[False, True], **grid)
-
-        if args.test_NMDA:
-            grid = dict(with_NMDA=[False, True], **grid)
+                    # synapse_subsampling=args.synapse_subsampling,
+                    # Inh_fraction=args.Inh_fraction,
+                    # stimFreq=args.stimFreq,
+                    # stepAmpFactor=args.stepAmpFactor)
 
         sim.build(grid)
 
@@ -283,12 +281,6 @@ if __name__=='__main__':
                                         (i, args.cellType, args.suffix))
 
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-
-            if args.test_uniform:
-                grid = dict(from_uniform=[False, True], **grid)
-
-            if args.test_NMDA:
-                grid = dict(with_NMDA=[False, True], **grid)
 
             sim.build(grid)
 

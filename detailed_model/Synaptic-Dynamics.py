@@ -865,4 +865,72 @@ ax.plot(time_shift, ACF/np.max(ACF), '-', lw=0.5, color='grey')
 pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.',
             title='(glutamate)\nrelease dynamics', yticks=[0.5,1])
 
+
+# %% [markdown]
+# # Step Functions
+
+# %%
+
+def sim_release(release_proba_params={},
+                stimFreq = 1., stepFactor=2.,
+                nSyns = 200,
+                dt = 1e-3, seed=1):
+
+    np.random.seed(seed)
+
+    tstop = 3
+    t = np.arange(int(tstop/dt))*dt
+
+    rate = stimFreq+0*t
+    rate[(t>1) & (t<2)] *=stepFactor
+
+    Release = 0*t    
+    for i in range(nSyns):
+        release_Events = get_release_events(\
+                    np.array(PoissonSpikeTrain(rate, dt=dt, tstop=t[-1])),
+                                               **release_proba_params)
+        Release += rough_release_dynamics(release_Events, 
+                                              tstop=t[-1]+dt, dt=dt)
+    Release /= nSyns
+            
+    return t, Release
+
+SIMS = {\
+    'models':['PV', 'SST'],
+    'SST':   np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item(),
+    'PV':   np.load('../data/detailed_model/PV_stp.npy', allow_pickle=True).item(),
+}
+
+for i, model in enumerate(SIMS['models']):
+    SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model])
+    
+np.save('../data/detailed_model/release-dynamics-step-functions-with-stp.npy',
+        SIMS)
+
+# %%
+SIMS = np.load('../data/detailed_model/release-dynamics-step-functions-with-stp.npy',
+               allow_pickle=True).item()
+
+COLORS = ['tab:red', 'tab:orange']
+fig, AX = pt.figure(axes=(1,3), figsize=(2,0.6), hspace=0.4)
+for i, model in enumerate(SIMS['models']):
+    AX[i+1].plot(SIMS['t'], SIMS['release_%s'%model], color=COLORS[i])
+    pt.annotate(AX[i+1], model, (1,.8), color=COLORS[i], va='top')
+pt.annotate(AX[0], 'input rate', (1,.8), color='grey', va='top')
+#AX[0].fill_between(t[cond], 0*t[cond], rate, color='lightgrey')
+fig.suptitle('release dynamics')
+
+# %%
+fig, AX = pt.figure(axes=(3,5), figsize=(1,0.8), hspace=0.2, wspace=0.2)
+
+for i, freq in enumerate([0.5, 1, 2, 3, 4]):
+    for j, factor in enumerate([2., 3, 4.]):
+        t, rate = sim_release(release_proba_params=SIMS['SST'], stimFreq=freq, stepFactor=factor, nSyns=2000)
+        AX[i][j].plot(t, rate, color='k')
+        AX[i][j].axis('off')
+        if j==0:
+            pt.annotate(AX[i][0], 'f=%.1fHz' % freq, (-0.3, 0.5), ha='center', rotation=90)
+        if i==0:
+            pt.annotate(AX[0][j], 'F=%.1f' % factor, (0.5, 1.1), ha='center')
+
 # %%
