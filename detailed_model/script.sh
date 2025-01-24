@@ -198,29 +198,22 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
 then
-    IF_range='0.05 0.1 0.2'
     nSeed=12
     ## Basket Cell
+    python step_stim.py --test_with_repeats -c Basket\
+                            --no_Vm\
+                            --Inh_fraction 0.05 --synapse_subsampling 1\
+                            --stimFreq 2 3 4 5 6\
+                            --stepAmpFactor 3\
+                            --stepWidth 200 --interstim 200\
+                            --suffix Range\
+                            --iBranch 1 --nSpikeSeed $nSeed
     : '
-    python step_stim.py --test_with_repeats -c Basket\
-                            --with_presynaptic_spikes\
-                            --Inh_fraction $Inh_range\
-                            --stimFreq 1 2 5\
-                            --iBranch 1 --nSpikeSeed $nSeed
-    python step_stim.py --test_with_repeats -c Basket\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 4\
-                            --stimFreq 8\
-                            --with_STP\
-                            --suffix withSTP\
-                            --iBranch 1 --nSpikeSeed $nSeed
-    '
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --with_NMDA --with_STP\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
+                            --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
                             --stepAmpFactor 3\
                             --stepWidth 1000 --interstim 1000\
@@ -229,8 +222,7 @@ then
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_presynaptic_spikes\
                             --with_NMDA\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
+                            --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
                             --stepAmpFactor 3\
                             --stepWidth 1000 --interstim 1000\
@@ -255,7 +247,6 @@ then
                             --stepWidth 1000 --interstim 1000\
                             --iBranch 5 --nSpikeSeed $nSeed\
                             --suffix longNoSTPNoNMDA
-    : '
     python step_stim.py --test_with_repeats -c Martinotti\
                             --with_NMDA --with_STP\
                             --with_presynaptic_spikes\
@@ -271,6 +262,8 @@ then
                             --iBranch 5 --nSpikeSeed $nSeed
     '
 fi
+
+
 ##########################################################
 ##### time-varying rate Stochastic Inputs (Fig. 5) #######
 ##########################################################

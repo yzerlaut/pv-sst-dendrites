@@ -215,7 +215,7 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 # # Summary Effect
 
 # %%
-rate_smoothing = 5. # ms
+rate_smoothing = 4
 
 def load_sim(results, cellType):
 
@@ -240,6 +240,7 @@ def load_sim(results, cellType):
                 for k, spikes in enumerate(\
                     [np.array(sim.spikes[k][iW][iA]).flatten() for k in range(len(seeds))]):
                     spikes_matrix[k,(spikes/dt).astype('int')] = True
+
                 rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                               int(rate_smoothing/dt))
                 if 'traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType) in results:
@@ -257,9 +258,6 @@ results = {}
 load_sim(results, 'Martinotti_longFull')
 load_sim(results, 'Basket_longNoSTP')
 load_sim(results, 'Martinotti_longNoSTP')
-
-# %%
-results['traceRate_Width0-Amp0_Basket_longNoSTP']
 
 
 # %%
