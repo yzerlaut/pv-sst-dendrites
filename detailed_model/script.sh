@@ -68,11 +68,42 @@ fi
 ######## step rate (Fig. 5) ####
 ################################
 #
-if [[ $1 == 'all' || $1 == 'demo-step' ]]
+if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
     nSeed=40
     widths=(50 50 200)
+    ampFs=(4 2 2)
+    for i in 1 2 3
+    do
+        ## Basket Cell
+        python step_stim.py --test_with_repeats -c Basket\
+                                --with_presynaptic_spikes\
+                                --stimFreq 4\
+                                --stepAmpFactor ${ampFs[$i]}\
+                                --stepWidth ${widths[$i]}\
+                                --iBranch 1\
+                                --nSpikeSeed $nSeed\
+                                --suffix noSTP-Step$i
+        # Martinotti Cell
+        python step_stim.py --test_with_repeats -c Martinotti\
+                                --with_NMDA\
+                                --with_presynaptic_spikes\
+                                --synapse_subsampling 2\
+                                --stimFreq 1\
+                                --stepAmpFactor ${ampFs[$i]}\
+                                --stepWidth ${widths[$i]}\
+                                --iBranch 5\
+                                --nSpikeSeed $nSeed\
+                                --suffix noSTP-Step$i
+    done
+    ### ----- SIMULATIONS WITH STP ----- ###
+fi
+if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
+then
+    ### ----- SIMULATIONS WITH STP ----- ###
+    nSeed=40
+    widths=(100 1000 1000)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
