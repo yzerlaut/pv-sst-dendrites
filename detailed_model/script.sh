@@ -143,11 +143,10 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=3
-    dt=0.1
+    nSeed=80
+    dt=0.025
     ## Basket Cell
     python step_stim.py --no_Vm -c Martinotti\
-                            --with_presynaptic_spikes\
                             --with_NMDA --with_STP\
                             --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
@@ -155,9 +154,8 @@ then
                             --stepWidth 50 100 500 1000\
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
-                            --suffix longFull
+                            --suffix vStepsFull
     python step_stim.py --no_Vm -c Martinotti\
-                            --with_presynaptic_spikes\
                             --with_NMDA\
                             --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
@@ -165,17 +163,32 @@ then
                             --stepWidth 50 100 500 1000\
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
-                            --suffix longNoSTP
-    python step_stim.py --no_Vm -c Basket\
-                            --with_presynaptic_spikes\
-                            --with_STP\
-                            --Inh_fraction 0.05 --synapse_subsampling 1\
-                            --stimFreq 4.\
+                            --suffix vStepsNoSTP
+    python step_stim.py --no_Vm -c Martinotti\
+                            --Inh_fraction 0.15 --synapse_subsampling 2\
+                            --stimFreq 1.\
                             --stepAmpFactor 2 3 4 5\
                             --stepWidth 50 100 500 1000\
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
-                            --suffix longNoSTP
+                            --suffix vStepsNoNMDA
+    python step_stim.py --no_Vm -c Basket\
+                            --with_STP\
+                            --Inh_fraction 0.1 --synapse_subsampling 1\
+                            --stimFreq 3.\
+                            --stepAmpFactor 2 3 4 5\
+                            --stepWidth 50 100 500 1000\
+                            --interstim 500\
+                            --dt $dt --nSpikeSeed $nSeed\
+                            --suffix vStepsFull
+    python step_stim.py --no_Vm -c Basket\
+                            --Inh_fraction 0.1 --synapse_subsampling 1\
+                            --stimFreq 3.\
+                            --stepAmpFactor 2 3 4 5\
+                            --stepWidth 50 100 500 1000\
+                            --interstim 500\
+                            --dt $dt --nSpikeSeed $nSeed\
+                            --suffix vStepsNoSTP
 fi
 
 
@@ -202,9 +215,9 @@ then
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
                             --no_Vm\
-                            --Inh_fraction 0.05 --synapse_subsampling 1\
+                            --Inh_fraction 0.1 --synapse_subsampling 1\
                             --stimFreq 2 3 4 5 6\
-                            --stepAmpFactor 3\
+                            --stepAmpFactor 2\
                             --stepWidth 200 --interstim 200\
                             --suffix Range\
                             --iBranch 1 --nSpikeSeed $nSeed

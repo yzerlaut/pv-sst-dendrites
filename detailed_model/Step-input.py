@@ -430,6 +430,61 @@ def plot_sim(results):
 results = load_sim('Martinotti', '')
 fig, AX = plot_sim(results)
 
+# %%
+rate_smoothing = 20. # ms
+
+results = {}
+def load_sim(cellType, suffix):
+
+    sim = Parallel(\
+            filename='../data/detailed_model/StepStim_demo_%sRange.zip' % (cellType))
+
+    sim.load()
+
+    nSF = len(np.unique(sim.stimFreq))
+    
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+    
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+    results['traceRate'] = np.zeros((nSF, int(tstop/dt)+1))
+
+    for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            
+        # compute time-varying RATE !
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for k, spikes in enumerate(\
+            [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+            spikes_matrix[k,(spikes/dt).astype('int')] = True
+        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                      int(rate_smoothing/dt))
+        results['traceRate'][iSF,:] = rate
+                
+    results['t'] = np.arange(len(rate))*dt
+    results['stimFreq'] = np.unique(sim.stimFreq[0])
+    return results
+
+
+def plot_sim(results, color):
+
+    fig, AX = pt.figure(axes=(len(results['stimFreq']), 1),
+                        figsize=(1,1), right=4., left=0.5, bottom=0.)
+
+    for iSF, SF in enumerate(np.unique(results['stimFreq'])):
+        rate = results['traceRate'][iSF,:]
+        AX[iSF].plot(results['t'], rate, color=color)
+        AX[iSF].set_title('sF=%.0fHz' % SF)
+        #pt.annotate(AX[iSF][0], 'I=%.2f' % results['Inh_fraction'][iIF], (0.5, 1.1), ha='center')
+    return fig, AX
+
+results = load_sim('Basket', '')
+fig, AX = plot_sim(results, 'tab:red')
+
+# %%
+sim.
+
 # %% [markdown]
 # # AMPA calib
 
