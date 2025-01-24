@@ -76,11 +76,11 @@ then
     ampFs=(4 2 2)
     for i in 1 2 3
     do
-        : '
         ## Basket Cell
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
                                 --stimFreq 4\
+                                --Inh_fraction 0.05 --synapse_subsampling 1\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
@@ -90,18 +90,16 @@ then
         python step_stim.py --test_with_repeats -c Martinotti\
                                 --with_NMDA\
                                 --with_presynaptic_spikes\
-                                --synapse_subsampling 2\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
                                 --stimFreq 1\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
                                 --suffix noSTP-Step$i
-        '
         python step_stim.py --test_with_repeats -c Martinotti\
-                                --with_NMDA\
                                 --with_presynaptic_spikes\
-                                --synapse_subsampling 2\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
                                 --stimFreq 1\
                                 --AMPAboost 5\
                                 --stepAmpFactor ${ampFs[$i-1]}\
@@ -151,8 +149,7 @@ then
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
                             --with_NMDA --with_STP\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
+                            --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
                             --stepAmpFactor 2 3 4 5\
                             --stepWidth 50 100 500 1000\
@@ -162,8 +159,7 @@ then
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
                             --with_NMDA\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
+                            --Inh_fraction 0.15 --synapse_subsampling 2\
                             --stimFreq 1.\
                             --stepAmpFactor 2 3 4 5\
                             --stepWidth 50 100 500 1000\
@@ -173,8 +169,7 @@ then
     python step_stim.py --no_Vm -c Basket\
                             --with_presynaptic_spikes\
                             --with_STP\
-                            --Inh_fraction 0.05\
-                            --synapse_subsampling 1\
+                            --Inh_fraction 0.05 --synapse_subsampling 1\
                             --stimFreq 4.\
                             --stepAmpFactor 2 3 4 5\
                             --stepWidth 50 100 500 1000\

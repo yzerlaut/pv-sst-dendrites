@@ -188,6 +188,12 @@ for i in np.arange(1,4):
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
+    cellTypes.append('MartinottiNoSTPNoNMDA-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
     cellTypes.append('BasketNoSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
@@ -236,7 +242,7 @@ def load_sim(results, cellType):
                     spikes_matrix[k,(spikes/dt).astype('int')] = True
                 rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                               int(rate_smoothing/dt))
-                if 'traceRate_Width%i-Amp%i_%s' in results:
+                if 'traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType) in results:
                     results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)].append(rate)
                 else:
                     results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
@@ -251,6 +257,9 @@ results = {}
 load_sim(results, 'Martinotti_longFull')
 load_sim(results, 'Basket_longNoSTP')
 load_sim(results, 'Martinotti_longNoSTP')
+
+# %%
+results['traceRate_Width0-Amp0_Basket_longNoSTP']
 
 
 # %%
@@ -272,7 +281,7 @@ def plot_sim(cellTypes, colors,
                                 sy = np.std(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
                                 color=color, ax=AX[iA][iW])
                 if cellType==cellTypes[-1]:
-                    inset = pt.inset(AX[iA][iW], [0,-0.4,1, 0.4])
+                    inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
                     #inset.axis('off')
                     inset.fill_between(results['t_Width%i'%iW][1:]-results['t_Width%i'%iW][-1]/2.,
                                        results['t_Width%i'%iW][1:]*0,
@@ -280,12 +289,14 @@ def plot_sim(cellTypes, colors,
                     pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
                     pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
                     INSETS.append(inset)
+                    if iA==0:
+                        pt.annotate(inset, '%ims' % results['stepWidth_%s' % cellType][iW], (0.5,1), va='top', ha='center')
     pt.set_common_ylims(INSETS)
-    for iW, W in enumerate(results['stepWidth_%s' % cellType]):
-        inset = pt.inset(AX[-1][iW], [0,-0.45,1, 0.04])
-        inset.plot([-W/2.,W/2.], [0,0], 'k-')
-        pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
-    #pt.set_common_xlims(AX+INSETS)
+    pt.set_common_ylims(AX)
+    for ax in pt.flatten(AX):
+        pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if ax==AX[0][0] else '',
+                           Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '')
+        
     return fig, AX
 
 fig, AX = plot_sim(['Basket_longNoSTP'], ['tab:red'])
