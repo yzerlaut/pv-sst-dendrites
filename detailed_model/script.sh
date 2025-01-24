@@ -76,6 +76,7 @@ then
     ampFs=(4 2 2)
     for i in 1 2 3
     do
+        : '
         ## Basket Cell
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
@@ -96,6 +97,18 @@ then
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
                                 --suffix noSTP-Step$i
+        '
+        python step_stim.py --test_with_repeats -c Martinotti\
+                                --with_NMDA\
+                                --with_presynaptic_spikes\
+                                --synapse_subsampling 2\
+                                --stimFreq 1\
+                                --AMPAboost 5\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
+                                --iBranch 5\
+                                --nSpikeSeed $nSeed\
+                                --suffix noSTPnoNMDA-Step$i
     done
     ### ----- SIMULATIONS WITH STP ----- ###
 fi
@@ -168,6 +181,24 @@ then
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
                             --suffix longNoSTP
+fi
+
+
+if [[ $1 == 'all' || $1 == 'step-ampa-calib' ]]
+then
+    nSeed=12
+    # Martinotti Cell
+    python step_stim.py --test_with_repeats -c Martinotti\
+                            --AMPAboost 2 3 4 5 6 7\
+                            --with_presynaptic_spikes\
+                            --synapse_subsampling 2\
+                            --stimFreq 1\
+                            --stepAmpFactor 2\
+                            --stepWidth 50 200 400\
+                            --iBranch 5\
+                            --interstim 300\
+                            --nSpikeSeed $nSeed\
+                            --suffix AMPAcalib
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]

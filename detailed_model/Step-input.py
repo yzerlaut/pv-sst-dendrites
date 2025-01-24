@@ -421,6 +421,62 @@ def plot_sim(results):
 results = load_sim('Martinotti', '')
 fig, AX = plot_sim(results)
 
+# %% [markdown]
+# # AMPA calib
+
+# %%
+rate_smoothing = 5. # ms
+
+results = {}
+
+sim = Parallel(\
+        filename='../data/detailed_model/StepStim_demo_MartinottiAMPAcalib.zip')
+
+sim.load()
+
+nSW = len(np.unique(sim.stepWidth))
+nAB = len(np.unique(sim.AMPAboost))
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+sim.fetch_quantity_on_grid('tstop')
+sim.fetch_quantity_on_grid('dt')
+seeds = np.unique(sim.spikeSeed)
+
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+for iSW, SW in enumerate(np.unique(sim.stepWidth)):
+    for iAB, AB in enumerate(np.unique(sim.AMPAboost)):
+
+        # compute time-varying RATE !
+        dt, tstop = sim.dt[0][iSW][iAB], sim.tstop[0][iSW][iAB]
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for k, spikes in enumerate(\
+            [np.array(sim.spikes[k][iSW][iAB]).flatten() for k in range(len(seeds))]):
+            spikes_matrix[k,(spikes/dt).astype('int')] = True
+        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                      int(rate_smoothing/dt))
+        results['traceRate_SW%i-AB%i' % (iSW, iAB)] = rate
+        results['t_SW%i-AB%i' % (iSW, iAB)] = np.arange(len(rate))*dt
+
+fig, AX = pt.figure(axes=(nSW, nAB),
+                    figsize=(1,1), right=4., left=0.5, bottom=0., hspace=0., reshape_axes=False)
+for ax in pt.flatten(AX):
+    ax.axis('off')
+
+for iSW, SW in enumerate(np.unique(sim.stepWidth)):
+    for iAB, AB in enumerate(np.unique(sim.AMPAboost)):
+
+        AX[iAB][iSW].fill_between(results['t_SW%i-AB%i' % (iSW, iAB)],0*results['t_SW%i-AB%i' % (iSW, iAB)],
+                                  results['traceRate_SW%i-AB%i' % (iSW, iAB)], color='tab:purple')
+        if iSW==0:
+            pt.annotate(AX[iAB][iSW], 'Boost=%.1f' % AB, (0,0), rotation=90, ha='right', fontsize=6)
+
+pt.set_common_ylims(AX)
+pt.set_common_xlims(AX)
+for ax in pt.flatten(AX):
+    pt.draw_bar_scales(ax, Ybar=5, Ybar_label='5Hz ', Xbar=50, Xbar_label='50ms' if ax==AX[0][0] else '')
+
 # %%
 cellType = 'Martinotti'
 sim = Parallel(\

@@ -24,6 +24,7 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_STP=False,
             with_NMDA=False,
+            AMPAboost=0,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
             no_Vm=False,
@@ -65,6 +66,10 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, 
                 passive_only=passive_only,
                 params_key=params_key)
+
+    # add optional modified AMPA boost:
+    if AMPAboost>0:
+        cell.params['%s_qAMPAonlyBoost'%cell.params_key] = AMPAboost
 
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
@@ -189,6 +194,8 @@ if __name__=='__main__':
                         nargs='*', default=[500.])
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[4.])
+    parser.add_argument("--AMPAboost", type=float, 
+                        nargs='*', default=[0])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
     parser.add_argument("--interstim", type=float, default=500)
@@ -232,6 +239,7 @@ if __name__=='__main__':
                   stepWidth=args.stepWidth[0], 
                   stepAmpFactor=args.stepAmpFactor[0],
                   synapse_subsampling=args.synapse_subsampling[0],
+                  AMPAboost=args.AMPAboost[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
@@ -256,10 +264,10 @@ if __name__=='__main__':
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-                    # synapse_subsampling=args.synapse_subsampling,
-                    # Inh_fraction=args.Inh_fraction,
-                    # stimFreq=args.stimFreq,
-                    # stepAmpFactor=args.stepAmpFactor)
+        for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
+                    'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+            if len(getattr(args, key))>1:
+                grid[key] = getattr(args, key)
 
         sim.build(grid)
 
