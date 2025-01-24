@@ -84,6 +84,7 @@ then
                                 --stepWidth ${widths[$i]}\
                                 --iBranch 1\
                                 --nSpikeSeed $nSeed\
+                                --dt 100\
                                 --suffix noSTP-Step$i
         # Martinotti Cell
         python step_stim.py --test_with_repeats -c Martinotti\
@@ -95,6 +96,7 @@ then
                                 --stepWidth ${widths[$i]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
+                                --dt 100\
                                 --suffix noSTP-Step$i
     done
     ### ----- SIMULATIONS WITH STP ----- ###
