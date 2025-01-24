@@ -74,7 +74,7 @@ for ax in AX:
 # # Plot
 
 # %%
-rate_smoothing = 10. # ms
+rate_smoothing = 5. # ms
 zoom = [0,3000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
