@@ -74,14 +74,15 @@ for ax in AX:
 # # Plot
 
 # %%
-rate_smoothing = 20. # ms
+rate_smoothing = 10. # ms
 zoom = [0,3000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
 
-def load_sim(cellType, RESULTS):
-    
+def load_sim(RESULTS, cellType,
+             with_example_index=None):
+
     sim = Parallel(\
             filename='../data/detailed_model/StepStim_demo_%s.zip' % cellType)
     sim.load()
@@ -101,7 +102,7 @@ def load_sim(cellType, RESULTS):
                                                            int(rate_smoothing/dt))
     RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
     #RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
-    RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
+    RESULTS['t_%s' % cellType] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt    
 
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
@@ -111,80 +112,86 @@ def load_sim(cellType, RESULTS):
     print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
     print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/mean_input_rate))
 
-
-def load_example_index(cellType, RESULTS):
-    
-    sim = Parallel(\
-            filename='../data/detailed_model/StepStim_demo_%s.zip' % cellType)
-    sim.load()
-
-    sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-    RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
-    sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
-    RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
-    sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
-    RESULTS['pre_exc_%s' % cellType] = sim.presynaptic_exc_events[RESULTS['%s_example_index' % cellType]]
-    sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
-    RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
+    if '%s_example_index' % cellType in RESULTS:
+        sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+        RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
+        sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
+        RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
+        sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
+        RESULTS['pre_exc_%s' % cellType] = sim.presynaptic_exc_events[RESULTS['%s_example_index' % cellType]]
+        sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
+        RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
         
-
-def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
+def plot_sim(RESULTS, cellTypes,
+             interstim=30, view=500,
+             color='k',
+             figsize=(1.2,0.6)):
 
     fig, AX = pt.figure(axes_extents=[[(1,1)],[(1,1)],[(1,4)],[(1,2)]],
                         figsize=figsize, left=0, bottom=0., hspace=0.)
 
-    # input
-    AX[0].fill_between(RESULTS['t'][:-1][::20], 0*RESULTS['t'][:-1][::20], RESULTS['Input_%s' % cellType][::20],
-                       color='tab:grey', lw=1)
-
-    # Vm
-    AX[2].plot(RESULTS['t'][::10], RESULTS['Vm_%s' % cellType][::10], color=color, lw=0.5)
-    AX[2].plot(RESULTS['t'][::100], -60+0*RESULTS['t'][::100], 'k:', lw=0.3)
-
-    # rate
-    if RESULTS['rate_%s' % cellType] is not None:
-        AX[3].fill_between(RESULTS['t'][::20], 0*RESULTS['t'][::20], RESULTS['rate_%s' % cellType][::20],
-                           color=color, lw=0)
-        AX[3].plot(RESULTS['t'][::20], 0*RESULTS['t'][::20], color=color, lw=1)
-        
-    # events
-    if 'pre_inh_%s' % cellType in RESULTS:
-        subsampling = 4 if 'Basket' in cellType else 1
-        # 1/4 for display
-        for i, events in enumerate(RESULTS['pre_exc_%s' % cellType]):
-            if len(events)>0:
-                e = np.random.choice(events, np.min([int(len(events)/subsampling+1),1]), replace=False)
-                AX[1].plot(e, i*np.ones(len(e)), 'o', fillstyle='full', color='g', ms=.3)
-        for i, events in enumerate(RESULTS['pre_inh_%s' % cellType]):
-            if len(events)>0:
-                e = np.random.choice(events, np.min([int(len(events)/subsampling+1),1]), replace=False)
-                AX[1].plot(e, len(RESULTS['pre_exc_%s' % cellType])+i*np.ones(len(e)), 'o', 
-                           fillstyle='full', color='r', ms=.3)
-
-    pt.set_common_xlims(AX, lims=zoom)
+    t0 = 0
+    for c, cellType in enumerate(cellTypes):
+        cond = (RESULTS['t_%s' % cellType]>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
+                    (RESULTS['t_%s' % cellType]<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+        t = RESULTS['t_%s' % cellType][cond]
+        # input
+        AX[0].fill_between(t0+t[:-1][::20], 0*t[:-1][::20], RESULTS['Input_%s' % cellType][cond[1:]][::20],
+                           color='tab:grey', lw=1)
     
-    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1,
-                       Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
+        # Vm
+        AX[2].plot(t0+t[::10], RESULTS['Vm_%s' % cellType][cond][::10], color=color, lw=0.5)
+        AX[2].plot(t0+t[::100], -60+0*RESULTS['t_%s' % cellType][cond][::100], 'k:', lw=0.3)
+    
+        # rate
+        if RESULTS['rate_%s' % cellType] is not None:
+            AX[3].fill_between(t0+t[::20], 0*t[::20], RESULTS['rate_%s' % cellType][cond][::20],
+                               color=color, lw=0)
+            AX[3].plot(t0+t[::20], 0*t[::20], color=color, lw=1)
+            
+        # events
+        if 'pre_inh_%s' % cellType in RESULTS:
+            subsampling = 4 if 'Basket' in cellType else 1 # for display only
+            for i, events in enumerate(RESULTS['pre_exc_%s' % cellType]):
+                eCond = (events>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
+                                (events<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+                if len(events[eCond])>0:
+                    e = np.random.choice(events[eCond], np.min([int(len(events[eCond])/subsampling+1),1]), replace=False)
+                    AX[1].plot(t0+e, i*np.ones(len(e)), 'o', fillstyle='full', color='g', ms=.3)
+            for i, events in enumerate(RESULTS['pre_inh_%s' % cellType]):
+                iCond = (events>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
+                                (events<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+                if len(events[iCond])>0:
+                    e = np.random.choice(events[iCond], np.min([int(len(events[iCond])/subsampling+1),1]), replace=False)
+                    AX[1].plot(t0+e, len(RESULTS['pre_exc_%s' % cellType])+i*np.ones(len(e)), 'o', 
+                               fillstyle='full', color='r', ms=.3)
+        t0 += t[-1]-t[0]+interstim
+
+    pt.set_common_xlims(AX)#, lims=zoom)
+    
+    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1, Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
-    #pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
-    #pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
     for ax in AX:
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
     return fig, AX
-    #fig.savefig('../figures/Figure5/StepSim_example_%s.svg' % cellType)
-
 #for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
-for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
-                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
-                                  [0, 0, 0, 0, 0]):
-    
-    load_sim(cellType, RESULTS) 
-    RESULTS['%s_example_index' % cellType] = index # change here !
-    load_example_index(cellType, RESULTS) 
-        
-    fig, _ = plot_sim(cellType, color=color, figsize=(2.,0.3))
+#for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
+#                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
+#                                  [0, 0, 0, 0, 0]):
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottiNoSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('BasketNoSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %% [markdown]
@@ -243,6 +250,7 @@ def load_sim(results, cellType):
 results = {}
 load_sim(results, 'Martinotti_longFull')
 load_sim(results, 'Basket_longNoSTP')
+load_sim(results, 'Martinotti_longNoSTP')
 
 
 # %%
@@ -283,7 +291,7 @@ def plot_sim(cellTypes, colors,
 fig, AX = plot_sim(['Basket_longNoSTP'], ['tab:red'])
 
 # %%
-fig, AX = plot_sim(['Martinotti_longFull'], ['tab:orange'])
+fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoSTP'], ['tab:orange', 'k'])
 
 
 # %%
