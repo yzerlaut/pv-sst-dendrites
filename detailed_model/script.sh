@@ -103,7 +103,7 @@ if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
     nSeed=40
-    widths=(100 1000 1000)
+    widths=(100 100 1000)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
@@ -111,29 +111,29 @@ then
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
                                 --stimFreq 4\
-                                --stepAmpFactor ${ampFs[$i]}\
-                                --stepWidth ${widths[$i]}\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
                                 --nSpikeSeed $nSeed\
-                                --suffix noSTP-Step$i
+                                --suffix withSTP-Step$i
         # Martinotti Cell
         python step_stim.py --test_with_repeats -c Martinotti\
                                 --with_NMDA\
                                 --with_presynaptic_spikes\
                                 --synapse_subsampling 2\
                                 --stimFreq 1\
-                                --stepAmpFactor ${ampFs[$i]}\
-                                --stepWidth ${widths[$i]}\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
-                                --suffix noSTP-Step$i
+                                --suffix withSTP-Step$i
     done
-    ### ----- SIMULATIONS WITH STP ----- ###
 fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=48
+    nSeed=3
+    dt=0.1
     ## Basket Cell
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
@@ -141,9 +141,10 @@ then
                             --Inh_fraction 0.15\
                             --synapse_subsampling 2\
                             --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
+                            --stepAmpFactor 2 3 4 5\
+                            --stepWidth 50 100 500 1000\
+                            --interstim 500\
+                            --dt $dt --nSpikeSeed $nSeed\
                             --suffix longFull
     python step_stim.py --no_Vm -c Martinotti\
                             --with_presynaptic_spikes\
@@ -151,29 +152,22 @@ then
                             --Inh_fraction 0.15\
                             --synapse_subsampling 2\
                             --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
+                            --stepAmpFactor 2 3 4 5\
+                            --stepWidth 50 100 500 1000\
+                            --interstim 500\
+                            --dt $dt --nSpikeSeed $nSeed\
                             --suffix longNoSTP
-    python step_stim.py --no_Vm -c Martinotti\
+    python step_stim.py --no_Vm -c Basket\
                             --with_presynaptic_spikes\
                             --with_STP\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longNoNMDA
-    python step_stim.py --no_Vm -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longNoSTPNoNMDA
+                            --Inh_fraction 0.05\
+                            --synapse_subsampling 1\
+                            --stimFreq 4.\
+                            --stepAmpFactor 2 3 4 5\
+                            --stepWidth 50 100 500 1000\
+                            --interstim 500\
+                            --dt $dt --nSpikeSeed $nSeed\
+                            --suffix longNoSTP
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]

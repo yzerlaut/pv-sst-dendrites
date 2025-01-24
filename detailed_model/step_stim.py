@@ -280,7 +280,9 @@ if __name__=='__main__':
                 filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' %\
                                         (i, args.cellType, args.suffix))
 
-            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
+                        stepWidth=args.stepWidth,
+                        stepAmpFactor=args.stepAmpFactor)
 
             sim.build(grid)
 

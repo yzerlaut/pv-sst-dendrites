@@ -204,31 +204,66 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 # %%
 rate_smoothing = 5. # ms
 
-zoom = [150, 1100]
-
-RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
-           'Basket_example_index':2} # 31
-
-def load_sim(cellType, suffix):
+def load_sim(results, cellType):
 
     rates = []
     for iBranch in range(6):
+        
         sim = Parallel(\
-                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' % (iBranch, cellType, suffix))
+                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s.zip' % (iBranch, cellType))
         sim.load()
+
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
-        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-        for i, spikes in enumerate(sim.spikes):
-            spikes_matrix[i,(spikes/dt).astype('int')] = True
-        rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                                   int(rate_smoothing/dt)))
-        input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+        sim.fetch_quantity_on_grid('dt')
+        sim.fetch_quantity_on_grid('tstop')
+    
+        for iW, W in enumerate(np.unique(sim.stepWidth)):
+            for iA, A in enumerate(np.unique(sim.stepAmpFactor)):
+                # compute time-varying RATE !
+                dt, tstop = sim.dt[0][iW][iA], sim.tstop[0][iW][iA]
+                spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                for k, spikes in enumerate(\
+                    [np.array(sim.spikes[k][iW][iA]).flatten() for k in range(len(seeds))]):
+                    spikes_matrix[k,(spikes/dt).astype('int')] = True
+                rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                              int(rate_smoothing/dt))
+                if 'traceRate_Width%i-Amp%i_%s' in results:
+                    results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)].append(rate)
+                else:
+                    results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
+                if not 'traceRate_Width%i'%iW in results:
+                    results['t_Width%i'%iW] = np.arange(len(rate))*dt
+        
+        results['stepWidth_%s' % cellType] = np.unique(sim.stepWidth[0])
+        results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
+    
+results = {}
+load_sim(results, 'Martinotti_longFull')
 
-    return np.arange(len(rates[0]))*dt, input, rates    
 
+# %%
+def plot_sim(cellTypes, colors, lines=['-','-','-','-'], Ybar=10):
+
+    fig, AX = pt.figure(axes=(4,4),
+                        figsize=(0.9,0.9), left=0, bottom=0., hspace=0.5, wspace=0.5)
+    #for ax in AX:
+    #    ax.axis('off')
+    for cellType, color, line in zip(cellTypes, colors, lines):
+        for iW, W in enumerate(results['stepWidth_%s' % cellType]):
+            for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
+                pt.plot(results['t_Width%i'%iW],
+                                np.mean(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
+                                sy = np.std(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
+                                color=color, ax=AX[iW][iA])
+    #pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
+    #pt.set_common_xlims(AX)
+    return fig, AX
+
+plot_sim(['Martinotti_longFull'], ['tab:orange'])
+
+
+# %%
 
 def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
 
