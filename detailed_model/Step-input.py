@@ -214,6 +214,7 @@ def load_sim(results, cellType):
         sim.load()
 
         sim.fetch_quantity_on_grid('spikes', dtype=list)
+        sim.fetch_quantity_on_grid('Stim', dtype=list)
         seeds = np.unique(sim.spikeSeed)
         sim.fetch_quantity_on_grid('dt')
         sim.fetch_quantity_on_grid('tstop')
@@ -234,33 +235,55 @@ def load_sim(results, cellType):
                     results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
                 if not 'traceRate_Width%i'%iW in results:
                     results['t_Width%i'%iW] = np.arange(len(rate))*dt
+                results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)] = sim.Stim[0][iW][iA]
         
         results['stepWidth_%s' % cellType] = np.unique(sim.stepWidth[0])
         results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
     
 results = {}
 load_sim(results, 'Martinotti_longFull')
+load_sim(results, 'Basket_longNoSTP')
 
 
 # %%
-def plot_sim(cellTypes, colors, lines=['-','-','-','-'], Ybar=10):
+def plot_sim(cellTypes, colors,
+             lines=['-','-','-','-'],
+             views=[300, 400, 900, 1500],
+             Ybar=10):
 
     fig, AX = pt.figure(axes=(4,4),
-                        figsize=(0.9,0.9), left=0, bottom=0., hspace=0.5, wspace=0.5)
-    #for ax in AX:
+                        figsize=(0.9,0.9), left=0, bottom=0., hspace=1., wspace=0.5)
+    INSETS = []
+    #for ax in pt.flatten(AX):
     #    ax.axis('off')
     for cellType, color, line in zip(cellTypes, colors, lines):
         for iW, W in enumerate(results['stepWidth_%s' % cellType]):
             for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
-                pt.plot(results['t_Width%i'%iW],
+                pt.plot(results['t_Width%i'%iW]-results['t_Width%i'%iW][-1]/2.,
                                 np.mean(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
                                 sy = np.std(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
-                                color=color, ax=AX[iW][iA])
-    #pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
-    #pt.set_common_xlims(AX)
+                                color=color, ax=AX[iA][iW])
+                if cellType==cellTypes[-1]:
+                    inset = pt.inset(AX[iA][iW], [0,-0.4,1, 0.4])
+                    #inset.axis('off')
+                    inset.fill_between(results['t_Width%i'%iW][1:]-results['t_Width%i'%iW][-1]/2.,
+                                       results['t_Width%i'%iW][1:]*0,
+                                       results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)], color='lightgray', lw=0)
+                    pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
+                    pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
+                    INSETS.append(inset)
+    pt.set_common_ylims(INSETS)
+    for iW, W in enumerate(results['stepWidth_%s' % cellType]):
+        inset = pt.inset(AX[-1][iW], [0,-0.45,1, 0.04])
+        inset.plot([-W/2.,W/2.], [0,0], 'k-')
+        pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
+    #pt.set_common_xlims(AX+INSETS)
     return fig, AX
 
-plot_sim(['Martinotti_longFull'], ['tab:orange'])
+fig, AX = plot_sim(['Basket_longNoSTP'], ['tab:red'])
+
+# %%
+fig, AX = plot_sim(['Martinotti_longFull'], ['tab:orange'])
 
 
 # %%
