@@ -72,7 +72,7 @@ if [[ $1 == 'all' || $1 == 'demo-step' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
     nSeed=40
-    widths=(50 50 100)
+    widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
