@@ -80,8 +80,8 @@ then
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
                                 --stimFreq 4\
-                                --stepAmpFactor ${ampFs[$i]}\
-                                --stepWidth ${widths[$i]}\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
                                 --nSpikeSeed $nSeed\
                                 --dt 100\
@@ -92,8 +92,8 @@ then
                                 --with_presynaptic_spikes\
                                 --synapse_subsampling 2\
                                 --stimFreq 1\
-                                --stepAmpFactor ${ampFs[$i]}\
-                                --stepWidth ${widths[$i]}\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
                                 --dt 100\
