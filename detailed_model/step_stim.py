@@ -181,27 +181,27 @@ if __name__=='__main__':
                         cell type, either:
                         - Basket
                         - Martinotti
-                        """, default='Basket')
+                        """, default='Martinotti')
     
     # stim props
     parser.add_argument("--Inh_fraction", type=float, 
                         nargs='*', default=[15./100.])
     parser.add_argument("--synapse_subsampling", type=int, 
-                        nargs='*', default=[5])
+                        nargs='*', default=[2])
     parser.add_argument("--stimFreq", type=float, 
-                        nargs='*', default=[0.5])
+                        nargs='*', default=[1.0])
     parser.add_argument("--stepWidth", type=float, 
-                        nargs='*', default=[500.])
+                        nargs='*', default=[200.])
     parser.add_argument("--stepAmpFactor", type=float, 
-                        nargs='*', default=[4.])
+                        nargs='*', default=[3.])
     parser.add_argument("--AMPAboost", type=float, 
-                        nargs='*', default=[0])
+                        nargs='*', default=[4])
     parser.add_argument("--spikeSeed", type=int, default=1)
-    parser.add_argument("--nSpikeSeed", type=int, default=8)
+    parser.add_argument("--nSpikeSeed", type=int, default=0)
     parser.add_argument("--interstim", type=float, default=500)
 
     # Branch number
-    parser.add_argument("--iBranch", type=int, default=2)
+    parser.add_argument("--iBranch", type=int, default=5)
     parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
@@ -212,7 +212,7 @@ if __name__=='__main__':
     parser.add_argument("--from_uniform", action="store_true")
     parser.add_argument("--with_STP", action="store_true")
 
-    parser.add_argument("--filename", default='single_sim.npy')
+    parser.add_argument('-f', "--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
     parser.add_argument('-fmo', "--fix_missing_only",
                         help="in scan", action="store_true")

@@ -4,12 +4,13 @@ from math import comb # binomial coefficient
 
 def PoissonSpikeTrain(freq,
                       dt=None,
-                      tstop=1.):
+                      tstop=1.,
+                      seed=1):
     """
     Poisson spike train from a given frequency (homogeneous process)
 
-    need to fix the seed before
     """
+    np.random.seed(seed)
 
     if dt is not None and (type(freq) in [np.ndarray, np.array, list]):
         spikes = []
@@ -32,13 +33,15 @@ def STP_release_filter(pre_spikes,
                        P1 = 1.0, # proba at oo-frequency
                        dP = 0.0, # proba increment
                        tauP = 1.0, # seconds
-                       Nmax=1):
+                       Nmax=1,
+                       seed=2):
     """
     model of spike timing dynamics
         see Synaptic-Dynamics.ipynb notebook
 
-    need to fix the seed before
     """
+    np.random.seed(seed)
+
     # build the time-varing release probability:
     P = np.ones(len(pre_spikes))*P0 # initialized
     for i in range(len(pre_spikes)-1):
@@ -55,7 +58,8 @@ def add_synaptic_input(cell, synapses,
                        with_NMDA=False,
                        Nmax_release = 1,
                        boost_AMPA_for_SST_noNMDA=True,
-                       Inh_fraction=20./100.):
+                       Inh_fraction=20./100.,
+                       seed=3):
     """
     add AMPA, NMDA and GABA synapses to a given cell
 
@@ -63,8 +67,8 @@ def add_synaptic_input(cell, synapses,
     it adds other synapses with double (Nmax>=2), triple (Nmax>=3), ...
         vesicular synaptic release only on AMPA and NMDA ! 
 
-    need to fix the seed before
     """
+    np.random.seed(seed)
 
     AMPAS, NMDAS, GABAS = [], [], []
     ampaNETCONS, nmdaNETCONS, gabaNETCONS = [], [], []

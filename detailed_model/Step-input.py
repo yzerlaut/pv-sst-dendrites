@@ -71,12 +71,19 @@ for ax in AX:
     ax.axis('off')
 
 # %%
+fig, ax = pt.figure(figsize=(2,1))
+for i in range(1,3):
+    results = np.load('%i.npy' % i, allow_pickle=True).item()
+    t = np.arange(len(results['Vm_soma']))*results['dt']
+    ax.plot(t, results['Vm_soma'])
+
+# %%
 python step_stim.py --test -c Martinotti\
         --with_NMDA\
         --with_presynaptic_spikes\
         --stimFreq 1 --stepAmpFactor 3\
         --synapse_subsampling 2 --Inh_fraction 0.15\
-        --iBranch 5
+        --iBranch 5 --spikeSeed 0
 
 # %% [markdown]
 # # Plot
