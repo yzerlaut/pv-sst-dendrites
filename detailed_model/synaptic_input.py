@@ -7,6 +7,8 @@ def PoissonSpikeTrain(freq,
                       tstop=1.):
     """
     Poisson spike train from a given frequency (homogeneous process)
+
+    need to fix the seed before
     """
 
     if dt is not None and (type(freq) in [np.ndarray, np.array, list]):
@@ -34,6 +36,8 @@ def STP_release_filter(pre_spikes,
     """
     model of spike timing dynamics
         see Synaptic-Dynamics.ipynb notebook
+
+    need to fix the seed before
     """
     # build the time-varing release probability:
     P = np.ones(len(pre_spikes))*P0 # initialized
@@ -58,6 +62,8 @@ def add_synaptic_input(cell, synapses,
     if Nmax>1
     it adds other synapses with double (Nmax>=2), triple (Nmax>=3), ...
         vesicular synaptic release only on AMPA and NMDA ! 
+
+    need to fix the seed before
     """
 
     AMPAS, NMDAS, GABAS = [], [], []
@@ -71,8 +77,6 @@ def add_synaptic_input(cell, synapses,
     for nVesicles in range(1, Nmax_release+1):
         
         for i, syn in enumerate(synapses):
-
-            np.random.seed(syn*(1+nVesicles))
 
             VECSTIMS.append(h.VecStim())
 
@@ -90,7 +94,6 @@ def add_synaptic_input(cell, synapses,
                 if with_NMDA:
                     NMDAS.append(\
                             h.NMDAIN(x, sec=cell.SEGMENTS['NEURON_section'][syn]))
-
 
                 ampaNETCONS.append(h.NetCon(VECSTIMS[-1], AMPAS[-1]))
                 if (cell.params_key=='MC') and (not with_NMDA)\
