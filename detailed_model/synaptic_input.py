@@ -5,11 +5,13 @@ from math import comb # binomial coefficient
 def PoissonSpikeTrain(freq,
                       dt=None,
                       tstop=1.,
-                      seed=1):
+                      seed=None):
     """
     Poisson spike train from a given frequency (homogeneous process)
 
     """
+    if seed is None:
+        seed = np.random.randint(1000)
     np.random.seed(seed)
 
     if dt is not None and (type(freq) in [np.ndarray, np.array, list]):
@@ -34,12 +36,14 @@ def STP_release_filter(pre_spikes,
                        dP = 0.0, # proba increment
                        tauP = 1.0, # seconds
                        Nmax=1,
-                       seed=2):
+                       seed=None):
     """
     model of spike timing dynamics
         see Synaptic-Dynamics.ipynb notebook
 
     """
+    if seed is None:
+        seed = np.random.randint(1000)
     np.random.seed(seed)
 
     # build the time-varing release probability:
@@ -59,7 +63,7 @@ def add_synaptic_input(cell, synapses,
                        Nmax_release = 1,
                        boost_AMPA_for_SST_noNMDA=True,
                        Inh_fraction=20./100.,
-                       seed=3):
+                       seed=None):
     """
     add AMPA, NMDA and GABA synapses to a given cell
 
@@ -68,6 +72,8 @@ def add_synaptic_input(cell, synapses,
         vesicular synaptic release only on AMPA and NMDA ! 
 
     """
+    if seed is None:
+        seed = np.random.randint(1000)
     np.random.seed(seed)
 
     AMPAS, NMDAS, GABAS = [], [], []

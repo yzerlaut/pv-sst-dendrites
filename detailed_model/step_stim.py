@@ -87,7 +87,8 @@ def run_sim(cellType='Basket',
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                             Nmax_release=STP_model['Nmax'],
                                             Inh_fraction=Inh_fraction,
-                                            with_NMDA=with_NMDA)
+                                            with_NMDA=with_NMDA,
+                                            seed=(1+spikeSeed)**2)
 
     # Step Function
     t = np.arange(int(tstop/dt))*dt
@@ -97,22 +98,22 @@ def run_sim(cellType='Basket',
     Stim[cond] *= stepAmpFactor
 
     # -- synaptic activity 
-    np.random.seed(spikeSeed)
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
     for i, syn in enumerate(synapses):
         if excitatory[i]:
             # we draw one spike train:
             train_s = np.array(PoissonSpikeTrain(Stim,
-                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+                                    dt=1e-3*dt, tstop=1e-3*tstop,
+                                    seed=(1+i+spikeSeed)*3)) # Hz,s
             # STP only in excitatory
-            N = STP_release_filter(train_s, **STP_model)
+            N = STP_release_filter(train_s, seed=(i+1+spikeSeed)*4, **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
             # train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*Stim, # REMOVED
-            train_s = np.array(PoissonSpikeTrain(Stim,
+            train_s = np.array(PoissonSpikeTrain(Stim, seed=2*(i+1+spikeSeed),
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 

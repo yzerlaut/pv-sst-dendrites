@@ -925,7 +925,8 @@ fig, AX = pt.figure(axes=(3,5), figsize=(1,0.8), hspace=0.2, wspace=0.2)
 
 for i, freq in enumerate([0.5, 1, 2, 3, 4]):
     for j, factor in enumerate([2., 3, 4.]):
-        t, rate = sim_release(release_proba_params=SIMS['SST'], stimFreq=freq, stepFactor=factor, nSyns=2000)
+        t, rate = sim_release(release_proba_params=SIMS['SST'],
+                              stimFreq=freq, stepFactor=factor, nSyns=2000)
         AX[i][j].plot(t, rate, color='k')
         AX[i][j].axis('off')
         if j==0:

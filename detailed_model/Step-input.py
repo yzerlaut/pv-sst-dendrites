@@ -39,7 +39,7 @@ from analyz.processing.signanalysis import autocorrel, crosscorrel
 #         --with_presynaptic_spikes\
 #         --stimFreq 1 --stepAmpFactor 3\
 #         --synapse_subsampling 2 --Inh_fraction 0.15\
-#         --iBranch 5
+#         --iBranch 5 --spikeSeed 3
 # ```
 
 # %%
@@ -69,21 +69,6 @@ print(' - output rate: %.1f Hz\n' % (1e3*len(results['spikes'].flatten())/result
 pt.set_common_xlims(AX, lims=[t[0], t[-1]])
 for ax in AX:
     ax.axis('off')
-
-# %%
-fig, ax = pt.figure(figsize=(2,1))
-for i in range(1,3):
-    results = np.load('%i.npy' % i, allow_pickle=True).item()
-    t = np.arange(len(results['Vm_soma']))*results['dt']
-    ax.plot(t, results['Vm_soma'])
-
-# %%
-python step_stim.py --test -c Martinotti\
-        --with_NMDA\
-        --with_presynaptic_spikes\
-        --stimFreq 1 --stepAmpFactor 3\
-        --synapse_subsampling 2 --Inh_fraction 0.15\
-        --iBranch 5 --spikeSeed 0
 
 # %% [markdown]
 # # Plot
@@ -155,7 +140,7 @@ def plot_sim(RESULTS, cellTypes,
                            color='tab:grey', lw=1)
     
         # Vm
-        AX[2].plot(t0+t[::10], RESULTS['Vm_%s' % cellType][cond][::10], color=color, lw=0.5)
+        AX[2].plot(t0+t[::10], RESULTS['Vm_%s' % cellType][cond][::10], color=color, lw=1)
         AX[2].plot(t0+t[::100], -60+0*RESULTS['t_%s' % cellType][cond][::100], 'k:', lw=0.3)
     
         # rate
@@ -191,6 +176,23 @@ def plot_sim(RESULTS, cellTypes,
         ax.axis('off')
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz ')
     return fig, AX
+
+def add_sim(RESULTS, cellTypes, fig, AX,
+             interstim=30, view=[-200, 300], color='k',):
+    
+    t0 = 0
+    for c, cellType in enumerate(cellTypes):
+        cond = ((RESULTS['t_%s' % cellType]-(RESULTS['t_%s' % cellType].mean())>view[0]) &\
+                    ((RESULTS['t_%s' % cellType]-RESULTS['t_%s' % cellType].mean())<view[1]))
+        t = RESULTS['t_%s' % cellType][cond]
+        # Vm
+        AX[2].plot(t0+t[::10], RESULTS['Vm_%s' % cellType][cond][::10], color=color, lw=0.5)
+        # rate
+        if RESULTS['rate_%s' % cellType] is not None:
+            AX[3].plot(t0+t[::20], RESULTS['rate_%s' % cellType][cond][::20],
+                       color=color, lw=0.5)
+        t0 += t[-1]-t[0]+interstim
+
 #for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
 #for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
 #                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
@@ -214,6 +216,20 @@ for i in np.arange(1,4):
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+
+# %%
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottiNoSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, AX = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottiNoSTPNoNMDA-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+add_sim(RESULTS, cellTypes, fig, AX, color='tab:purple')
 
 # %% [markdown]
 # ## Look for traces
@@ -281,7 +297,7 @@ load_sim(results, 'Basket_longNoSTP')
 load_sim(results, 'Martinotti_longNoSTP')
 
 # %%
-load_sim(results, 'Martinotti_vStepsFull')
+load_sim(results, 'Basket_vStepsFull')
 
 
 # %%
@@ -321,7 +337,7 @@ def plot_sim(cellTypes, colors,
         
     return fig, AX
 
-fig, AX = plot_sim(['Basket_longNoSTP'], ['tab:red'])
+fig, AX = plot_sim(['Basket_vStepsFull'], ['tab:red'])
 
 # %%
 fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoNMDA'], ['tab:orange', 'tab:purple'])
@@ -441,12 +457,12 @@ def plot_sim(results):
     
                     rate = results['traceRate'][iSS,iIF,iSF,iSA,:]
                     AX[iSS][iIF].plot(results['t'], rate,
-                                     color=pt.viridis(iSA/(len(results['stepAmpFactor'])-0.99)))
+                                     color='tab:orange')#pt.viridis(iSA/(len(results['stepAmpFactor'])-0.99)))
             pt.draw_bar_scales(AX[iSS][iIF], Ybar=5, Ybar_label='5Hz ', Xbar=1e-12)
             if iIF==0:
                 pt.annotate(AX[iSS][0], 'ss=%i' % results['synapse_subsampling'][iSS], (-0.3, 0.5), ha='center', rotation=90)
             if iSS==0:
-                pt.annotate(AX[0][iIF], 'I=%.2f' % results['Inh_fraction'][iIF], (0.5, 1.1), ha='center')
+                pt.annotate(AX[0][iIF], 'IF=%.2f' % results['Inh_fraction'][iIF], (0.5, 1.1), ha='center')
     pt.bar_legend(AX[0][-1], X=range(len(results['stepAmpFactor'])),
                   ticks_labels=['%.1f' % f for f in results['stepAmpFactor']],
                   colorbar_inset={'rect': [1.2, 0.1, 0.07, 0.9], 'facecolor': None},
@@ -461,59 +477,59 @@ fig, AX = plot_sim(results)
 rate_smoothing = 20. # ms
 
 results = {}
-def load_sim(cellType, suffix):
+sim = Parallel(\
+        filename='../data/detailed_model/StepStim_demo_BasketRangeNoSTP.zip')
+sim.load()
+color = 'tab:red'
+nSF = len(np.unique(sim.stimFreq))
+nIF = len(np.unique(sim.Inh_fraction))
 
-    sim = Parallel(\
-            filename='../data/detailed_model/StepStim_demo_%sRange.zip' % (cellType))
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
 
-    sim.load()
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
 
-    nSF = len(np.unique(sim.stimFreq))
-    
-    sim.fetch_quantity_on_grid('spikes', dtype=list)
-    seeds = np.unique(sim.spikeSeed)
-    
-    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+results['traceRate'] = np.zeros((nSF, nIF, int(tstop/dt)+1))
 
-    results['traceRate'] = np.zeros((nSF, int(tstop/dt)+1))
-
-    for iSF, SF in enumerate(np.unique(sim.stimFreq)):
-            
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        
         # compute time-varying RATE !
         spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
         for k, spikes in enumerate(\
-            [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+            [np.array(sim.spikes[k][iIF][iSF]).flatten() for k in range(len(seeds))]):
             spikes_matrix[k,(spikes/dt).astype('int')] = True
         rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                       int(rate_smoothing/dt))
-        results['traceRate'][iSF,:] = rate
-                
-    results['t'] = np.arange(len(rate))*dt
-    results['stimFreq'] = np.unique(sim.stimFreq[0])
-    return results
+        results['traceRate'][iSF,iIF,:] = rate
+            
+results['t'] = np.arange(len(rate))*dt
 
+fig, AX = pt.figure(axes=(nIF, nSF),
+                    figsize=(1,1), wspace=0., hspace=0., left=0.5, bottom=0.)
 
-def plot_sim(results, color):
-
-    fig, AX = pt.figure(axes=(len(results['stimFreq']), 1),
-                        figsize=(1,1), right=4., left=0.5, bottom=0.)
-
-    for iSF, SF in enumerate(np.unique(results['stimFreq'])):
-        rate = results['traceRate'][iSF,:]
-        AX[iSF].plot(results['t'], rate, color=color)
-        AX[iSF].set_title('sF=%.0fHz' % SF)
-        #pt.annotate(AX[iSF][0], 'I=%.2f' % results['Inh_fraction'][iIF], (0.5, 1.1), ha='center')
-    return fig, AX
-
-results = load_sim('Basket', '')
-fig, AX = plot_sim(results, 'tab:red')
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        rate = results['traceRate'][iSF,iIF,:]
+        AX[iSF][iIF].fill_between(results['t'], 0*results['t'], rate, color=color)
+        if iIF==0:
+            pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.5, 0.5), va='center', rotation=90)
+        if iSF==0:
+            pt.annotate(AX[0][iIF], 'IF=%.2f' % IF, (0.5, 1.1), ha='center')
+pt.set_common_ylims(AX)
+for ax in pt.flatten(AX):
+    ax.axis('off')
+    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[-1][-1] else '',
+                       Ybar=5, Ybar_label='5Hz ' if ax==AX[-1][-1] else '')
 
 # %%
-sim.
+sim.spikes[11][2][3]
 
 # %% [markdown]
 # # AMPA calib
+
+# %%
 
 # %%
 rate_smoothing = 5. # ms
