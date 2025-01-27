@@ -145,7 +145,7 @@ if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
     nSeed=80
     dt=0.025
-    ## Basket Cell
+    : '
     python step_stim.py --no_Vm -c Martinotti\
                             --with_NMDA --with_STP\
                             --Inh_fraction 0.15 --synapse_subsampling 2\
@@ -172,6 +172,7 @@ then
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
                             --suffix vStepsNoNMDA
+    '
     python step_stim.py --no_Vm -c Basket\
                             --with_STP\
                             --Inh_fraction 0.1 --synapse_subsampling 1\
@@ -180,7 +181,7 @@ then
                             --stepWidth 50 100 500 1000\
                             --interstim 500\
                             --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsFull
+                            --suffix vStepsFull --fix_missing_only
     python step_stim.py --no_Vm -c Basket\
                             --Inh_fraction 0.1 --synapse_subsampling 1\
                             --stimFreq 3.\
