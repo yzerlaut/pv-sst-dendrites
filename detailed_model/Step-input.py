@@ -47,7 +47,7 @@ results = np.load('single_sim.npy', allow_pickle=True).item()
 
 t = np.arange(len(results['Vm_soma']))*results['dt']
 fig, AX = pt.figure(axes_extents=[[(1,4)],[(1,2)],[(1,1)]],
-                    figsize=(2,0.7), left=0, bottom=0., hspace=0.)
+                    figsize=(2,0.4), left=0, bottom=0., hspace=0.)
 #AX[0].plot(t, results['Vm_dend'], 'k:', lw=0.5, label=' distal\ndendrite')
 AX[2].fill_between(t[1:], 0*t[1:], results['Stim'], color='tab:grey', label='soma')
 AX[0].plot(t, results['Vm_soma'], 'tab:brown', label='soma')
@@ -70,11 +70,19 @@ pt.set_common_xlims(AX, lims=[t[0], t[-1]])
 for ax in AX:
     ax.axis('off')
 
+# %%
+python step_stim.py --test -c Martinotti\
+        --with_NMDA\
+        --with_presynaptic_spikes\
+        --stimFreq 1 --stepAmpFactor 3\
+        --synapse_subsampling 2 --Inh_fraction 0.15\
+        --iBranch 5
+
 # %% [markdown]
 # # Plot
 
 # %%
-rate_smoothing = 5. # ms
+rate_smoothing = 2. # ms
 zoom = [0,3000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
@@ -123,7 +131,7 @@ def load_sim(RESULTS, cellType,
         RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
         
 def plot_sim(RESULTS, cellTypes,
-             interstim=30, view=500,
+             interstim=30, view=[-200, 300],
              color='k',
              figsize=(1.2,0.6)):
 
@@ -132,8 +140,8 @@ def plot_sim(RESULTS, cellTypes,
 
     t0 = 0
     for c, cellType in enumerate(cellTypes):
-        cond = (RESULTS['t_%s' % cellType]>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
-                    (RESULTS['t_%s' % cellType]<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+        cond = ((RESULTS['t_%s' % cellType]-(RESULTS['t_%s' % cellType].mean())>view[0]) &\
+                    ((RESULTS['t_%s' % cellType]-RESULTS['t_%s' % cellType].mean())<view[1]))
         t = RESULTS['t_%s' % cellType][cond]
         # input
         AX[0].fill_between(t0+t[:-1][::20], 0*t[:-1][::20], RESULTS['Input_%s' % cellType][cond[1:]][::20],
@@ -151,16 +159,16 @@ def plot_sim(RESULTS, cellTypes,
             
         # events
         if 'pre_inh_%s' % cellType in RESULTS:
-            subsampling = 4 if 'Basket' in cellType else 1 # for display only
+            subsampling = 6 if 'Basket' in cellType else 1 # for display only
             for i, events in enumerate(RESULTS['pre_exc_%s' % cellType]):
-                eCond = (events>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
-                                (events<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+                eCond = ((events-RESULTS['t_%s' % cellType].mean())>view[0]) &\
+                                ((events-RESULTS['t_%s' % cellType].mean())<view[1])
                 if len(events[eCond])>0:
                     e = np.random.choice(events[eCond], np.min([int(len(events[eCond])/subsampling+1),1]), replace=False)
                     AX[1].plot(t0+e, i*np.ones(len(e)), 'o', fillstyle='full', color='g', ms=.3)
             for i, events in enumerate(RESULTS['pre_inh_%s' % cellType]):
-                iCond = (events>(RESULTS['t_%s' % cellType].max()/2.-view/2.)) &\
-                                (events<(RESULTS['t_%s' % cellType].max()/2.+view/2.))
+                iCond = ((events-RESULTS['t_%s' % cellType].mean())>view[0]) &\
+                                ((events-RESULTS['t_%s' % cellType].mean())<view[1])
                 if len(events[iCond])>0:
                     e = np.random.choice(events[iCond], np.min([int(len(events[iCond])/subsampling+1),1]), replace=False)
                     AX[1].plot(t0+e, len(RESULTS['pre_exc_%s' % cellType])+i*np.ones(len(e)), 'o', 
@@ -170,11 +178,11 @@ def plot_sim(RESULTS, cellTypes,
     pt.set_common_xlims(AX)#, lims=zoom)
     
     pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1, Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
-    pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
+    #pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     for ax in AX:
         ax.axis('off')
-    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
+    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz ')
     return fig, AX
 #for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
 #for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
@@ -221,43 +229,52 @@ def load_sim(results, cellType):
 
     rates = []
     for iBranch in range(6):
-        
-        sim = Parallel(\
-                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s.zip' % (iBranch, cellType))
-        sim.load()
 
-        sim.fetch_quantity_on_grid('spikes', dtype=list)
-        sim.fetch_quantity_on_grid('Stim', dtype=list)
-        seeds = np.unique(sim.spikeSeed)
-        sim.fetch_quantity_on_grid('dt')
-        sim.fetch_quantity_on_grid('tstop')
+        filename = '../data/detailed_model/StepStim_sim_iBranch%i_%s.zip' % (iBranch, cellType)
+        try:
+            sim = Parallel(filename=filename)
+            sim.load()
     
-        for iW, W in enumerate(np.unique(sim.stepWidth)):
-            for iA, A in enumerate(np.unique(sim.stepAmpFactor)):
-                # compute time-varying RATE !
-                dt, tstop = sim.dt[0][iW][iA], sim.tstop[0][iW][iA]
-                spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-                for k, spikes in enumerate(\
-                    [np.array(sim.spikes[k][iW][iA]).flatten() for k in range(len(seeds))]):
-                    spikes_matrix[k,(spikes/dt).astype('int')] = True
-
-                rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                              int(rate_smoothing/dt))
-                if 'traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType) in results:
-                    results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)].append(rate)
-                else:
-                    results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
-                if not 'traceRate_Width%i'%iW in results:
-                    results['t_Width%i'%iW] = np.arange(len(rate))*dt
-                results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)] = sim.Stim[0][iW][iA]
+            sim.fetch_quantity_on_grid('spikes', dtype=list)
+            sim.fetch_quantity_on_grid('Stim', dtype=list)
+            seeds = np.unique(sim.spikeSeed)
+            sim.fetch_quantity_on_grid('dt')
+            sim.fetch_quantity_on_grid('tstop')
         
-        results['stepWidth_%s' % cellType] = np.unique(sim.stepWidth[0])
-        results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
+            for iW, W in enumerate(np.unique(sim.stepWidth)):
+                for iA, A in enumerate(np.unique(sim.stepAmpFactor)):
+                    # compute time-varying RATE !
+                    dt, tstop = sim.dt[0][iW][iA], sim.tstop[0][iW][iA]
+                    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                    for k, spikes in enumerate(\
+                        [np.array(sim.spikes[k][iW][iA]).flatten() for k in range(len(seeds))]):
+                        spikes_matrix[k,(spikes/dt).astype('int')] = True
+    
+                    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                  int(rate_smoothing/dt))
+                    if 'traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType) in results:
+                        results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)].append(rate)
+                    else:
+                        results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
+                    if not 'traceRate_Width%i'%iW in results:
+                        results['t_Width%i'%iW] = np.arange(len(rate))*dt
+                    results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)] = sim.Stim[0][iW][iA]
+            
+            results['stepWidth_%s' % cellType] = np.unique(sim.stepWidth[0])
+            results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
+        except BaseException as be:
+            print(be)
+            print(' Pb with "%s" ' % filename)
     
 results = {}
+
+# %%
 load_sim(results, 'Martinotti_longFull')
 load_sim(results, 'Basket_longNoSTP')
 load_sim(results, 'Martinotti_longNoSTP')
+
+# %%
+load_sim(results, 'Martinotti_vStepsFull')
 
 
 # %%
@@ -298,6 +315,9 @@ def plot_sim(cellTypes, colors,
     return fig, AX
 
 fig, AX = plot_sim(['Basket_longNoSTP'], ['tab:red'])
+
+# %%
+fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoNMDA'], ['tab:orange', 'tab:purple'])
 
 # %%
 fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoSTP'], ['tab:orange', 'k'])
