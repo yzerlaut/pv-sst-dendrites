@@ -21,6 +21,7 @@
 # %%
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
+from scipy import stats
 
 import sys
 from parallel import Parallel
@@ -289,21 +290,26 @@ def load_sim(results, cellType):
             print(be)
             print(' Pb with "%s" ' % filename)
     
-results = {}
+
 
 # %%
+results = {}
 load_sim(results, 'Martinotti_vStepsFull')
 load_sim(results, 'Basket_vStepsNoSTP')
 load_sim(results, 'Martinotti_vStepsNoSTP')
+
+# %%
+results['stepWidth_
 
 
 # %%
 def plot_sim(results, cellTypes, colors,
              lines=['-','-','-','-'],
-             views=[300, 400, 900, 1500],
+             views=[400, 500, 1000, 1600],
              Ybar=10):
 
-    fig, AX = pt.figure(axes=(4,4),
+    fig, AX = pt.figure(axes=(len(results['stepWidth_%s' % cellTypes[0]]),
+                              len(results['stepAmpFactor_%s' % cellTypes[0]])),
                         figsize=(0.9,0.9), left=0, bottom=0., hspace=1., wspace=0.5)
     INSETS = []
     #for ax in pt.flatten(AX):
@@ -313,7 +319,7 @@ def plot_sim(results, cellTypes, colors,
             for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
                 pt.plot(results['t_Width%i'%iW]-results['t_Width%i'%iW][-1]/2.,
                                 np.mean(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
-                                sy = np.std(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
+                                sy = stats.sem(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
                                 color=color, ax=AX[iA][iW])
                 if cellType==cellTypes[-1]:
                     inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
@@ -334,10 +340,10 @@ def plot_sim(results, cellTypes, colors,
         
     return fig, AX
 
-fig, AX = plot_sim(results, ['Basket_vStepsFull'], ['tab:red'])
+fig, AX = plot_sim(results, ['Basket_vStepsNoSTP'], ['tab:red'])
 
 # %%
-fig, AX = plot_sim(results, ['Martinotti_longFull', 'Martinotti_longNoNMDA'], ['tab:orange', 'tab:purple'])
+fig, AX = plot_sim(results, ['Martinotti_vStepsNoSTP', 'Martinotti_vStepsFull'], ['tab:orange', 'tab:purple'])
 
 # %%
 fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoSTP'], ['tab:orange', 'k'])
