@@ -1,3 +1,6 @@
+
+START=$(date +%s)
+
 if [[ $1 == 'all' || $1 == 'test' ]]
 then
     echo 'Running the script to regenerate all modelling data'
@@ -71,7 +74,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=160
+    nSeed=32
     widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -79,34 +82,37 @@ then
         ## Basket Cell
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
-                                --stimFreq 4\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 3\
+                                --Inh_fraction 0.05 --synapse_subsampling 1\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
                                 --nSpikeSeed $nSeed\
                                 --suffix noSTP-Step$i
-        # Martinotti Cell
+        : '
+        # Martinotti Cell - with NMDA
         python step_stim.py --test_with_repeats -c Martinotti\
                                 --with_NMDA\
                                 --with_presynaptic_spikes\
                                 --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 1\
+                                --stimFreq 2\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
                                 --suffix noSTP-Step$i
+        # Martinotti Cell - no NMDA
         python step_stim.py --test_with_repeats -c Martinotti\
                                 --with_presynaptic_spikes\
                                 --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 1\
+                                --stimFreq 2\
                                 --AMPAboost 4\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 5\
                                 --nSpikeSeed $nSeed\
                                 --suffix noSTPnoNMDA-Step$i
+        ' 
     done
     ### ----- SIMULATIONS WITH STP ----- ###
 fi
@@ -143,52 +149,66 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=32
+    nSeed=4
     dt=0.05
-    python step_stim.py --no_Vm -c Martinotti\
-                            --with_NMDA --with_STP\
-                            --Inh_fraction 0.15 --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 2 3 4\
-                            --stepWidth 50 100 500 1000\
-                            --interstim 500\
-                            --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsFull
-    python step_stim.py --no_Vm -c Martinotti\
-                            --with_NMDA\
-                            --Inh_fraction 0.15 --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 2 3 4\
-                            --stepWidth 50 100 500 1000\
-                            --interstim 500\
-                            --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsNoSTP
-    python step_stim.py --no_Vm -c Martinotti\
-                            --Inh_fraction 0.15 --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 2 3 4\
-                            --stepWidth 50 100 500 1000\
-                            --interstim 500\
-                            --AMPAboost 4\
-                            --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsNoNMDA
-    python step_stim.py --no_Vm -c Basket\
-                            --with_STP\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
-                            --stimFreq 3.\
-                            --stepAmpFactor 2 3 4\
-                            --stepWidth 50 100 500 1000\
-                            --interstim 500\
-                            --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsFull
-    python step_stim.py --no_Vm -c Basket\
-                            --Inh_fraction 0.1 --synapse_subsampling 2\
-                            --stimFreq 3.\
-                            --stepAmpFactor 2 3 4\
-                            --stepWidth 50 100 500 1000\
-                            --interstim 500\
-                            --dt $dt --nSpikeSeed $nSeed\
-                            --suffix vStepsNoSTP
+    widths=(50 200 1000)
+    nSeeds=(20 5 2)
+    for i in 1 2 3
+    do
+        python step_stim.py --no_Vm -c Martinotti\
+                                --with_NMDA --with_STP\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 1.\
+                                --stepAmpFactor 2 3 4\
+                                --interstim 400\
+                                --stepWidth ${widths[$i-1]}\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}Full
+        python step_stim.py --no_Vm -c Martinotti\
+                                --with_NMDA --with_STP\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 1.\
+                                --stepAmpFactor 2 3 4\
+                                --stepWidth ${widths[$i-1]}\
+                                --interstim 500\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}Full
+        python step_stim.py --no_Vm -c Martinotti\
+                                --with_NMDA\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 1.\
+                                --stepAmpFactor 2 3 4\
+                                --stepWidth ${widths[$i-1]}\
+                                --interstim 500\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}NoSTP
+        python step_stim.py --no_Vm -c Martinotti\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 1.\
+                                --stepAmpFactor 2 3 4\
+                                --stepWidth ${widths[$i-1]}\
+                                --interstim 500\
+                                --AMPAboost 4\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}NoNMDA
+        python step_stim.py --no_Vm -c Basket\
+                                --with_STP\
+                                --Inh_fraction 0.1 --synapse_subsampling 2\
+                                --stimFreq 3.\
+                                --stepAmpFactor 2 3 4\
+                                --stepWidth ${widths[$i-1]}\
+                                --interstim 500\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}Full
+        python step_stim.py --no_Vm -c Basket\
+                                --Inh_fraction 0.1 --synapse_subsampling 2\
+                                --stimFreq 3.\
+                                --stepAmpFactor 2 3 4\
+                                --stepWidth ${widths[$i-1]}\
+                                --interstim 500\
+                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
+                                --suffix vSteps${i}NoSTP
+    done
 fi
 
 
@@ -216,10 +236,10 @@ then
     python step_stim.py --test_with_repeats -c Basket\
                             --no_Vm\
                             --Inh_fraction 0.05 0.1 0.15\
-                            --synapse_subsampling 2\
-                            --stimFreq 2 3 4 5\
-                            --stepAmpFactor 2\
-                            --stepWidth 200 --interstim 200\
+                            --synapse_subsampling 1 2 4\
+                            --stimFreq 4\
+                            --stepAmpFactor 4\
+                            --stepWidth 100 --interstim 300\
                             --suffix RangeNoSTP\
                             --iBranch 1 --nSpikeSeed $nSeed
     : '
@@ -584,3 +604,14 @@ then
                             --with_STP --bgStimFreq 5 --stimFreq 15\
                             --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
+
+
+END=$(date +%s)
+DIFF=$(( $END - $START ))
+H=$(($DIFF/3600))
+M=$(($(($DIFF%3600))/60))
+S=$(($DIFF%60))
+echo ""
+echo ""
+echo "     ------> Simulations took:" ${H}h:${M}m:${S}s
+echo ""

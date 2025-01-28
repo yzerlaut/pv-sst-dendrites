@@ -59,7 +59,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/SST_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.60, 'P1':0.60, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.30, 'P1':0.30, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     else:
         raise Exception(' cell type not recognized  !')
 
