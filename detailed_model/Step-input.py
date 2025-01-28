@@ -292,16 +292,13 @@ def load_sim(results, cellType):
 results = {}
 
 # %%
-load_sim(results, 'Martinotti_longFull')
-load_sim(results, 'Basket_longNoSTP')
-load_sim(results, 'Martinotti_longNoSTP')
-
-# %%
-load_sim(results, 'Basket_vStepsFull')
+load_sim(results, 'Martinotti_vStepsFull')
+load_sim(results, 'Basket_vStepsNoSTP')
+load_sim(results, 'Martinotti_vStepsNoSTP')
 
 
 # %%
-def plot_sim(cellTypes, colors,
+def plot_sim(results, cellTypes, colors,
              lines=['-','-','-','-'],
              views=[300, 400, 900, 1500],
              Ybar=10):
@@ -337,10 +334,10 @@ def plot_sim(cellTypes, colors,
         
     return fig, AX
 
-fig, AX = plot_sim(['Basket_vStepsFull'], ['tab:red'])
+fig, AX = plot_sim(results, ['Basket_vStepsFull'], ['tab:red'])
 
 # %%
-fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoNMDA'], ['tab:orange', 'tab:purple'])
+fig, AX = plot_sim(results, ['Martinotti_longFull', 'Martinotti_longNoNMDA'], ['tab:orange', 'tab:purple'])
 
 # %%
 fig, AX = plot_sim(['Martinotti_longFull', 'Martinotti_longNoSTP'], ['tab:orange', 'k'])
@@ -522,9 +519,6 @@ for ax in pt.flatten(AX):
     ax.axis('off')
     pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[-1][-1] else '',
                        Ybar=5, Ybar_label='5Hz ' if ax==AX[-1][-1] else '')
-
-# %%
-sim.spikes[11][2][3]
 
 # %% [markdown]
 # # AMPA calib

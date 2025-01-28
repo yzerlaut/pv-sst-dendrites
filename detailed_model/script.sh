@@ -71,7 +71,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=80
+    nSeed=160
     widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -79,8 +79,8 @@ then
         ## Basket Cell
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
-                                --stimFreq 3\
-                                --Inh_fraction 0.05 --synapse_subsampling 1\
+                                --stimFreq 4\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
