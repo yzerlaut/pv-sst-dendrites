@@ -176,10 +176,6 @@ def plot_sim(RESULTS, cellTypes,
     return fig, AX
 
 
-#for cellType, color, index in zip(['Martinotti', 'Basket', 'MartinottiwithSTP', 'MartinottinoNMDA', 'BasketwithSTP'],
-#for cellType, color, index in zip(['MartinottilongFull', 'MartinottilongNoSTP', 'MartinottilongNoSTPNoNMDA'],
-#                                  ['tab:orange', 'tab:red', 'gold', 'tab:purple', 'tab:red'],
-#                                  [0, 0, 0, 0, 0]):
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiNoSTP-Step%i' % i)
