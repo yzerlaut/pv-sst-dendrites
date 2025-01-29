@@ -233,7 +233,7 @@ if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]
 then
     nSeed=10
     ## Basket Cell
-    python step_stim.py Basket\
+    python step_stim.py -c Basket\
       --no_Vm --nSpikeSeed $nSeed --synapse_subsampling 1 2 4\
       --stepWidth 200 --interstim 300 --suffix InputRangeNoSTP\
       --Inh_fraction 0.1 0.15 0.2 --stimFreq 4 5 6 7 8 --stepAmpFactor 2 4
