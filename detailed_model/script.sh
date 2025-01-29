@@ -149,7 +149,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=24
+    nSeed=48
     dt=0.05
     widths=(50 200 1000)
     nSeeds=(20 5 2)
