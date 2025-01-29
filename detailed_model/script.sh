@@ -229,7 +229,7 @@ then
                             --suffix AMPAcalib
 fi
 
-if [[ $1 == 'all' || $1 == 'step-range' ]]
+if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]
 then
     nSeed=10
     ## Basket Cell
