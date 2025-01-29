@@ -448,6 +448,7 @@ def load_sim(cellType, suffix):
 
     nSS = len(np.unique(sim.synapse_subsampling))
     nIF = len(np.unique(sim.Inh_fraction))
+    nIF = len(np.unique(sim.Inh_fraction))
     
     sim.fetch_quantity_on_grid('spikes', dtype=list)
     seeds = np.unique(sim.spikeSeed)
@@ -499,11 +500,12 @@ rate_smoothing = 20. # ms
 
 results = {}
 sim = Parallel(\
-        filename='../data/detailed_model/StepStim_demo_BasketRangeNoSTP.zip')
+        filename='../data/detailed_model/StepStim_demo_BasketInputRangeNoSTP.zip')
 sim.load()
 color = 'tab:red'
 nSF = len(np.unique(sim.stimFreq))
 nIF = len(np.unique(sim.Inh_fraction))
+nSA = len(np.unique(sim.stepAmpFactor))
 
 sim.fetch_quantity_on_grid('spikes', dtype=list)
 seeds = np.unique(sim.spikeSeed)
@@ -511,38 +513,46 @@ seeds = np.unique(sim.spikeSeed)
 dt = sim.fetch_quantity_on_grid('dt', return_last=True)
 tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
 
-results['traceRate'] = np.zeros((nSF, nIF, int(tstop/dt)+1))
+results['traceRate'] = np.zeros((nSF, nIF, nSA, int(tstop/dt)+1))
 
 for iSF, SF in enumerate(np.unique(sim.stimFreq)):
     for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
         
-        # compute time-varying RATE !
-        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-        for k, spikes in enumerate(\
-            [np.array(sim.spikes[k][iIF][iSF]).flatten() for k in range(len(seeds))]):
-            spikes_matrix[k,(spikes/dt).astype('int')] = True
-        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                      int(rate_smoothing/dt))
-        results['traceRate'][iSF,iIF,:] = rate
+            # compute time-varying RATE !
+            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+            for k, spikes in enumerate(\
+                [np.array(sim.spikes[k][iIF][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                spikes_matrix[k,(spikes/dt).astype('int')] = True
+            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                          int(rate_smoothing/dt))
+            results['traceRate'][iSF,iIF,iSA,:] = rate
             
 results['t'] = np.arange(len(rate))*dt
 
-fig, AX = pt.figure(axes=(nIF, nSF),
-                    figsize=(1,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+fig, AX = pt.figure(axes=(nIF, nSF), right=4.,
+                    figsize=(1,.8), wspace=0., hspace=0., left=0.5, bottom=0.)
 
 for iSF, SF in enumerate(np.unique(sim.stimFreq)):
     for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
-        rate = results['traceRate'][iSF,iIF,:]
-        AX[iSF][iIF].fill_between(results['t'], 0*results['t'], rate, color=color)
-        if iIF==0:
-            pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.5, 0.5), va='center', rotation=90)
-        if iSF==0:
-            pt.annotate(AX[0][iIF], 'IF=%.2f' % IF, (0.5, 1.1), ha='center')
+        for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+            rate = results['traceRate'][iSF,iIF,iSA,:]
+            AX[iSF][iIF].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
+            if iIF==0:
+                pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.5, 0.5), va='center', rotation=90)
+            if iSF==(nSF-1):
+                pt.annotate(AX[iSF][iIF], 'IF=%.2f' % IF, (0.5, -0.1), ha='center',va='top')
 pt.set_common_ylims(AX)
 for ax in pt.flatten(AX):
     ax.axis('off')
-    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[-1][-1] else '',
-                       Ybar=5, Ybar_label='5Hz ' if ax==AX[-1][-1] else '')
+    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[0][-1] else '', Ybar=1e-12)
+    pt.draw_bar_scales(ax, loc='bottom-left', Xbar=1e-5, Ybar=20, Ybar_label='20Hz ' if ax==AX[0][0] else '')
+    
+pt.bar_legend(ax, X=range(2),
+              ticks_labels=['%i' % f for f in np.unique(sim.stepAmpFactor)],
+              colorbar_inset={'rect': [1.2, 0.1, 0.07, 2], 'facecolor': None},
+              label='step factor',
+              colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
 
 # %% [markdown]
 # # AMPA calib

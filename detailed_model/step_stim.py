@@ -281,6 +281,12 @@ if __name__=='__main__':
    
         # run the simulation with parameter variations
 
+        grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+        for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
+                    'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+            if len(getattr(args, key))>1:
+                grid[key] = getattr(args, key)
+
         for i in range(args.nBranch):
 
             params['iBranch'] = i
@@ -288,10 +294,6 @@ if __name__=='__main__':
             sim = Parallel(\
                 filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' %\
                                         (i, args.cellType, args.suffix))
-
-            grid = dict(spikeSeed=np.arange(args.nSpikeSeed),
-                        stepWidth=args.stepWidth,
-                        stepAmpFactor=args.stepAmpFactor)
 
             sim.build(grid)
 

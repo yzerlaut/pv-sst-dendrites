@@ -83,7 +83,7 @@ then
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
                                 --stimFreq 3\
-                                --Inh_fraction 0.05 --synapse_subsampling 1\
+                                --Inh_fraction 0.15 --synapse_subsampling 2\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
@@ -231,17 +231,16 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
 then
-    nSeed=12
+    nSeed=10
     ## Basket Cell
     python step_stim.py --test_with_repeats -c Basket\
-                            --no_Vm\
-                            --Inh_fraction 0.05 0.1 0.15\
-                            --synapse_subsampling 1 2 4\
-                            --stimFreq 4\
-                            --stepAmpFactor 4\
-                            --stepWidth 100 --interstim 300\
-                            --suffix RangeNoSTP\
-                            --iBranch 1 --nSpikeSeed $nSeed
+      --no_Vm --nSpikeSeed $nSeed --synapse_subsampling 1 2 4\
+      --stepWidth 200 --interstim 300 --suffix InputRangeNoSTP\
+      --Inh_fraction 0.1 0.15 0.2 --stimFreq 4 5 6 7 8 --stepAmpFactor 2 4
+fi
+
+if [[ $1 == 'all' || $1 == 'step-range' ]]
+then
     : '
     # Martinotti Cell
     python step_stim.py --test_with_repeats -c Martinotti\
