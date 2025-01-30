@@ -18,9 +18,8 @@ def run_sim(cellType='Basket',
             Inh_fraction=15./100.,
             synapse_subsampling=5,
             # bg stim
-            bgStimFreq=0.,
-            bgFreqInhFactor=4.,
             spikeSeed=2,
+            # bgFreqInhFactor=4.,
             # biophysical props
             with_STP=False,
             with_NMDA=False,
@@ -36,6 +35,9 @@ def run_sim(cellType='Basket',
                                     STP_release_filter
 
     tstop = 2*interstim+stepWidth
+
+    trialSeed = int(spikeSeed * (\
+            ( stimFreq*stepWidth*stepAmpFactor*(iBranch+1) ) ) )%1000000 
 
     ######################################################
     ##   simulation preparation  #########################
@@ -88,7 +90,7 @@ def run_sim(cellType='Basket',
                                             Nmax_release=STP_model['Nmax'],
                                             Inh_fraction=Inh_fraction,
                                             with_NMDA=with_NMDA,
-                                            seed=(1+spikeSeed)**2)
+                                            seed=trialSeed)
 
     # Step Function
     t = np.arange(int(tstop/dt))*dt
@@ -104,17 +106,20 @@ def run_sim(cellType='Basket',
             # we draw one spike train:
             train_s = np.array(PoissonSpikeTrain(Stim,
                                     dt=1e-3*dt, tstop=1e-3*tstop,
-                                    seed=(1+i+spikeSeed)*3)) # Hz,s
+                                    seed=trialSeed+1000+i)) # Hz,s
             # STP only in excitatory
-            N = STP_release_filter(train_s, seed=(i+1+spikeSeed)*4, **STP_model)
+            N = STP_release_filter(train_s, 
+                                   seed=trialSeed+2000+i,
+                                   **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
             # train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*Stim, # REMOVED
-            train_s = np.array(PoissonSpikeTrain(Stim, seed=2*(i+1+spikeSeed),
-                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            train_s = np.array(PoissonSpikeTrain(Stim, 
+                                    dt=1e-3*dt, tstop=1e-3*tstop,
+                                    seed=trialSeed+3000+i)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 
     # -- reordering spike trains

@@ -200,12 +200,15 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 # ## Look for traces
 
 # %%
-for cellType, color in zip(['Martinotti'], ['tab:orange']):
-    load_sim(cellType, RESULTS) 
-    for example_index in range(0, 1):
-        RESULTS['%s_example_index' % cellType] = example_index
-        load_example_index(cellType, RESULTS) 
-        fig, _ = plot_sim(cellType, color=color)
+for cellType, color in zip(['MartinottiNoSTP'], ['tab:orange']):
+    for example_index in range(0, 4):
+        cellTypes, RESULTS = [], {}
+        for i in np.arange(1,4):
+            cellTypes.append('%s-Step%i' % (cellType, i))
+            RESULTS['%s_example_index' % cellTypes[-1]] = example_index
+            load_sim(RESULTS, cellTypes[-1]) 
+        fig, _ = plot_sim(RESULTS, cellTypes, color=color, figsize=(2.,0.3))
+
 
 # %% [markdown]
 # # Summary Effect
