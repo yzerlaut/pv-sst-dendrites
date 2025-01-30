@@ -53,7 +53,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':0.80, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.80, 'P1':0.80, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
@@ -291,18 +291,15 @@ if __name__=='__main__':
                     'stepWidth', 'stepAmpFactor', 'AMPAboost']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
+            grid['iBranch'] = range(args.nBranch)
 
-        for i in range(args.nBranch):
+        sim = Parallel(\
+            filename='../data/detailed_model/StepStim_sim_%s_%s.zip' %\
+                                    (args.cellType, args.suffix))
 
-            params['iBranch'] = i
-            
-            sim = Parallel(\
-                filename='../data/detailed_model/StepStim_sim_iBranch%i_%s_%s.zip' %\
-                                        (i, args.cellType, args.suffix))
+        sim.build(grid)
 
-            sim.build(grid)
-
-            sim.run(run_sim,
-                    single_run_args=\
-                        dict({k:v for k,v in params.items() if k not in grid}),
-                    fix_missing_only=args.fix_missing_only)
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)

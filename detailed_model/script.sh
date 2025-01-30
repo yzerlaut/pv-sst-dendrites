@@ -74,17 +74,17 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=80
+    nSeed=36
     widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
-        ## Basket Cell
         : '
+        ## Basket Cell
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
-                                --stimFreq 3\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
+                                --stimFreq 8\
+                                --Inh_fraction 0.2 --synapse_subsampling 1\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
                                 --iBranch 1\
@@ -92,39 +92,46 @@ then
                                 --suffix noSTP-Step$i
         '
         # Martinotti Cell - with NMDA
-        python step_stim.py --test_with_repeats -c Martinotti\
-                                --with_NMDA\
-                                --with_presynaptic_spikes\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2\
-                                --stepAmpFactor ${ampFs[$i-1]}\
-                                --stepWidth ${widths[$i-1]}\
-                                --iBranch 5\
-                                --nSpikeSeed $nSeed\
-                                --suffix noSTP-Step$i
+        python step_stim.py\
+            --test_with_repeats\
+            -c Martinotti\
+            --with_NMDA\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 1.5\
+            --stepAmpFactor ${ampFs[$i-1]}\
+            --stepWidth ${widths[$i-1]}\
+            --iBranch 0\
+            --nSpikeSeed $nSeed\
+            --suffix noSTP-Step$i
         # Martinotti Cell - no NMDA
-        python step_stim.py --test_with_repeats -c Martinotti\
-                                --with_presynaptic_spikes\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2\
-                                --AMPAboost 4\
-                                --stepAmpFactor ${ampFs[$i-1]}\
-                                --stepWidth ${widths[$i-1]}\
-                                --iBranch 5\
-                                --nSpikeSeed $nSeed\
-                                --suffix noSTPnoNMDA-Step$i
+        python step_stim.py\ 
+            --test_with_repeats\
+            -c Martinotti\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 1.5\
+            --AMPAboost 4\
+            --stepAmpFactor ${ampFs[$i-1]}\
+            --stepWidth ${widths[$i-1]}\
+            --iBranch 0\
+            --nSpikeSeed $nSeed\
+            --suffix noSTPnoNMDA-Step$i
     done
     ### ----- SIMULATIONS WITH STP ----- ###
 fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=40
-    widths=(100 100 1000)
+    nSeed=12
+    widths=(100 1000 1000)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
         ## Basket Cell
+        : '
         python step_stim.py --test_with_repeats -c Basket\
                                 --with_presynaptic_spikes\
                                 --stimFreq 4\
@@ -133,17 +140,30 @@ then
                                 --iBranch 1\
                                 --nSpikeSeed $nSeed\
                                 --suffix withSTP-Step$i
-        # Martinotti Cell
+        '
+        # Martinotti Cell - with NMDA
         python step_stim.py --test_with_repeats -c Martinotti\
-                                --with_NMDA\
+                                --with_NMDA --with_STP\
                                 --with_presynaptic_spikes\
-                                --synapse_subsampling 2\
-                                --stimFreq 1\
+                                --Inh_fraction 0.2 --synapse_subsampling 1\
+                                --stimFreq 2\
                                 --stepAmpFactor ${ampFs[$i-1]}\
                                 --stepWidth ${widths[$i-1]}\
-                                --iBranch 5\
+                                --iBranch 0\
                                 --nSpikeSeed $nSeed\
-                                --suffix withSTP-Step$i
+                                --suffix wiSTP-Step$i
+        # Martinotti Cell - no NMDA
+        python step_stim.py --test_with_repeats -c Martinotti\
+                                --with_STP\
+                                --with_presynaptic_spikes\
+                                --Inh_fraction 0.2 --synapse_subsampling 1\
+                                --stimFreq 2\
+                                --AMPAboost 4\
+                                --stepAmpFactor ${ampFs[$i-1]}\
+                                --stepWidth ${widths[$i-1]}\
+                                --iBranch 0\
+                                --nSpikeSeed $nSeed\
+                                --suffix wiSTPnoNMDA-Step$i
     done
 fi
 
@@ -236,10 +256,19 @@ if [[ $1 == 'all' || $1 == 'step-range-SST-noSTP' ]]
 then
     nSeed=8
     ## Basket Cell
-    python step_stim.py -c Martinotti --with_NMDA\
-      --no_Vm --synapse_subsampling 1 --nSpikeSeed $nSeed\
-      --stepWidth 200 --interstim 300 --suffix InputRangeNoSTP\
-      --Inh_fraction 0.15 0.2 0.25 --stimFreq 1 1.5 2. 2.5 --stepAmpFactor 2 4
+    python step_stim.py\
+        -c Martinotti\
+        --with_NMDA\
+        --no_Vm\
+        --synapse_subsampling 1\
+        --nSpikeSeed $nSeed\
+        --stepWidth 200\
+        --interstim 500\
+        --dt 5\
+        --suffix InputRangeNoSTP\
+        --Inh_fraction 0.2\
+        --stimFreq 0.8 1 1.2 1.4 1.6 1.8 2\
+        --stepAmpFactor 2 4
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]

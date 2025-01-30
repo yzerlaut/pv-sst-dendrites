@@ -36,11 +36,12 @@ from analyz.processing.signanalysis import autocorrel, crosscorrel
 # # Test Simulation
 # ```
 # python step_stim.py --test -c Martinotti\
-#         --with_NMDA --with_STP\
+#         --with_NMDA\
 #         --with_presynaptic_spikes\
-#         --stimFreq 1 --stepAmpFactor 3\
-#         --synapse_subsampling 2 --Inh_fraction 0.15\
-#         --iBranch 5 --spikeSeed 3
+#         --interstim 500 --stepWidth 200\
+#         --stimFreq 2 --stepAmpFactor 4\
+#         --synapse_subsampling 1 --Inh_fraction 0.2\
+#         --iBranch 1 --spikeSeed 3
 # ```
 
 # %%
@@ -189,16 +190,21 @@ for i in np.arange(1,4):
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('BasketNoSTP-Step%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %%
-# pt.draw_bar_scales?
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottiwiSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottiwiSTPNoNMDA-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 
 # %% [markdown]
 # ## Look for traces
@@ -606,6 +612,70 @@ for iSS, SS in enumerate(np.unique(sim.synapse_subsampling)):
         for iSF, SF in enumerate(np.unique(sim.stimFreq)):
             for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
                 rate = results['traceRate'][iSS,iIF,iSF,iSA,:]
+                AX[iSF][iIF].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
+                if iIF==0:
+                    pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.4, 0.5), va='center', ha='right')
+                if iSF==(nSF-1):
+                    pt.annotate(AX[iSF][iIF], 'IF=%.2f' % IF, (0.5, -0.1), ha='center',va='top')
+    pt.set_common_ylims(AX)
+    for ax in pt.flatten(AX):
+        ax.axis('off')
+        pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '', Ybar=1e-12)
+        pt.draw_bar_scales(ax, loc='bottom-left', Xbar=1e-5, Ybar=20, Ybar_label='20Hz ' if ax==AX[0][0] else '')
+        
+    pt.bar_legend(ax, X=range(2),
+                  ticks_labels=['%i' % f for f in np.unique(sim.stepAmpFactor)],
+                  colorbar_inset={'rect': [1.2, 0.1, 0.07, 2], 'facecolor': None},
+                  label='step factor',
+                  colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
+
+# %%
+
+rate_smoothing = 10. # ms
+
+for iBranch in range(6):
+    
+    
+    results = {}
+    sim = Parallel(\
+            filename='../data/detailed_model/StepStim_sim_iBranch%i_Martinotti_InputRangeNoSTP.zip' % iBranch)
+    sim.load()
+    
+    color = 'tab:orange'
+    nIF = len(np.unique(sim.Inh_fraction))
+    nSF = len(np.unique(sim.stimFreq))
+    nSA = len(np.unique(sim.stepAmpFactor))
+    
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+    
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+    
+    results['traceRate'] = np.zeros((nIF, nSF, nSA, int(tstop/dt)+1))
+    
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+            
+                # compute time-varying RATE !
+                spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                for k, spikes in enumerate(\
+                    [np.array(sim.spikes[k][iIF][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                    spikes_matrix[k,(spikes/dt).astype('int')] = True
+                rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                              int(rate_smoothing/dt))
+                results['traceRate'][iIF,iSF,iSA,:] = rate
+
+    print('Branch %i, rate = %.1f Hz' % (iBranch+1, np.mean(results['traceRate'])))
+    results['t'] = np.arange(len(rate))*dt
+    
+    fig, AX = pt.figure(axes=(nIF, nSF), right=4.,
+                        figsize=(1,.6), wspace=0., hspace=0., left=0.5, bottom=0.)
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+                rate = results['traceRate'][iIF,iSF,iSA,:]
                 AX[iSF][iIF].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
                 if iIF==0:
                     pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.4, 0.5), va='center', ha='right')
