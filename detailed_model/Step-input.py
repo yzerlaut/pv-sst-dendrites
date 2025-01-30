@@ -167,12 +167,13 @@ def plot_sim(RESULTS, cellTypes,
 
     pt.set_common_xlims(AX)#, lims=zoom)
     
-    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=1, Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
+    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=2*RESULTS['stimFreq_%s' % cellType], ycolor=color,
+                       Ybar_label='%.0fHz' % (2*RESULTS['stimFreq_%s' % cellType]))
     #pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     for ax in AX:
         ax.axis('off')
-    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz ')
+    pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
     return fig, AX
 
 
@@ -195,6 +196,9 @@ for i in np.arange(1,4):
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+
+# %%
+# pt.draw_bar_scales?
 
 # %% [markdown]
 # ## Look for traces
@@ -553,8 +557,71 @@ pt.bar_legend(ax, X=range(2),
               label='step factor',
               colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
 
-# %% [markdown]
-# # AMPA calib
+# %%
+iBranch = 0
+
+rate_smoothing = 20. # ms
+
+results = {}
+sim = Parallel(\
+        filename='../data/detailed_model/StepStim_sim_iBranch%i_Basket_InputRangeNoSTP.zip' % iBranch)
+sim.load()
+
+color = 'tab:red'
+nSS = len(np.unique(sim.synapse_subsampling))
+nIF = len(np.unique(sim.Inh_fraction))
+nSF = len(np.unique(sim.stimFreq))
+nSA = len(np.unique(sim.stepAmpFactor))
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
+
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+results['traceRate'] = np.zeros((nSS, nIF, nSF, nSA, int(tstop/dt)+1))
+
+for iSS, SS in enumerate(np.unique(sim.synapse_subsampling)):
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+            
+                # compute time-varying RATE !
+                spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                for k, spikes in enumerate(\
+                    [np.array(sim.spikes[k][iSS][iIF][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                    spikes_matrix[k,(spikes/dt).astype('int')] = True
+                rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                              int(rate_smoothing/dt))
+                results['traceRate'][iSS,iIF,iSF,iSA,:] = rate
+            
+results['t'] = np.arange(len(rate))*dt
+
+for iSS, SS in enumerate(np.unique(sim.synapse_subsampling)):
+
+    fig, AX = pt.figure(axes=(nIF, nSF), right=4.,
+                        figsize=(1,.6), wspace=0., hspace=0., left=0.5, bottom=0.)
+    fig.suptitle('Syn. Subspl. %i' % SS)
+    for iIF, IF in enumerate(np.unique(sim.Inh_fraction)):
+        for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+                rate = results['traceRate'][iSS,iIF,iSF,iSA,:]
+                AX[iSF][iIF].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
+                if iIF==0:
+                    pt.annotate(AX[iSF][0], 'f=%.1fHz' % SF, (-0.4, 0.5), va='center', ha='right')
+                if iSF==(nSF-1):
+                    pt.annotate(AX[iSF][iIF], 'IF=%.2f' % IF, (0.5, -0.1), ha='center',va='top')
+    pt.set_common_ylims(AX)
+    for ax in pt.flatten(AX):
+        ax.axis('off')
+        pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '', Ybar=1e-12)
+        pt.draw_bar_scales(ax, loc='bottom-left', Xbar=1e-5, Ybar=20, Ybar_label='20Hz ' if ax==AX[0][0] else '')
+        
+    pt.bar_legend(ax, X=range(2),
+                  ticks_labels=['%i' % f for f in np.unique(sim.stepAmpFactor)],
+                  colorbar_inset={'rect': [1.2, 0.1, 0.07, 2], 'facecolor': None},
+                  label='step factor',
+                  colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
 
 # %%
 rate_smoothing = 5. # ms

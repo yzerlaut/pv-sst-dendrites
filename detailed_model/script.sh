@@ -232,6 +232,16 @@ then
                             --suffix AMPAcalib
 fi
 
+if [[ $1 == 'all' || $1 == 'step-range-SST-noSTP' ]]
+then
+    nSeed=8
+    ## Basket Cell
+    python step_stim.py -c Martinotti --with_NMDA\
+      --no_Vm --synapse_subsampling 1 --nSpikeSeed $nSeed 
+      --stepWidth 200 --interstim 300 --suffix InputRangeNoSTP\
+      --Inh_fraction 0.15 0.2 0.25 --stimFreq 1 1.5 2. 2.5 --stepAmpFactor 2 4
+fi
+
 if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]
 then
     nSeed=10
