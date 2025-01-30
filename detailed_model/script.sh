@@ -264,7 +264,7 @@ then
         --nSpikeSeed $nSeed\
         --stepWidth 200\
         --interstim 500\
-        --dt 5\
+        --dt 0.05\
         --suffix InputRangeNoSTP\
         --Inh_fraction 0.2\
         --stimFreq 0.8 1 1.2 1.4 1.6 1.8 2\
@@ -273,12 +273,20 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]
 then
-    nSeed=10
+    nSeed=8
     ## Basket Cell
-    python step_stim.py -c Basket\
-      --no_Vm --nSpikeSeed $nSeed --synapse_subsampling 1 2 4\
-      --stepWidth 200 --interstim 300 --suffix InputRangeNoSTP\
-      --Inh_fraction 0.1 0.15 0.2 --stimFreq 4 5 6 7 8 --stepAmpFactor 2 4
+    python step_stim.py\
+        -c Basket\
+        --no_Vm\
+        --synapse_subsampling 1\
+        --nSpikeSeed $nSeed\
+        --stepWidth 200\
+        --interstim 500\
+        --dt 0.05\
+        --suffix InputRangeNoSTP\
+        --Inh_fraction 0.2\
+        --stimFreq 6 6.5 7 7.5 8 8.5 9\
+        --stepAmpFactor 2 4
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
