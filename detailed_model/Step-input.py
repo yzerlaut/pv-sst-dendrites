@@ -237,12 +237,13 @@ for cellType, color in zip(['MartinottiNoSTP'], ['tab:orange']):
 # %%
 rate_smoothing = 4
 
-def load_sim(results, cellType):
+def load_sim(results, cellType, suffix):
 
     rates = []
-    for iBranch in range(6):
+    results['stepWidth_%s' % cellType] = []
+    for iWidth in range(1, 5):
 
-        filename = '../data/detailed_model/StepStim_sim_iBranch%i_%s.zip' % (iBranch, cellType)
+        filename = '../data/detailed_model/StepStim_sim_%s_vSteps%s%i.zip' % (cellType, suffix, iWidth)
         try:
             sim = Parallel(filename=filename)
             sim.load()
@@ -252,79 +253,81 @@ def load_sim(results, cellType):
             seeds = np.unique(sim.spikeSeed)
             sim.fetch_quantity_on_grid('dt')
             sim.fetch_quantity_on_grid('tstop')
-        
-            for iW, W in enumerate(np.unique(sim.stepWidth)):
+            
+            for iB, B in enumerate(np.unique(sim.iBranch)):
                 for iA, A in enumerate(np.unique(sim.stepAmpFactor)):
                     # compute time-varying RATE !
-                    dt, tstop = sim.dt[0][iW][iA], sim.tstop[0][iW][iA]
+                    dt, tstop = sim.dt[0][iA][iB], sim.tstop[0][iA][iB]
                     spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
                     for k, spikes in enumerate(\
-                        [np.array(sim.spikes[k][iW][iA]).flatten() for k in range(len(seeds))]):
+                        [np.array(sim.spikes[k][iA][iB]).flatten() for k in range(len(seeds))]):
                         spikes_matrix[k,(spikes/dt).astype('int')] = True
     
                     rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                   int(rate_smoothing/dt))
-                    if 'traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType) in results:
-                        results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)].append(rate)
+                    if 'traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix) in results:
+                        results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)].append(rate)
                     else:
-                        results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)] = [rate]
-                    if not 'traceRate_Width%i'%iW in results:
-                        results['t_Width%i'%iW] = np.arange(len(rate))*dt
-                    results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)] = sim.Stim[0][iW][iA]
+                        results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)] = [rate]
+                    if not 'traceRate_Width%i'%iWidth in results:
+                        results['t_Width%i'%iWidth] = np.arange(len(rate))*dt
+                    results['stim_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType,suffix)] = sim.Stim[0][iA][iB]
             
-            results['stepWidth_%s' % cellType] = np.unique(sim.stepWidth[0])
+            results['iBranch_%s' % cellType] = np.unique(sim.iBranch[0])
             results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
+            results['stepWidth_%s' % cellType].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
+            
         except BaseException as be:
-            print(be)
+            #print(be)
             print(' Pb with "%s" ' % filename)
-    
+
 
 
 # %%
 results = {}
-load_sim(results, 'Martinotti_vStepsFull')
-load_sim(results, 'Basket_vStepsNoSTP')
-load_sim(results, 'Martinotti_vStepsNoSTP')
-load_sim(results, 'Martinotti_vStepsNoNMDA')
-
+load_sim(results, 'Martinotti', 'Full')
+load_sim(results, 'Basket', 'NoSTP')
+load_sim(results, 'Martinotti', 'NoSTP')
+load_sim(results, 'Martinotti', 'NoNMDA')
 
 # %%
-def plot_sim(results, cellTypes, colors,
-             lines=['-','-','-','-'],
-             views=[400, 500, 1000, 1600],
-             Ybar=10):
 
-    fig, AX = pt.figure(axes=(len(results['stepWidth_%s' % cellTypes[0]]),
-                              len(results['stepAmpFactor_%s' % cellTypes[0]])),
-                        figsize=(0.9,0.9), left=0, bottom=0., wspace=0.2, hspace=0.5)
-    INSETS = []
-    #for ax in pt.flatten(AX):
-    #    ax.axis('off')
-    for cellType, color, line in zip(cellTypes, colors, lines):
-        for iW, W in enumerate(results['stepWidth_%s' % cellType]):
-            for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
-                pt.plot(results['t_Width%i'%iW]-results['t_Width%i'%iW][-1]/2.,
-                                np.mean(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
-                                sy = stats.sem(results['traceRate_Width%i-Amp%i_%s' % (iA, iW, cellType)], axis=0),
-                                color=color, ax=AX[iA][iW])
-                if cellType==cellTypes[-1]:
-                    inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
-                    #inset.axis('off')
-                    inset.fill_between(results['t_Width%i'%iW][1:]-results['t_Width%i'%iW][-1]/2.,
-                                       results['t_Width%i'%iW][1:]*0,
-                                       results['stim_Width%i-Amp%i_%s' % (iA, iW, cellType)], color='lightgray', lw=0)
-                    pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
-                    pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
-                    INSETS.append(inset)
-                    if iA==0:
-                        pt.annotate(inset, '%ims' % results['stepWidth_%s' % cellType][iW], (0.5,1), va='top', ha='center')
-    pt.set_common_ylims(INSETS)
-    pt.set_common_ylims(AX)        
-    for ax in pt.flatten(AX):
-        pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if ax==AX[0][0] else '',
-                           Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '')
-    return fig, AX
 
+views=[400, 500, 1300, 2300]
+Ybar=10
+lines=['-','-','-','-']
+    
+cellType = 'Martinotti'
+
+fig, AX = pt.figure(axes=(len(results['stepWidth_%s' % cellType]),
+                          len(results['stepAmpFactor_%s' % cellType])),
+                    figsize=(0.9,0.9), left=0, bottom=0., wspace=0.2, hspace=0.5)
+INSETS = []
+#for ax in pt.flatten(AX):
+#    ax.axis('off')
+for suffix, color, line in zip(['Full', 'NoNMDA'], ['tab:orange', 'tab:purple'], ['-', '-']):
+    for iW, W in enumerate(results['stepWidth_%s' % cellType]):
+        for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
+            pt.plot(results['t_Width%i'%(1+iW)]-results['t_Width%i'%(1+iW)][-1]/2.,
+                            np.mean(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
+                            sy = stats.sem(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
+                            color=color, ax=AX[iA][iW])
+            if suffix=='Full':
+                inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
+                #inset.axis('off')
+                inset.fill_between(results['t_Width%i'%(1+iW)][1:]-results['t_Width%i'%(1+iW)][-1]/2.,
+                                   results['t_Width%i'%(1+iW)][1:]*0,
+                                   results['stim_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType,suffix)], color='lightgray', lw=0)
+                pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
+                pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
+                INSETS.append(inset)
+                if iA==0:
+                    pt.annotate(inset, '%ims' % results['stepWidth_%s' % cellType][iW], (0.5,1), va='top', ha='center')
+pt.set_common_ylims(INSETS)
+pt.set_common_ylims(AX)        
+for ax in pt.flatten(AX):
+    pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if ax==AX[0][0] else '',
+                       Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '')
 
 # %%
 fig, AX = plot_sim(results,

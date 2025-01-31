@@ -190,8 +190,9 @@ then
     for c in 1 2 3 4 5 6
     do
         widths=(50 200 1000 2000)
-        nSeeds=(20 5 2 2)
-        for i in 1 2 3
+        #nSeeds=(10 4 2 2) # for debugging
+        nSeeds=(160 80 20 20)
+        for i in 1 2 3 4
         do
             python step_stim.py\
                 --no_Vm\
@@ -265,59 +266,39 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
 then
-    : '
-    # Martinotti Cell
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --with_NMDA --with_STP\
-                            --Inh_fraction 0.15 --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longFull
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --with_NMDA\
-                            --Inh_fraction 0.15 --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longNoSTP
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --with_STP\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longNoNMDA
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --Inh_fraction 0.15\
-                            --synapse_subsampling 2\
-                            --stimFreq 1.\
-                            --stepAmpFactor 3\
-                            --stepWidth 1000 --interstim 1000\
-                            --iBranch 5 --nSpikeSeed $nSeed\
-                            --suffix longNoSTPNoNMDA
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_NMDA --with_STP\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 1\
-                            --stimFreq 3\
-                            --suffix withSTP\
-                            --iBranch 5 --nSpikeSeed $nSeed
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 5\
-                            --stimFreq 15\
-                            --suffix noNMDA\
-                            --iBranch 5 --nSpikeSeed $nSeed
-    '
+    nSeed=20
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP")
+    for c in 1 2 3 4
+    do
+        python step_stim.py\
+            --no_Vm\
+            -c Martinotti ${args[$c-1]}\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3\
+            --AMPAboost 4.5\
+            --stepAmpFactor 4\
+            --stepWidth 50\
+            --nSpikeSeed $nSeed\
+            --suffix sRange${suffix[$c-1]}
+    done
+    cells=("Basket" "Basket")
+    args=("--with_STP" "")
+    suffix=("Full" "noSTP")
+    for c in 1 2
+    do
+        python step_stim.py\
+            --no_Vm\
+            -c Basket ${args[$c-1]}\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 7.0 7.2 7.4 7.6 7.8 8.0 8.2 8.4 8.6 8.8 9.0 9.2\
+            --stepAmpFactor 4\
+            --stepWidth 50\
+            --nSpikeSeed $nSeed\
+            --suffix sRange${suffix[$c-1]}
+    done
 fi
 
 
