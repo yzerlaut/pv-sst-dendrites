@@ -127,7 +127,7 @@ if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
     nSeed=24
-    widths=(200 200 800)
+    widths=(200 200 2000)
     ampFs=(4 2 2)
     for i in 1 2 3
     do
@@ -143,6 +143,7 @@ then
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
             --iBranch 1\
+            --interstim $(((3000-${widths[$i-1]})/2))\
             --nSpikeSeed $nSeed\
             --suffix wiSTP-Step$i
         # Martinotti Cell - with NMDA
@@ -158,6 +159,7 @@ then
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
             --iBranch 0\
+            --interstim $(((3000-${widths[$i-1]})/2))\
             --nSpikeSeed $nSeed\
             --suffix wiSTP-Step$i
         # Martinotti Cell - no NMDA
@@ -173,6 +175,7 @@ then
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
             --iBranch 0\
+            --interstim $(((3000-${widths[$i-1]})/2))\
             --nSpikeSeed $nSeed\
             --suffix wiSTPnoNMDA-Step$i
     done

@@ -121,7 +121,7 @@ def load_sim(RESULTS, cellType,
         RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
         
 def plot_sim(RESULTS, cellTypes,
-             interstim=30, view=[-200, 300],
+             interstim=30, view=[-200, 400],
              color='k',
              figsize=(1.2,0.6)):
 
@@ -196,8 +196,8 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %%
-rate_smoothing = 10
-view=[-500, 600]
+rate_smoothing = 5
+view=[-500, 700]
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('BasketwiSTP-Step%i' % i)

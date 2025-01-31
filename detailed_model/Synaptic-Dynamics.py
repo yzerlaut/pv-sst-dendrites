@@ -950,10 +950,10 @@ Static_model = {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
 
 for i, freq in enumerate([0.5, 1, 1.5, 2, 2.5]):
     for j, duration in enumerate([0.1, 0.5, 1., 2.]):
-        t, rate = sim_release(release_proba_params=STP_model, duration=duration, tstop=2.5,
+        t, rate = sim_release(release_proba_params=STP_model, duration=duration, tstop=3,
                               stimFreq=freq, stepFactor=factor, tau=0.05, dt=5e-3, nSyns=200)
         AX[i][j].plot(t, rate, color=COLORS[0])
-        t, rate = sim_release(release_proba_params=Static_model, duration=duration, tstop=2.5,
+        t, rate = sim_release(release_proba_params=Static_model, duration=duration, tstop=3,
                               stimFreq=freq, stepFactor=factor, tau=0.05, dt=5e-3, nSyns=200)
         AX[i][j].plot(t, rate, color=COLORS[1])
         AX[i][j].axis('off')
