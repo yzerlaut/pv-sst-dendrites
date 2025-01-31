@@ -128,7 +128,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=16
+    nSeed=24
     widths=(200 200 800)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -148,8 +148,8 @@ then
         python step_stim.py\
             --test_with_repeats\
             -c Martinotti\
-            --with_NMDA\
-            --with_STP\
+            --with_NMDA \
+            --with_STP \
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
@@ -163,6 +163,7 @@ then
         python step_stim.py\ 
             --test_with_repeats\
             -c Martinotti\
+            --with_STP\
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
