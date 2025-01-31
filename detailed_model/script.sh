@@ -144,7 +144,6 @@ then
             --iBranch 1\
             --nSpikeSeed $nSeed\
             --suffix noSTP-Step$i
-        : '
         # Martinotti Cell - with NMDA
         python step_stim.py\
             --test_with_repeats\
@@ -175,7 +174,6 @@ then
             --iBranch 0\
             --nSpikeSeed $nSeed\
             --suffix wiSTPnoNMDA-Step$i
-        '
     done
 fi
 
