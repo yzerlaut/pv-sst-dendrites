@@ -183,68 +183,28 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    nSeed=48
-    dt=0.05
-    widths=(50 200 1000)
-    nSeeds=(20 5 2)
-    for i in 1 2 3
+    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
+    freqs=(1.5 1.5 1.5 1.5 8.0 8.0)
+    for c in 1 2 3 4 5 6
     do
-        python step_stim.py --no_Vm -c Martinotti\
-                                --with_NMDA --with_STP\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2.\
-                                --stepAmpFactor 2 3 4\
-                                --interstim 400\
-                                --stepWidth ${widths[$i-1]}\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}Full
-        python step_stim.py --no_Vm -c Martinotti\
-                                --with_NMDA\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2.\
-                                --stepAmpFactor 2 3 4\
-                                --stepWidth ${widths[$i-1]}\
-                                --interstim 400\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}NoSTP
-        python step_stim.py --no_Vm -c Martinotti\
-                                --with_STP\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2.\
-                                --stepAmpFactor 2 3 4\
-                                --stepWidth ${widths[$i-1]}\
-                                --interstim 400\
-                                --AMPAboost 4\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}NoNMDA
-        python step_stim.py --no_Vm -c Martinotti\
-                                --Inh_fraction 0.15 --synapse_subsampling 2\
-                                --stimFreq 2.\
-                                --stepAmpFactor 2 3 4\
-                                --stepWidth ${widths[$i-1]}\
-                                --interstim 400\
-                                --AMPAboost 4\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}NoSTPNoNMDA
-        : '
-        python step_stim.py --no_Vm -c Basket\
-                                --with_STP\
-                                --Inh_fraction 0.1 --synapse_subsampling 2\
-                                --stimFreq 3.\
-                                --stepAmpFactor 2 3 4\
-                                --stepWidth ${widths[$i-1]}\
-                                --interstim 500\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}Full
-        python step_stim.py --no_Vm -c Basket\
-                                --Inh_fraction 0.1 --synapse_subsampling 2\
-                                --stimFreq 3.\
-                                --stepAmpFactor 2 3 4\
-                                --stepWidth ${widths[$i-1]}\
-                                --interstim 500\
-                                --dt $dt --nSpikeSeed ${nSeeds[$i-1]}\
-                                --suffix vSteps${i}NoSTP
-        '
+        widths=(50 200 1000 2000)
+        nSeeds=(20 5 2 2)
+        for i in 1 2 3
+        do
+            echo python step_stim.py\
+                --no_Vm\
+                -c ${cells[$c-1]} ${args[$c-1]}\
+                --Inh_fraction 0.2\
+                --synapse_subsampling 1\
+                --stimFreq ${freqs[$i-1]}\
+                --AMPAboost 4.5\
+                --stepAmpFactor 2 3 4\
+                --stepWidth ${widths[$i-1]}\
+                --nSpikeSeed ${nSeeds[$i-1]}\
+                --suffix vSteps${suffix[$c-1]}$i
+        done
     done
 fi
 
