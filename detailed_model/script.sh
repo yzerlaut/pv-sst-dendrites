@@ -74,7 +74,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=36
+    nSeed=24
     widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -86,10 +86,10 @@ then
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.5\
+            --stimFreq 8\
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
-            --iBranch 0\
+            --iBranch 5\
             --nSpikeSeed $nSeed\
             --suffix noSTP-Step$i
         : '
@@ -134,15 +134,19 @@ then
     for i in 1 2 3
     do
         ## Basket Cell
+        python step_stim.py\
+            --test_with_repeats\
+            -c Basket\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 8\
+            --stepAmpFactor ${ampFs[$i-1]}\
+            --stepWidth ${widths[$i-1]}\
+            --iBranch 5\
+            --nSpikeSeed $nSeed\
+            --suffix noSTP-Step$i
         : '
-        python step_stim.py --test_with_repeats -c Basket\
-                                --with_presynaptic_spikes\
-                                --stimFreq 4\
-                                --stepAmpFactor ${ampFs[$i-1]}\
-                                --stepWidth ${widths[$i-1]}\
-                                --iBranch 1\
-                                --nSpikeSeed $nSeed\
-                                --suffix withSTP-Step$i
         # Martinotti Cell - with NMDA
         python step_stim.py\
             --test_with_repeats\
@@ -158,7 +162,6 @@ then
             --iBranch 0\
             --nSpikeSeed $nSeed\
             --suffix wiSTP-Step$i
-        '
         # Martinotti Cell - no NMDA
         python step_stim.py\
             --test_with_repeats\
@@ -174,6 +177,7 @@ then
             --iBranch 0\
             --nSpikeSeed $nSeed\
             --suffix wiSTPnoNMDA-Step$i
+        '
     done
 fi
 

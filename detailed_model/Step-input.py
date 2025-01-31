@@ -698,6 +698,115 @@ for iBranch in range(6):
                   colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
 
 # %%
+sim = Parallel(\
+            filename='../data/detailed_model/StepStim_sim_Martinotti_InputRangeNoSTP.zip')
+sim.load()
+rate_smoothing = 10
+color = 'tab:orange'
+nSF = len(np.unique(sim.stimFreq))
+nSA = len(np.unique(sim.stepAmpFactor))
+nB = len(np.unique(sim.iBranch))
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
+
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+results = {'traceRate': np.zeros((nSF, nSA, nB, int(tstop/dt)+1))}
+
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+        for iB, B in enumerate(np.unique(sim.iBranch)):
+            
+            # compute time-varying RATE !
+            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+            for k, spikes in enumerate(\
+                [np.array(sim.spikes[k][iB][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                spikes_matrix[k,(spikes/dt).astype('int')] = True
+            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                          int(rate_smoothing/dt))
+            results['traceRate'][iSF,iSA,iB,:] = rate
+results['t'] = np.arange(len(rate))*dt
+
+fig, AX = pt.figure(axes=(nB, nSF), right=4.,
+                    figsize=(1,.6), wspace=0., hspace=0., left=0.5, bottom=0.)
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+        for iB, B in enumerate(np.unique(sim.iBranch)):
+            rate = results['traceRate'][iSF,iSA,iB,:]
+            AX[iSF][iB].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
+            if iB==0:
+                pt.annotate(AX[iSF][0], 'f=%.1f' % SF, (-0.4, 0.5), va='center', ha='right')
+            if iB==(nSF-1):
+                pt.annotate(AX[iSF][iB], 'Branch #' % (B+1), (0.5, -0.1), ha='center',va='top')
+pt.set_common_ylims(AX)
+for ax in pt.flatten(AX):
+    ax.axis('off')
+    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '', Ybar=1e-12)
+    pt.draw_bar_scales(ax, loc='bottom-left', Xbar=1e-5, Ybar=20, Ybar_label='20Hz ' if ax==AX[0][0] else '')
+    
+pt.bar_legend(ax, X=range(2),
+              ticks_labels=['%i' % f for f in np.unique(sim.stepAmpFactor)],
+              colorbar_inset={'rect': [1.2, 0.1, 0.07, 2], 'facecolor': None},
+              label='step factor',
+              colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
+
+# %%
+sim = Parallel(\
+            filename='../data/detailed_model/StepStim_sim_Basket_InputRangeNoSTP.zip')
+sim.load()
+rate_smoothing = 10
+nSF = len(np.unique(sim.stimFreq))
+nSA = len(np.unique(sim.stepAmpFactor))
+nB = len(np.unique(sim.iBranch))
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
+
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+results = {'traceRate': np.zeros((nSF, nSA, nB, int(tstop/dt)+1))}
+
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+        for iB, B in enumerate(np.unique(sim.iBranch)):
+            
+            # compute time-varying RATE !
+            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+            for k, spikes in enumerate(\
+                [np.array(sim.spikes[k][iB][iSF][iSA]).flatten() for k in range(len(seeds))]):
+                spikes_matrix[k,(spikes/dt).astype('int')] = True
+            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                          int(rate_smoothing/dt))
+            results['traceRate'][iSF,iSA,iB,:] = rate
+results['t'] = np.arange(len(rate))*dt
+
+fig, AX = pt.figure(axes=(nB, nSF), right=4.,
+                    figsize=(1,.6), wspace=0., hspace=0., left=0.5, bottom=0.)
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+    for iSA, SA in enumerate(np.unique(sim.stepAmpFactor)):
+        for iB, B in enumerate(np.unique(sim.iBranch)):
+            rate = results['traceRate'][iSF,iSA,iB,:]
+            AX[iSF][iB].plot(results['t'], rate, color=pt.copper_r(iSA/1.5))
+            if iB==0:
+                pt.annotate(AX[iSF][0], 'f=%.1f' % SF, (-0.4, 0.5), va='center', ha='right')
+            if iB==(nSF-1):
+                pt.annotate(AX[iSF][iB], 'Branch #' % (B+1), (0.5, -0.1), ha='center',va='top')
+pt.set_common_ylims(AX)
+for ax in pt.flatten(AX):
+    ax.axis('off')
+    pt.draw_bar_scales(ax, Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '', Ybar=1e-12)
+    pt.draw_bar_scales(ax, loc='bottom-left', Xbar=1e-5, Ybar=20, Ybar_label='20Hz ' if ax==AX[0][0] else '')
+    
+pt.bar_legend(ax, X=range(2),
+              ticks_labels=['%i' % f for f in np.unique(sim.stepAmpFactor)],
+              colorbar_inset={'rect': [1.2, 0.1, 0.07, 2], 'facecolor': None},
+              label='step factor',
+              colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
+
+# %%
 rate_smoothing = 5. # ms
 
 results = {}

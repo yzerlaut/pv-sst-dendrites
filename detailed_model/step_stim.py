@@ -291,7 +291,7 @@ if __name__=='__main__':
                     'stepWidth', 'stepAmpFactor', 'AMPAboost']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
-            grid['iBranch'] = range(args.nBranch)
+        grid['iBranch'] = range(args.nBranch)
 
         sim = Parallel(\
             filename='../data/detailed_model/StepStim_sim_%s_%s.zip' %\
