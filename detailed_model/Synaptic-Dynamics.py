@@ -870,18 +870,19 @@ pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.',
 # # Step Functions
 
 # %%
-def get_rate(t, stimFreq=1., stepFactor=3.):
+def get_rate(t, duration=0.5, stimFreq=1., stepFactor=3.):
     rate = stimFreq+0*t
-    rate[(t>0.5) & (t<1)] *=stepFactor
+    rate[(t>(t[-1]/2.-duration/2.)) & (t<(t[-1]/2.+duration/2.))] *=stepFactor
     return rate 
+    
 def sim_release(release_proba_params={},
                 stimFreq = 1., stepFactor=3.,
                 nSyns = 200, tau=0.02,
+                tstop=1.5, duration=0.5,
                 dt = 1e-3):
 
-    tstop = 1.5
     t = np.arange(int(tstop/dt))*dt
-    rate = get_rate(t, stimFreq=stimFreq, stepFactor=stepFactor)
+    rate = get_rate(t, duration=duration, stimFreq=stimFreq, stepFactor=stepFactor)
 
     Release = 0*t    
     for i in range(nSyns):
@@ -941,6 +942,28 @@ for i, freq in enumerate([0.5, 1, 1.5, 2, 2.5]):
             pt.annotate(AX[0][j], 'step x%i' % factor, (0.5, 1.1), ha='center')
 
 # %%
+fig, AX = pt.figure(axes=(4,5), figsize=(1,0.8), hspace=0.2, wspace=0.2)
+
+COLORS = ['tab:orange', 'grey']
+STP_model = np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item()
+Static_model = {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+
+for i, freq in enumerate([0.5, 1, 1.5, 2, 2.5]):
+    for j, duration in enumerate([0.1, 0.5, 1., 2.]):
+        t, rate = sim_release(release_proba_params=STP_model, duration=duration, tstop=2.5,
+                              stimFreq=freq, stepFactor=factor, tau=0.05, dt=5e-3, nSyns=200)
+        AX[i][j].plot(t, rate, color=COLORS[0])
+        t, rate = sim_release(release_proba_params=Static_model, duration=duration, tstop=2.5,
+                              stimFreq=freq, stepFactor=factor, tau=0.05, dt=5e-3, nSyns=200)
+        AX[i][j].plot(t, rate, color=COLORS[1])
+        AX[i][j].axis('off')
+        pt.draw_bar_scales(AX[i][j], Xbar=0.5, Ybar=5e-3)
+        if j==0:
+            pt.annotate(AX[i][0], 'f=%.1fHz' % freq, (-0.3, 0.5), ha='center', rotation=90)
+        if i==0:
+            pt.annotate(AX[0][j], 'dur.=%.1fs' % duration, (0.5, 1.1), ha='center')
+
+# %%
 fig, AX = pt.figure(axes=(3,5), figsize=(1,0.8), hspace=0.2, wspace=0.2)
 
 COLORS = ['tab:red', 'grey']
@@ -961,5 +984,88 @@ for i, freq in enumerate([2, 4, 6, 8, 10]):
             pt.annotate(AX[i][0], 'f=%.1fHz' % freq, (-0.3, 0.5), ha='center', rotation=90)
         if i==0:
             pt.annotate(AX[0][j], 'step x%i' % factor, (0.5, 1.1), ha='center')
+
+# %% [markdown]
+# ## Flashed-Grating Dynamics
+
+# %%
+from scipy.special import erf
+
+def sigmoid(x, width=0.1):
+    return (1+erf(x/width))/2.
+
+def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
+    y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
+            0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
+    return y/y.max()
+    
+P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
+
+x = np.linspace(0, 7, 1000)
+
+def get_rate(t, stimFreq=1., stepFactor=3.):
+    rate = stimFreq+0*t
+    rate[(t>0.5) & (t<1)] *=stepFactor
+    return rate 
+
+t = 
+fig, ax = pt.figure()
+pt.plot(x-2, signal(x-2, **P), ax=ax)
+ax.fill_between([0,2], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
+pt.set_plot(ax, yticks=[0,1], xticks=2*np.arange(-1,3), xlabel='time (s)', ylabel='input rate\n(norm.)')
+
+
+
+# %%
+
+
+def get_rate(t, stimFreq=1., stepFactor=3.):
+    rate = stimFreq+0*t
+    rate[(t>0.5) & (t<1)] *=stepFactor
+    return rate 
+    
+def sim_release(release_proba_params={},
+                stimFreq = 1., stepFactor=3.,
+                nSyns = 200, tau=0.02,
+                dt = 1e-3):
+
+    tstop = 1.5
+    t = np.arange(int(tstop/dt))*dt
+    rate = get_rate(t, stimFreq=stimFreq, stepFactor=stepFactor)
+
+    Release = 0*t    
+    for i in range(nSyns):
+        release_Events = get_release_events(\
+                    np.array(PoissonSpikeTrain(rate, dt=dt, tstop=t[-1], seed=i)),
+                                               **release_proba_params)
+        Release += rough_release_dynamics(release_Events, 
+                                              tstop=t[-1]+dt, dt=dt, tau=tau)
+    Release /= nSyns
+            
+    return t, Release
+
+SIMS = {\
+    'models':['PV', 'SST'],
+    'SST':   np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item(),
+    'PV':   np.load('../data/detailed_model/PV_stp.npy', allow_pickle=True).item(),
+}
+
+for i, model in enumerate(SIMS['models']):
+    SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model])
+    
+COLORS = ['tab:red', 'tab:orange']
+fig, AX = pt.figure(axes=(1,3), figsize=(2,0.6), hspace=0.4)
+AX[0].fill_between(SIMS['t'], 0*SIMS['t'], get_rate(SIMS['t']), color='lightgray')
+pt.annotate(AX[0], ' input rate (Hz)', (1,1), va='top', ha='right')
+pt.draw_bar_scales(AX[0], Xbar=0.1, Ybar=1, Ybar_label='1Hz ')
+for i, model in enumerate(SIMS['models']):
+    AX[i+1].plot(SIMS['t'], SIMS['release_%s'%model], color=COLORS[i])
+    pt.annotate(AX[i+1], model, (1,.8), color=COLORS[i], va='top')
+pt.annotate(AX[2], 'release dynamics', (0.5,1), ha='center')
+for ax in pt.flatten(AX):
+    ax.axis('off')
+    pt.draw_bar_scales(ax, Xbar=0.1, Xbar_label='100ms 'if ax==AX[0] else '',
+                       Ybar=1 if ax==AX[0] else 1e-12, Ybar_label='1Hz 'if ax==AX[0] else '')
+pt.annotate(AX[2], 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
 
 # %%

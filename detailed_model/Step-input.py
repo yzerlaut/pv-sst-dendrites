@@ -72,14 +72,13 @@ pt.set_common_xlims(AX, lims=[t[0], t[-1]])
 for ax in AX:
     ax.axis('off')
 
+
 # %% [markdown]
 # # Plot
 
 # %%
-rate_smoothing = 2. # ms
-zoom = [0,3000]
-
 def load_sim(RESULTS, cellType,
+             rate_smoothing = 3., # ms
              with_example_index=None):
 
     sim = Parallel(\
@@ -108,8 +107,8 @@ def load_sim(RESULTS, cellType,
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
     mean_input_rate = np.mean(sim.Stim[0])*RESULTS['stimFreq_%s' % cellType]
     syn_exc_rates = [np.mean([1e3*len(E)/tstop for E in sim.presynaptic_exc_events[i]]) for i in range(len(seeds))]
-    print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
-    print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/mean_input_rate))
+    #print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
+    #print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/mean_input_rate))
 
     if '%s_example_index' % cellType in RESULTS:
         sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
@@ -197,18 +196,26 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %%
+rate_smoothing = 10
+view=[-500, 600]
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('BasketwiSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3), view=view)
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiwiSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+    load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3), view=view)
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiwiSTPNoNMDA-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
+    load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3), view=view)
 
 # %% [markdown]
 # ## Look for traces
