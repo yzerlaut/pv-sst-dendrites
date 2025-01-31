@@ -193,7 +193,7 @@ then
         nSeeds=(20 5 2 2)
         for i in 1 2 3
         do
-            echo python step_stim.py\
+            python step_stim.py\
                 --no_Vm\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
