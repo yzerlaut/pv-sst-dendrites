@@ -126,7 +126,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=24
+    nSeed=16
     widths=(200 200 2000)
     ampFs=(4 2 2)
     for i in 1 2 3
