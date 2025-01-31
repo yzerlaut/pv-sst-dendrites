@@ -199,7 +199,7 @@ then
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
-                --stimFreq ${freqs[$i-1]}\
+                --stimFreq ${freqs[$c-1]}\
                 --AMPAboost 4.5\
                 --stepAmpFactor 2 3 4\
                 --stepWidth ${widths[$i-1]}\
@@ -552,6 +552,23 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
     nSeed=40
+    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
+    freqs=(1.5 1.5 1.5 1.5 8.0 8.0)
+    for c in 1 2 3 4 5 6
+    do
+        python step_stim.py\
+            --no_Vm\
+            -c ${cells[$c-1]} ${args[$c-1]}\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq ${freqs[$i-1]}\
+            --AMPAboost 4.5\
+            --stepAmpFactor 4\
+            --nSpikeSeed $nSeed\
+            --suffix vSteps${suffix[$c-1]}$i
+    done
     : '
     ## Basket Cell
     python grating_stim.py --test_with_repeats -c Basket\

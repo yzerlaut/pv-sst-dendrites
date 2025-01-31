@@ -10,9 +10,8 @@ def run_sim(cellType='Basket',
             passive_only=False,
             iBranch=0,
             from_uniform=False,
-            stimFreq=1e-3,
-            bgStimFreq=1e-3,
-            bgFreqInhFactor=4.,
+            stimFreq=1,
+            stepAmpFactor=4.,
             spikeSeed=2,
             with_STP=False,
             # biophysical props
@@ -44,7 +43,7 @@ def run_sim(cellType='Basket',
             STP_model = np.load('../data/detailed_model/PV_stp.npy',
                                 allow_pickle=True).item()
         else:
-            STP_model = {'P0':1.00, 'P1':1.00, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+            STP_model = {'P0':0.80, 'P1':0.80, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
     elif cellType=='Martinotti':
         ID = '864691135571546917_264824' # Martinotti Cell example
         params_key='MC'
@@ -89,7 +88,7 @@ def run_sim(cellType='Basket',
         return y/y.max()
 
     P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
-    Stim = bgStimFreq+stimFreq*signal(t*1e-3-2, **P)
+    Stim = stimFreq*(1+stepAmpFactor*signal(t*1e-3-2, **P))
 
     # -- background activity 
     np.random.seed(spikeSeed)
@@ -106,7 +105,7 @@ def run_sim(cellType='Basket',
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
-            train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*Stim,
+            train_s = np.array(PoissonSpikeTrain(Stim,
                                     dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 
@@ -145,8 +144,7 @@ def run_sim(cellType='Basket',
               'dt': dt, 
               'synapses':synapses,
               'stimFreq':stimFreq,
-              'bgStimFreq':bgStimFreq,
-              'bgFreqInhFactor':bgFreqInhFactor,
+              'stepAmpFactor':stepAmpFactor,
               'tstop':tstop}
 
     if not no_Vm:
@@ -178,8 +176,6 @@ if __name__=='__main__':
     
     # bg stim props
     parser.add_argument("--stimFreq", type=float, default=1e-2)
-    parser.add_argument("--bgStimFreq", type=float, default=1e-2)
-    parser.add_argument("--bgFreqInhFactor", type=float, default=1.)
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=8)
 
@@ -218,14 +214,11 @@ if __name__=='__main__':
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
                   stimFreq=args.stimFreq,
-                  bgStimFreq=args.bgStimFreq,
-                  bgFreqInhFactor=args.bgFreqInhFactor,
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   with_STP=args.with_STP,
-                  from_uniform=args.from_uniform,
                   no_Vm=args.no_Vm,
                   dt=args.dt)
 
