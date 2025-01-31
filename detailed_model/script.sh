@@ -74,7 +74,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=24
+    nSeed=80
     widths=(50 50 200)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -89,10 +89,9 @@ then
             --stimFreq 8\
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
-            --iBranch 5\
+            --iBranch 1\
             --nSpikeSeed $nSeed\
             --suffix noSTP-Step$i
-        : '
         # Martinotti Cell - with NMDA
         python step_stim.py\
             --test_with_repeats\
@@ -121,7 +120,6 @@ then
             --iBranch 0\
             --nSpikeSeed $nSeed\
             --suffix noSTPnoNMDA-Step$i
-        '
     done
     ### ----- SIMULATIONS WITH STP ----- ###
 fi
@@ -143,7 +141,7 @@ then
             --stimFreq 8\
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
-            --iBranch 5\
+            --iBranch 1\
             --nSpikeSeed $nSeed\
             --suffix noSTP-Step$i
         : '

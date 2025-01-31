@@ -807,6 +807,9 @@ pt.bar_legend(ax, X=range(2),
               colormap=pt.mpl.colors.ListedColormap([pt.copper_r(x) for x in [0,0.6]]))
 
 # %%
+dt
+
+# %%
 rate_smoothing = 5. # ms
 
 results = {}
