@@ -133,7 +133,7 @@ def plot_sim(RESULTS, cellTypes,
     for c, cellType in enumerate(cellTypes):
         cond = ((RESULTS['t_%s' % cellType]-(RESULTS['t_%s' % cellType].mean())>view[0]) &\
                     ((RESULTS['t_%s' % cellType]-RESULTS['t_%s' % cellType].mean())<view[1]))
-        t = RESULTS['t_%s' % cellType][cond]
+        t = RESULTS['t_%s' % cellType][cond]-RESULTS['t_%s' % cellType][cond][0]
         # input
         AX[0].fill_between(t0+t[:-1][::20], 0*t[:-1][::20], RESULTS['Input_%s' % cellType][cond[1:]][::20],
                            color='tab:grey', lw=1)
@@ -150,20 +150,18 @@ def plot_sim(RESULTS, cellTypes,
             
         # events
         if 'pre_inh_%s' % cellType in RESULTS:
-            subsampling = 10 if 'Basket' in cellType else 1 # for display only
-            for i, events in enumerate(RESULTS['pre_exc_%s' % cellType]):
+            subsampling = 3 if 'Basket' in cellType else 1 # for display only
+            for i, events in enumerate(RESULTS['pre_exc_%s' % cellType][::subsampling]):
                 eCond = ((events-RESULTS['t_%s' % cellType].mean())>view[0]) &\
                                 ((events-RESULTS['t_%s' % cellType].mean())<view[1])
-                if len(events[eCond])>0:
-                    e = np.random.choice(events[eCond], np.min([int(len(events[eCond])/subsampling+1),1]), replace=False)
-                    AX[1].plot(t0+e, i*np.ones(len(e)), 'o', fillstyle='full', color='g', ms=.3)
-            for i, events in enumerate(RESULTS['pre_inh_%s' % cellType]):
+                AX[1].plot(t0+events[eCond]-RESULTS['t_%s' % cellType][cond][0],
+                           i*np.ones(len(events[eCond])), 'o', fillstyle='full', color='g', ms=.3)
+            for i, events in enumerate(RESULTS['pre_inh_%s' % cellType][::subsampling]):
                 iCond = ((events-RESULTS['t_%s' % cellType].mean())>view[0]) &\
                                 ((events-RESULTS['t_%s' % cellType].mean())<view[1])
-                if len(events[iCond])>0:
-                    e = np.random.choice(events[iCond], np.min([int(len(events[iCond])/subsampling+1),1]), replace=False)
-                    AX[1].plot(t0+e, len(RESULTS['pre_exc_%s' % cellType])+i*np.ones(len(e)), 'o', 
-                               fillstyle='full', color='r', ms=.3)
+                AX[1].plot(t0+events[iCond]-RESULTS['t_%s' % cellType][cond][0],
+                           len(RESULTS['pre_exc_%s' % cellType][::subsampling])+i*np.ones(len(events[iCond])),
+                           'o', fillstyle='full', color='r', ms=.3)
         t0 += t[-1]-t[0]+interstim
 
     pt.set_common_xlims(AX)#, lims=zoom)
@@ -178,6 +176,12 @@ def plot_sim(RESULTS, cellTypes,
     return fig, AX
 
 
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('BasketNoSTP-Step%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiNoSTP-Step%i' % i)

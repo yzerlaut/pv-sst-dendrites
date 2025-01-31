@@ -872,14 +872,14 @@ pt.set_plot(ax, xlabel='shift (s)', ylabel='peak norm.\n corr. coef.',
 # %%
 def get_rate(t, stimFreq=1., stepFactor=3.):
     rate = stimFreq+0*t
-    rate[(t>1) & (t<2)] *=stepFactor
+    rate[(t>0.5) & (t<1)] *=stepFactor
     return rate 
 def sim_release(release_proba_params={},
                 stimFreq = 1., stepFactor=3.,
                 nSyns = 200, tau=0.02,
                 dt = 1e-3):
 
-    tstop = 3
+    tstop = 1.5
     t = np.arange(int(tstop/dt))*dt
     rate = get_rate(t, stimFreq=stimFreq, stepFactor=stepFactor)
 
@@ -923,9 +923,9 @@ fig, AX = pt.figure(axes=(3,5), figsize=(1,0.8), hspace=0.2, wspace=0.2)
 
 COLORS = ['tab:orange', 'grey']
 STP_model = np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item()
-Static_model = {'P0':0.4, 'P1':0.38, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+Static_model = {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
 
-for i, freq in enumerate([1, 1.5, 2, 2.5, 3]):
+for i, freq in enumerate([0.5, 1, 1.5, 2, 2.5]):
     for j, factor in enumerate([2., 3, 4.]):
         t, rate = sim_release(release_proba_params=STP_model,
                               stimFreq=freq, stepFactor=factor, tau=0.05, dt=5e-3, nSyns=500)
