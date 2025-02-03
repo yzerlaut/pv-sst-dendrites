@@ -1092,9 +1092,50 @@ fig, ax = pt.figure(figsize=(2, 2))
 
 
 for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS[model],
-                                                      stimFreq=f)
+    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=4.)
     ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
     
 pt.draw_bar_scales(AX[0], Xbar=0.1)
 pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+
+# %%
+Freqs = [0.25, 0.5, 1.0, 1.5]
+
+fig, ax = pt.figure(figsize=(2, 2))
+
+
+for i, f in enumerate(Freqs):
+    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=8.)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
+    
+pt.draw_bar_scales(AX[0], Xbar=0.1)
+pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+
+# %%
+Freqs = [0.25, 0.5, 1.0, 1.5]
+
+fig, ax = pt.figure(figsize=(2, 2))
+
+for i, f in enumerate(Freqs):
+    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=12.)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
+    
+pt.draw_bar_scales(AX[0], Xbar=0.1)
+pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+
+# %%
+SIMS['SST-no-STP']
+
+# %%
+Freqs = [6, 8, 10, 12]
+
+fig, ax = pt.figure(figsize=(2, 2))
+
+for i, f in enumerate(Freqs):
+    t, rel = sim_release(release_proba_params=SIMS['PV'], stimFreq=f, stepFactor=4.)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
+    
+pt.draw_bar_scales(AX[0], Xbar=0.1)
+pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+
+# %%

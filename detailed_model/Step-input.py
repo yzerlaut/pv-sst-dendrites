@@ -269,7 +269,7 @@ def load_sim(results, cellType, suffix):
                         results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)].append(rate)
                     else:
                         results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)] = [rate]
-                    if not 'traceRate_Width%i'%iWidth in results:
+                    if not 't_Width%i'%iWidth in results:
                         results['t_Width%i'%iWidth] = np.arange(len(rate))*dt
                     results['stim_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType,suffix)] = sim.Stim[0][iA][iB]
             
@@ -278,7 +278,7 @@ def load_sim(results, cellType, suffix):
             results['stepWidth_%s' % cellType].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
             
         except BaseException as be:
-            #print(be)
+            print(be)
             print(' Pb with "%s" ' % filename)
 
 
@@ -291,7 +291,10 @@ load_sim(results, 'Martinotti', 'NoSTP')
 load_sim(results, 'Martinotti', 'NoNMDA')
 
 # %%
+sim.fetch_quantity_on_grid('stepWidth', dtype=list)
+np.unique(sim.stepWidth)
 
+# %%
 
 views=[400, 500, 1300, 2300]
 Ybar=10
@@ -308,21 +311,24 @@ INSETS = []
 for suffix, color, line in zip(['Full', 'NoNMDA'], ['tab:orange', 'tab:purple'], ['-', '-']):
     for iW, W in enumerate(results['stepWidth_%s' % cellType]):
         for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
-            pt.plot(results['t_Width%i'%(1+iW)]-results['t_Width%i'%(1+iW)][-1]/2.,
-                            np.mean(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
-                            sy = stats.sem(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
-                            color=color, ax=AX[iA][iW])
-            if suffix=='Full':
-                inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
-                #inset.axis('off')
-                inset.fill_between(results['t_Width%i'%(1+iW)][1:]-results['t_Width%i'%(1+iW)][-1]/2.,
-                                   results['t_Width%i'%(1+iW)][1:]*0,
-                                   results['stim_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType,suffix)], color='lightgray', lw=0)
-                pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
-                pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
-                INSETS.append(inset)
-                if iA==0:
-                    pt.annotate(inset, '%ims' % results['stepWidth_%s' % cellType][iW], (0.5,1), va='top', ha='center')
+            try:
+                pt.plot(results['t_Width%i'%(1+iW)]-results['t_Width%i'%(1+iW)][-1]/2.,
+                                np.mean(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
+                                sy = stats.sem(results['traceRate_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType, suffix)], axis=0),
+                                color=color, ax=AX[iA][iW])
+                if suffix=='Full':
+                    inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
+                    inset.axis('off')
+                    inset.fill_between(results['t_Width%i'%(1+iW)][1:]-results['t_Width%i'%(1+iW)][-1]/2.,
+                                       results['t_Width%i'%(1+iW)][1:]*0,
+                                       results['stim_Width%i-Amp%i_%s%s' % (iW+1, iA, cellType,suffix)], color='lightgray', lw=0)
+                    pt.set_plot(AX[iA][iW], [], xlim=[-views[iW]/2.,views[iW]/2.])
+                    pt.set_plot(inset, [], xlim=[-views[iW]/2.,views[iW]/2.])
+                    INSETS.append(inset)
+                    if iA==0:
+                        pt.annotate(inset, '%ims' % results['stepWidth_%s' % cellType][iW], (0.5,1), va='top', ha='center')
+            except BaseException as be:
+                pass
 pt.set_common_ylims(INSETS)
 pt.set_common_ylims(AX)        
 for ax in pt.flatten(AX):

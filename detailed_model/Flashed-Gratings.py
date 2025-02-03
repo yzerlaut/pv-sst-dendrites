@@ -97,8 +97,8 @@ for ax in AX:
 # # Plot
 
 # %%
-rate_smoothing = 20. # ms
-zoom = [0,6100]
+rate_smoothing = 40. # ms
+zoom = [200,4000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
@@ -203,8 +203,21 @@ for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'Martinottino
     RESULTS['%s_example_index' % cellType] = index # change here !
     load_example_index(cellType, RESULTS) 
         
-    fig, _ = plot_sim(cellType, color=color, figsize=(1.2,0.4))
+    fig, _ = plot_sim(cellType, color=color, figsize=(2.2,0.4))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+
+# %%
+fig, ax = pt.figure(figsize=(0.9,1.1))
+
+for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA'],
+                                  ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
+                                  [1, 9, 1, 1]):
+    cond = (RESULTS['t']>0.3e3) & (RESULTS['t']<4e3)
+    ax.plot(1e-3*RESULTS['t'][cond]-0.5, RESULTS['rate_%s' % cellType][cond]/np.max(RESULTS['rate_%s' % cellType]),
+            color=color, lw=1)
+
+pt.set_plot(ax)
+
 
 # %% [markdown]
 # ## Look for traces
