@@ -205,6 +205,7 @@ then
                 --stepAmpFactor 2 3 4\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed ${nSeeds[$i-1]}\
+                --dt 10\
                 --suffix vSteps${suffix[$c-1]}$i
         done
     done
