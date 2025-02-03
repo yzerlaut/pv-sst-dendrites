@@ -286,20 +286,23 @@ if __name__=='__main__':
    
         # run the simulation with parameter variations
 
-        grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-        for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                    'stepWidth', 'stepAmpFactor', 'AMPAboost']:
-            if len(getattr(args, key))>1:
-                grid[key] = getattr(args, key)
-        grid['iBranch'] = range(args.nBranch)
+        for iBranch in range(args.nBranch):
 
-        sim = Parallel(\
-            filename='../data/detailed_model/StepStim_sim_%s_%s.zip' %\
-                                    (args.cellType, args.suffix))
+            params['iBranch'] = b
 
-        sim.build(grid)
+            sim = Parallel(\
+                filename='../data/detailed_model/StepSim_%s%s_branch%i.zip' %\
+                                    (args.cellType, args.suffix, iBranch))
 
-        sim.run(run_sim,
-                single_run_args=\
-                    dict({k:v for k,v in params.items() if k not in grid}),
-                fix_missing_only=args.fix_missing_only)
+            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+            for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
+                        'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+                if len(getattr(args, key))>1:
+                    grid[key] = getattr(args, key)
+
+            sim.build(grid)
+
+            sim.run(run_sim,
+                    single_run_args=\
+                        dict({k:v for k,v in params.items() if k not in grid}),
+                    fix_missing_only=args.fix_missing_only)

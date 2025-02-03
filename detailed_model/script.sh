@@ -268,17 +268,17 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
 then
-    nSeed=20
+    nSeed=4
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP")
-    for c in 1 2 3 4
+    for c in 1 2 # 3 4
     do
         python step_stim.py\
             --no_Vm\
             -c Martinotti ${args[$c-1]}\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.1 2.2 2.3\
+            --stimFreq 1.0 1.2 1.4 1.6 1.8 2.0 2.2\
             --AMPAboost 4.5\
             --stepAmpFactor 4\
             --stepWidth 50\
@@ -288,14 +288,14 @@ then
     cells=("Basket" "Basket")
     args=("--with_STP" "")
     suffix=("Full" "noSTP")
-    for c in 1 2
+    for c in 1 # 2
     do
         python step_stim.py\
             --no_Vm\
             -c Basket ${args[$c-1]}\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 7.0 7.2 7.4 7.6 7.8 8.0 8.2 8.4 8.6 8.8 9.0 9.2\
+            --stimFreq 7.0 7.4 7.8 8.2 8.6 9.0\
             --stepAmpFactor 4\
             --stepWidth 50\
             --nSpikeSeed $nSeed\
