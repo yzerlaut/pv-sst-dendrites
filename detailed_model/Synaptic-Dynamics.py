@@ -1025,7 +1025,6 @@ def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
     
 P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
 
-
 def get_rate(t, stimFreq=1., stepFactor=4.):
     rate = stimFreq+0*t
     rate += stimFreq*stepFactor*signal(t-0.5, **P)
@@ -1040,8 +1039,8 @@ pt.set_plot(ax, xlabel='time (s)', ylabel='input rate')
 
 # %%
 def sim_release(release_proba_params={},
-                stimFreq = 1., stepFactor=4.,
-                nSyns = 500, tau=0.1,
+                stimFreq = 1., stepFactor=8.,
+                nSyns = 500, tau=0.05,
                 dt = 1e-3, tstop=4):
 
     t = np.arange(int(tstop/dt))*dt
@@ -1065,7 +1064,8 @@ SIMS = {\
     'SST':   np.load('../data/detailed_model/SST_stp.npy', allow_pickle=True).item(),
     'SST-no-STP':  {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
 }
-Freqs = [8, 8, 1., 1.]
+
+Freqs = [4, 4, 0.5, 0.5]
 
 for i, model in enumerate(SIMS['models']):
     SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model],
@@ -1086,3 +1086,15 @@ for ax in pt.flatten(AX):
 pt.annotate(AX[1], 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
 
 # %%
+Freqs = [0.25, 0.5, 1.0, 1.5]
+
+fig, ax = pt.figure(figsize=(2, 2))
+
+
+for i, f in enumerate(Freqs):
+    t, rel = sim_release(release_proba_params=SIMS[model],
+                                                      stimFreq=f)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
+    
+pt.draw_bar_scales(AX[0], Xbar=0.1)
+pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)

@@ -1,4 +1,3 @@
-
 START=$(date +%s)
 
 if [[ $1 == 'all' || $1 == 'test' ]]
@@ -126,7 +125,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=16
+    nSeed=40
     widths=(200 200 2000)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -183,8 +182,10 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-step' ]]
 then
-    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
-    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
+    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti"
+           "Basket" "Basket")
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" ""
+          "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     freqs=(1.5 1.5 1.5 1.5 8.0 8.0)
     for c in 1 2 3 4 5 6
@@ -551,81 +552,49 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=40
+    nSeed=80
+    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
+    branch=(0 0 0 0 1 1)
+    freqs=(1.0 1.0 1.0 1.0 8.0 8.0)
+    for c in 1 2 3 4 5 6
+    do
+        python grating_stim.py --test_with_repeats\
+            -c ${cells[$c-1]} ${args[$c-1]}\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq ${freqs[$c-1]}\
+            --AMPAboost 4.5\
+            --stepAmpFactor 4\
+            --iBranch ${branch[$c-1]}\
+            --nSpikeSeed $nSeed\
+            --suffix ${suffix[$c-1]}$i
+    done
+fi
+
+if [[ $1 == 'all' || $1 == 'full-grating' ]]
+then
+    nSeed=12
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     freqs=(1.5 1.5 1.5 1.5 8.0 8.0)
     for c in 1 2 3 4 5 6
     do
-        python step_stim.py\
-            --no_Vm\
+        python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
+            --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq ${freqs[$i-1]}\
+            --stimFreq ${freqs[$c-1]}\
             --AMPAboost 4.5\
             --stepAmpFactor 4\
             --nSpikeSeed $nSeed\
-            --suffix vSteps${suffix[$c-1]}$i
+            --suffix ${suffix[$c-1]}$i
     done
-    : '
-    ## Basket Cell
-    python grating_stim.py --test_with_repeats -c Basket\
-                            --with_presynaptic_spikes \
-                            --bgStimFreq 8 --stimFreq 24\
-                            --with_STP --suffix withSTP\
-                            --iBranch 1 --nSpikeSeed $nSeed
-    python grating_stim.py --test_with_repeats -c Basket\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 12 --stimFreq 36\
-                            --iBranch 1 --nSpikeSeed $nSeed
-    # Martinotti Cell
-    python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --bgStimFreq 1.5 --stimFreq 4.5\
-                            --with_NMDA --iBranch 5 --nSpikeSeed $nSeed
-    python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --with_NMDA --with_STP --suffix withSTP\
-                            --bgStimFreq 1 --stimFreq 3\
-                            --iBranch 5 --nSpikeSeed $nSeed
-    python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                             --iBranch 5 --bgStimFreq 20 --stimFreq 60\
-                            --suffix noNMDA --nSpikeSeed $nSeed
-    '
-    python grating_stim.py --test_with_repeats -c Martinotti\
-                            --with_presynaptic_spikes\
-                            --iBranch 5 --bgStimFreq 3 --stimFreq 9\
-                            --with_STP --suffix noNMDAwithSTP --nSpikeSeed $nSeed
 fi
-
-if [[ $1 == 'all' || $1 == 'full-grating' ]]
-then
-    nSeed=40
-    : '
-    ## Basket Cell
-    python grating_stim.py --no_Vm -c Basket\
-                            --bgStimFreq 8 --stimFreq 24 --nSpikeSeed $nSeed
-    python grating_stim.py --no_Vm -c Basket\
-                            --bgStimFreq 12 --stimFreq 36\
-                            --with_STP --suffix withSTP --nSpikeSeed $nSeed
-    # Martinotti Cell
-    python grating_stim.py --no_Vm -c Martinotti\
-                            --with_NMDA --bgStimFreq 1.5 --stimFreq 4.5 --nSpikeSeed $nSeed
-    python grating_stim.py --no_Vm -c Martinotti\
-                            --bgStimFreq 1 --stimFreq 3\
-                            --with_NMDA --with_STP --suffix withSTP --nSpikeSeed $nSeed
-    python grating_stim.py --no_Vm -c Martinotti\
-                            --bgStimFreq 20 --stimFreq 60\
-                            --suffix noNMDA --nSpikeSeed $nSeed
-    '
-    python grating_stim.py --no_Vm -c Martinotti\
-                            --with_STP --bgStimFreq 5 --stimFreq 15\
-                            --suffix noNMDAwithSTP --nSpikeSeed $nSeed
-fi
-
 
 END=$(date +%s)
 DIFF=$(( $END - $START ))

@@ -16,7 +16,7 @@ def run_sim(cellType='Basket',
             stepWidth=50.,
             stepAmpFactor=2.,
             Inh_fraction=15./100.,
-            synapse_subsampling=5,
+            synapse_subsampling=1,
             # bg stim
             spikeSeed=2,
             # bgFreqInhFactor=4.,

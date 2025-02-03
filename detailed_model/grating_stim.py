@@ -10,12 +10,16 @@ def run_sim(cellType='Basket',
             passive_only=False,
             iBranch=0,
             from_uniform=False,
+            # stim props
             stimFreq=1,
             stepAmpFactor=4.,
+            Inh_fraction=15./100.,
+            synapse_subsampling=1,
             spikeSeed=2,
-            with_STP=False,
             # biophysical props
+            with_STP=False,
             with_NMDA=False,
+            AMPAboost=0,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
             no_Vm=False,
@@ -27,7 +31,10 @@ def run_sim(cellType='Basket',
                                     STP_release_filter
     from scipy.special import erf
 
-    tstop = 7e3 # -2s:5s
+    tstop = 4e3 # -0.5s:3.5s
+
+    trialSeed = int(spikeSeed * (\
+            ( stimFreq*stepAmpFactor*(iBranch+1) ) ) )%1000000 
 
     ######################################################
     ##   simulation preparation  #########################
@@ -59,24 +66,27 @@ def run_sim(cellType='Basket',
                 passive_only=passive_only,
                 params_key=params_key)
 
+    # add optional modified AMPA boost:
+    if AMPAboost>0:
+        cell.params['%s_qAMPAonlyBoost'%cell.params_key] = AMPAboost
+
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
-        # synapses = np.concatenate([cell.set_of_synapses_spatially_uniform[iBranch]\
                         # for iBranch in range(6)])
     else:
         synapses = cell.set_of_synapses[iBranch]
-        # synapses = [cell.set_of_synapses[iBranch]\
-                        # for iBranch in range(6)]
+    synapses = synapses[::synapse_subsampling]
 
     # build synaptic input
     AMPAS, NMDAS, GABAS,\
        ampaNETCONS, nmdaNETCONS, gabaNETCONS,\
         STIMS, VECSTIMS, excitatory = add_synaptic_input(cell, synapses, 
                                             Nmax_release=STP_model['Nmax'],
-                                            with_NMDA=with_NMDA)
+                                            Inh_fraction=Inh_fraction,
+                                            with_NMDA=with_NMDA,
+                                            seed=trialSeed)
 
     t = np.arange(int(tstop/dt))*dt
-
 
     # Grating Stim Function:
     def sigmoid(x, width=0.1):
@@ -87,26 +97,31 @@ def run_sim(cellType='Basket',
                 0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
         return y/y.max()
 
-    P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
-    Stim = stimFreq*(1+stepAmpFactor*signal(t*1e-3-2, **P))
+    P = np.load('../data/detailed_model/grating-stim-input-params.npy',
+                allow_pickle=True).item()
+    Stim = stimFreq*(1+stepAmpFactor*signal(t*1e-3-0.5, **P))
 
-    # -- background activity 
-    np.random.seed(spikeSeed)
+    # -- synaptic activity 
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
     for i, syn in enumerate(synapses):
         if excitatory[i]:
             # we draw one spike train:
             train_s = np.array(PoissonSpikeTrain(Stim,
-                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+                                    dt=1e-3*dt, tstop=1e-3*tstop,
+                                    seed=trialSeed+1000+i)) # Hz,s
             # STP only in excitatory
-            N = STP_release_filter(train_s, **STP_model)
+            N = STP_release_filter(train_s, 
+                                   seed=trialSeed+2000+i,
+                                   **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **
                 TRAINS[i+len(synapses)*(n-1)] += list(1e3*train_s[N==n]) 
         else:
             # GABA -> only single release
-            train_s = np.array(PoissonSpikeTrain(Stim,
-                                    dt=1e-3*dt, tstop=1e-3*tstop)) # Hz,s
+            # train_s = np.array(PoissonSpikeTrain(bgFreqInhFactor*Stim, # REMOVED
+            train_s = np.array(PoissonSpikeTrain(Stim, 
+                                    dt=1e-3*dt, tstop=1e-3*tstop,
+                                    seed=trialSeed+3000+i)) # Hz,s
             TRAINS[i] += list(1e3*train_s) # to ** ms **
 
     # -- reordering spike trains
@@ -143,6 +158,7 @@ def run_sim(cellType='Basket',
                                     (Vm[:-1]<=spike_threshold)),
               'dt': dt, 
               'synapses':synapses,
+              'Inh_fraction':Inh_fraction,
               'stimFreq':stimFreq,
               'stepAmpFactor':stepAmpFactor,
               'tstop':tstop}
@@ -174,13 +190,24 @@ if __name__=='__main__':
                         - Martinotti
                         """, default='Basket')
     
-    # bg stim props
-    parser.add_argument("--stimFreq", type=float, default=1e-2)
+    # stim props
+    parser.add_argument("--Inh_fraction", type=float, 
+                        nargs='*', default=[15./100.])
+    parser.add_argument("--synapse_subsampling", type=int, 
+                        nargs='*', default=[2])
+    parser.add_argument("--stimFreq", type=float, 
+                        nargs='*', default=[1.0])
+    parser.add_argument("--stepWidth", type=float, 
+                        nargs='*', default=[200.])
+    parser.add_argument("--stepAmpFactor", type=float, 
+                        nargs='*', default=[3.])
+    parser.add_argument("--AMPAboost", type=float, 
+                        nargs='*', default=[4])
     parser.add_argument("--spikeSeed", type=int, default=1)
-    parser.add_argument("--nSpikeSeed", type=int, default=8)
+    parser.add_argument("--nSpikeSeed", type=int, default=0)
 
     # Branch number
-    parser.add_argument("--iBranch", type=int, default=2)
+    parser.add_argument("--iBranch", type=int, default=5)
     parser.add_argument("--nBranch", type=int, default=6)
 
     # Testing Conditions
@@ -191,7 +218,7 @@ if __name__=='__main__':
     parser.add_argument("--from_uniform", action="store_true")
     parser.add_argument("--with_STP", action="store_true")
 
-    parser.add_argument("--filename", default='single_sim.npy')
+    parser.add_argument('-f', "--filename", default='single_sim.npy')
     parser.add_argument("--suffix", help="suffix for saving", default='')
     parser.add_argument('-fmo', "--fix_missing_only",
                         help="in scan", action="store_true")
@@ -213,12 +240,17 @@ if __name__=='__main__':
     params = dict(cellType=args.cellType,
                   passive_only=args.passive,
                   spikeSeed=args.spikeSeed,
-                  stimFreq=args.stimFreq,
+                  Inh_fraction=args.Inh_fraction[0],
+                  stimFreq=args.stimFreq[0],
+                  stepAmpFactor=args.stepAmpFactor[0],
+                  synapse_subsampling=args.synapse_subsampling[0],
+                  AMPAboost=args.AMPAboost[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
                   with_NMDA=args.with_NMDA,
                   with_STP=args.with_STP,
+                  from_uniform=args.from_uniform,
                   no_Vm=args.no_Vm,
                   dt=args.dt)
 
@@ -237,12 +269,6 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
 
-        if args.test_uniform:
-            grid = dict(from_uniform=[False, True], **grid)
-
-        if args.test_NMDA:
-            grid = dict(with_NMDA=[False, True], **grid)
-
         sim.build(grid)
 
         sim.run(run_sim,
@@ -254,25 +280,20 @@ if __name__=='__main__':
    
         # run the simulation with parameter variations
 
-        for i in range(args.nBranch):
+        grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+        for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
+                    'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+            if len(getattr(args, key))>1:
+                grid[key] = getattr(args, key)
+        grid['iBranch'] = range(args.nBranch)
 
-            params['iBranch'] = i
-            
-            sim = Parallel(\
-                filename='../data/detailed_model/GratingStim_sim_iBranch%i_%s_%s.zip' %\
-                                        (i, args.cellType, args.suffix))
+        sim = Parallel(\
+            filename='../data/detailed_model/GratingStim_sim_%s_%s.zip' %\
+                                    (args.cellType, args.suffix))
 
-            grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
+        sim.build(grid)
 
-            if args.test_uniform:
-                grid = dict(from_uniform=[False, True], **grid)
-
-            if args.test_NMDA:
-                grid = dict(with_NMDA=[False, True], **grid)
-
-            sim.build(grid)
-
-            sim.run(run_sim,
-                    single_run_args=\
-                        dict({k:v for k,v in params.items() if k not in grid}),
-                    fix_missing_only=args.fix_missing_only)
+        sim.run(run_sim,
+                single_run_args=\
+                    dict({k:v for k,v in params.items() if k not in grid}),
+                fix_missing_only=args.fix_missing_only)

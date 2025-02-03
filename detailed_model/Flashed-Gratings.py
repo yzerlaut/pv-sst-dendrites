@@ -46,20 +46,59 @@ def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
             0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
     
-x = np.linspace(0, 7, 1000)
-
+tstop, dt = 4e3, 0.1
+t = np.arange(int(tstop/dt))*dt
 fig, ax = pt.figure(figsize=(1.5,1))
 P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
-pt.plot(x-2, signal(x-2, **P), ax=ax)
-ax.fill_between([0,2], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
-pt.set_plot(ax, yticks=[0,1], xticks=2*np.arange(-1,3), xlabel='time (s)', ylabel='input rate\n(norm.)')
+pt.plot(1e-3*t, signal(1e-3*t-0.5, **P), ax=ax)
+ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
+pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
+
+# %% [markdown]
+# # Test Simulation
+# ```
+# python grating_stim.py --test -c Martinotti\
+#         --with_NMDA\
+#         --with_presynaptic_spikes\
+#         --stimFreq 2 --stepAmpFactor 4\
+#         --synapse_subsampling 1 --Inh_fraction 0.2\
+#         --iBranch 1 --spikeSeed 3
+# ```
+
+# %%
+results = np.load('single_sim.npy', allow_pickle=True).item()
+
+t = np.arange(len(results['Vm_soma']))*results['dt']
+fig, AX = pt.figure(axes_extents=[[(1,4)],[(1,2)],[(1,1)]],
+                    figsize=(2,0.4), left=0, bottom=0., hspace=0.)
+#AX[0].plot(t, results['Vm_dend'], 'k:', lw=0.5, label=' distal\ndendrite')
+AX[2].fill_between(t[1:], 0*t[1:], results['Stim'], color='tab:grey', label='soma')
+AX[0].plot(t, results['Vm_soma'], 'tab:brown', label='soma')
+AX[0].plot(t, -60+0*t, 'k:')
+pt.annotate(AX[0], '-60mV ', (0,-60), xycoords='data', ha='right', va='center')
+pt.draw_bar_scales(AX[0], Xbar=100, Xbar_label='100ms', Ybar=10, Ybar_label='10mV')
+for i, events in enumerate(results['presynaptic_exc_events']):
+    AX[1].scatter(events, i*np.ones(len(events)), facecolor='g', edgecolor=None, alpha=.35, s=3)
+for i, events in enumerate(results['presynaptic_inh_events']):
+    AX[1].scatter(events, len(results['presynaptic_exc_events'])+i*np.ones(len(events)),
+                  facecolor='r', edgecolor=None, alpha=.35, s=3)
+    
+pt.annotate(AX[1], 'Inh.', (0,1), ha='right', va='top', color='r')
+pt.annotate(AX[1], 'Exc.', (0,0), ha='right', va='bottom', color='g')
+
+print('\n - number of excitatory events: %i' %\
+              np.sum([len(E) for E in results['presynaptic_exc_events']]))
+print(' - output rate: %.1f Hz\n' % (1e3*len(results['spikes'].flatten())/results['tstop']))
+pt.set_common_xlims(AX, lims=[t[0], t[-1]])
+for ax in AX:
+    ax.axis('off')
 
 # %% [markdown]
 # # Plot
 
 # %%
 rate_smoothing = 20. # ms
-zoom = [900,6100]
+zoom = [0,6100]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
@@ -84,8 +123,6 @@ def load_sim(cellType, RESULTS):
     RESULTS['rate_%s' % cellType] = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                            int(rate_smoothing/dt))
     RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
-    RESULTS['bgStimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('bgStimFreq', return_last=True)
-    RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt    
 
@@ -148,8 +185,8 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
 
     pt.set_common_xlims(AX, lims=zoom)
     
-    pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=RESULTS['bgStimFreq_%s' % cellType],
-                       Ybar_label='%.0fHz' % (RESULTS['bgStimFreq_%s' % cellType]))
+    pt.draw_bar_scales(AX[0], Xbar=200, Xbar_label='200ms', Ybar=RESULTS['stimFreq_%s' % cellType],
+                       Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
     pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     for ax in AX:
@@ -158,7 +195,7 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
     return fig, AX
 
 #for cellType, color, index in zip(['Martinotti', 'Basket'],
-for cellType, color, index in zip(['MartinottiwithSTP', 'BasketwithSTP', 'MartinottinoNMDA','MartinottinoNMDAwithSTP'],
+for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA','MartinottinoNMDAnoSTP'],
                                   ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
                                   [1, 9, 1, 1]):
     
