@@ -125,7 +125,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=40
+    nSeed=200
     widths=(200 200 2000)
     ampFs=(4 2 2)
     for i in 1 2 3
@@ -154,7 +154,7 @@ then
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.5\
+            --stimFreq 1.2\
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
             --iBranch 0\
@@ -169,8 +169,8 @@ then
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.5\
-            --AMPAboost 4\
+            --stimFreq 1.2\
+            --AMPAboost 4.5\
             --stepAmpFactor ${ampFs[$i-1]}\
             --stepWidth ${widths[$i-1]}\
             --iBranch 0\

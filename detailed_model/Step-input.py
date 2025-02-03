@@ -397,13 +397,84 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 # # Input Range
 
 # %%
+
+rate_smoothing = 10. # ms
+
+def func(cellType='Martinotti', suffix='Full', color='tab:orange'):
+    results = {}
+    
+    for iBranch in np.arange(6):
+        
+        sim = Parallel(\
+                filename='../data/detailed_model/StepSim_%ssRange%s_branch%i.zip' % (\
+                        cellType, suffix, iBranch))
+        sim.load()
+        
+        sim.fetch_quantity_on_grid('spikes', dtype=list)
+        seeds = np.unique(sim.spikeSeed)
+        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+
+        if iBranch==0:
+            results['traceRate'] = np.zeros((6, len(np.unique(sim.stimFreq)), int(tstop/dt)+1)) # create the array
+            results['t'] = np.arange(int(tstop/dt)+1)*dt
+            results['stimFreq'] = np.unique(sim.stimFreq)
+            sim.fetch_quantity_on_grid('Stim', dtype=list)
+            
+        for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+        
+            # compute time-varying RATE !
+            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+            for k, spikes in enumerate(\
+                [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+                spikes_matrix[k,(spikes/dt).astype('int')] = True
+            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                          int(rate_smoothing/dt))
+            results['traceRate'][iBranch, iSF,:] = rate
+            if iBranch==0:
+                results['Stim%i'%iSF] = sim.Stim[0][iSF]
+
+    fig, AX = pt.figure(axes=(len(results['stimFreq']), 1), right=4.,
+                        figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+    INSETS = []
+    for iSF, SF in enumerate(results['stimFreq']):
+        pt.plot(results['t'], results['traceRate'][:,iSF,:].mean(axis=0),
+                sy=stats.sem(results['traceRate'][:,iSF,:], axis=0), ax=AX[iSF], 
+                          color=pt.viridis(iSF/(len(results['stimFreq'])-1)))
+        INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+        INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
+        INSETS[-1].axis('off')             
+        
+        pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][:,iSF,1:].mean(axis=0)),
+                        (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
+    pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
+    for ax in pt.flatten(AX):
+        pt.set_plot(ax, ['left'] if ax==AX[0] else [])
+    pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+        
+    pt.bar_legend(AX[-1], X=results['stimFreq'],
+                  ticks_labels=['%.1f' % f for f in results['stimFreq']],
+                  colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
+                  label='stimFreq (Hz)',
+                  colormap=pt.viridis)
+    fig.suptitle('%s - %s' % (cellType, suffix), color=color)
+
+#func('Martinotti', 'Full', 'tab:orange')
+
+
+# %%
+func('Martinotti', 'Full', 'tab:orange')
+func('Martinotti', 'noNMDA', 'tab:purple')
+func('Basket', 'Full', 'tab:red')
+
+# %%
 rate_smoothing = 20. # ms
 
 results = {}
 def load_sim(cellType, suffix):
 
     sim = Parallel(\
-            filename='../data/detailed_model/StepStim_demo_%siRange%s.zip' % (cellType, suffix))
+            filename='../data/detailed_model/StepSim_demo_%siRange%s.zip' % (cellType, suffix))
 
     sim.load()
 
@@ -654,7 +725,6 @@ for iSS, SS in enumerate(np.unique(sim.synapse_subsampling)):
 rate_smoothing = 10. # ms
 
 for iBranch in range(6):
-    
     
     results = {}
     sim = Parallel(\

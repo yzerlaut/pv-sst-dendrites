@@ -264,7 +264,7 @@ if __name__=='__main__':
     elif args.test_with_repeats:
 
         sim = Parallel(\
-            filename='../data/detailed_model/GratingStim_demo_%s%s.zip' %\
+            filename='../data/detailed_model/GratingSim_demo_%s%s.zip' %\
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))

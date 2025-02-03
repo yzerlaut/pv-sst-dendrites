@@ -1066,7 +1066,7 @@ SIMS = {\
     'SST-no-STP':  {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
 }
 
-Freqs = [8., 8., 1., 1.]
+Freqs = [8.2, 8.2, 1.2, 1.4]
 
 for i, model in enumerate(SIMS['models']):
     SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model],
@@ -1101,6 +1101,7 @@ pt.bar_legend(ax, X=range(len(Freqs)),
               colorbar_inset={'rect': [1.05, 0.1, 0.04, 0.9], 'facecolor': None},
               label='step factor',
               colormap=pt.viridis)
+fig.suptitle('SST STP', color='tab:orange')
 
 # %%
 Freqs = [6, 8, 10 , 12]
@@ -1120,6 +1121,7 @@ pt.bar_legend(ax, X=range(len(Freqs)),
               colorbar_inset={'rect': [1.05, 0.1, 0.04, 0.9], 'facecolor': None},
               label='step factor',
               colormap=pt.viridis)
+fig.suptitle('PV STP', color='tab:red')
 
 # %%
 Freqs = [0.25, 0.5, 1.0, 1.5]
