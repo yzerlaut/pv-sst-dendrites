@@ -1039,9 +1039,10 @@ pt.set_plot(ax, xlabel='time (s)', ylabel='input rate')
 
 # %%
 def sim_release(release_proba_params={},
-                stimFreq = 1., stepFactor=8.,
-                nSyns = 500, tau=0.05,
-                dt = 1e-3, tstop=4):
+                stimFreq = 1., stepFactor=4.,
+                nSyns = 1000, tau=0.05,
+                dt = 1e-3, tstop=4,
+                seed=1):
 
     t = np.arange(int(tstop/dt))*dt
     rate = get_rate(t, stimFreq=stimFreq, stepFactor=stepFactor)
@@ -1049,7 +1050,7 @@ def sim_release(release_proba_params={},
     Release = 0*t    
     for i in range(nSyns):
         release_Events = get_release_events(\
-                    np.array(PoissonSpikeTrain(rate, dt=dt, tstop=t[-1], seed=i)),
+                    np.array(PoissonSpikeTrain(rate, dt=dt, tstop=t[-1], seed=seed**5*i%10000)),
                                                **release_proba_params)
         Release += rough_release_dynamics(release_Events, 
                                               tstop=t[-1]+dt, dt=dt, tau=tau)
@@ -1065,51 +1066,60 @@ SIMS = {\
     'SST-no-STP':  {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
 }
 
-Freqs = [4, 4, 0.5, 0.5]
+Freqs = [8., 8., 1., 1.]
 
 for i, model in enumerate(SIMS['models']):
     SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model],
-                                                      stimFreq=Freqs[i])
+                                                      stimFreq=Freqs[i], seed=3)
     
 COLORS = ['tab:red', 'darkred', 'tab:orange', 'gold']
-fig, AX = pt.figure(axes=(1,2), figsize=(2, 2), hspace=0.4)
-AX[0].fill_between(SIMS['t'], 0*SIMS['t'], get_rate(SIMS['t']), color='lightgray')
-pt.annotate(AX[0], ' input rate (Hz)', (1,1), va='top', ha='right')
-pt.draw_bar_scales(AX[0], Xbar=0.1, Ybar=1, Ybar_label='1Hz ')
+fig, ax = pt.figure(figsize=(2, 2))
 for i, model in enumerate(SIMS['models']):
-    AX[1].plot(SIMS['t'], SIMS['release_%s'%model]/np.max(SIMS['release_%s'%model]), color=COLORS[i])
-    pt.annotate(AX[1], i*'\n'+model, (1,.8), color=COLORS[i], va='top')
-for ax in pt.flatten(AX):
-    ax.axis('off')
-    pt.draw_bar_scales(ax, Xbar=0.1, Xbar_label='100ms 'if ax==AX[0] else '',
-                       Ybar=1 if ax==AX[0] else 1e-12, Ybar_label='1Hz 'if ax==AX[0] else '')
-pt.annotate(AX[1], 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
-
-# %%
-Freqs = [0.25, 0.5, 1.0, 1.5]
-
-fig, ax = pt.figure(figsize=(2, 2))
-
-
-for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=4.)
-    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
-    
-pt.draw_bar_scales(AX[0], Xbar=0.1)
+    ax.plot(SIMS['t'], SIMS['release_%s'%model]/np.max(SIMS['release_%s'%model]), color=COLORS[i])
+    pt.annotate(ax, i*'\n'+model+'(%.1fHz)' % Freqs[i], (1,.8), color=COLORS[i], va='top')
+ax.plot(SIMS['t'], get_rate(SIMS['t'])/np.max(get_rate(SIMS['t'])), color='lightgray', lw=2)
+ax.axis('off')
+pt.draw_bar_scales(ax, Xbar=0.1, Xbar_label='100ms ')
 pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
 
 # %%
-Freqs = [0.25, 0.5, 1.0, 1.5]
+Freqs = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2]
 
-fig, ax = pt.figure(figsize=(2, 2))
+fig, ax = pt.figure(figsize=(2, 2), right=5)
 
 
 for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=8.)
-    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
+    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/(len(Freqs)-1)))
     
+ax.plot(SIMS['t'], get_rate(SIMS['t'])/np.max(get_rate(SIMS['t'])), color='lightgray', lw=2)
+ax.axis('off')
 pt.draw_bar_scales(AX[0], Xbar=0.1)
 pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+pt.bar_legend(ax, X=range(len(Freqs)),
+              ticks_labels=['%.2f' % f for f in Freqs],
+              colorbar_inset={'rect': [1.05, 0.1, 0.04, 0.9], 'facecolor': None},
+              label='step factor',
+              colormap=pt.viridis)
+
+# %%
+Freqs = [6, 8, 10 , 12]
+
+fig, ax = pt.figure(figsize=(2, 2), right=5)
+
+for i, f in enumerate(Freqs):
+    t, rel = sim_release(release_proba_params=SIMS['PV'], stimFreq=f, stepFactor=4.)
+    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/(len(Freqs)-1)))
+    
+ax.plot(SIMS['t'], get_rate(SIMS['t'])/np.max(get_rate(SIMS['t'])), color='lightgray', lw=2)
+ax.axis('off')
+pt.draw_bar_scales(AX[0], Xbar=0.1)
+pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
+pt.bar_legend(ax, X=range(len(Freqs)),
+              ticks_labels=['%.1f' % f for f in Freqs],
+              colorbar_inset={'rect': [1.05, 0.1, 0.04, 0.9], 'facecolor': None},
+              label='step factor',
+              colormap=pt.viridis)
 
 # %%
 Freqs = [0.25, 0.5, 1.0, 1.5]

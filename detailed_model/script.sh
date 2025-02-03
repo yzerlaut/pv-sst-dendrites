@@ -186,13 +186,15 @@ then
            "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" ""
           "--with_STP" "")
-    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.5 1.5 1.5 1.5 8.0 8.0)
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" 
+            "Full" "noSTP")
+    freqs=(1.5 1.5 1.5 1.5 
+           8.0 8.0)
     for c in 1 2 3 4 5 6
     do
         widths=(50 200 1000 2000)
-        #nSeeds=(10 4 2 2) # for debugging
-        nSeeds=(160 80 20 20)
+        nSeeds=(10 4 2 2) # for debugging
+        #nSeeds=(160 80 20 20)
         for i in 1 2 3 4
         do
             python step_stim.py\
