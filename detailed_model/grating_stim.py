@@ -286,7 +286,7 @@ if __name__=='__main__':
 
         for iBranch in range(args.nBranch):
 
-            params['iBranch'] = b
+            params['iBranch'] = iBranch
 
             sim = Parallel(\
                 filename='../data/detailed_model/GratingSim_%s%s_branch%i.zip' %\
