@@ -73,7 +73,7 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=160
+    nSeed=200
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA" "" "")
     suffix=("noSTP" "noSTPnoNMDA" "noSTP")
@@ -88,6 +88,7 @@ then
             python step_stim.py\
                 --test_with_repeats\
                 -c ${cells[$c-1]} ${args[$c-1]}\
+                --with_Vm 100\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
@@ -104,20 +105,21 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=160
+    nSeed=120
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("noSTP" "noSTPnoNMDA" "noSTP")
     branch=(0 0 1)
-    freqs=(1.0 1.15 8)
+    freqs=(1.2 1.2 8)
     for c in 1 2 3
     do
-        widths=(200 800 800)
+        widths=(200 200 1000)
         ampFs=(4 2 2)
         for i in 1 2 3
         do
             python step_stim.py\
                 --test_with_repeats\
+                --with_Vm 30\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
@@ -126,7 +128,7 @@ then
                 --stepAmpFactor ${ampFs[$i-1]}\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed $nSeed\
-                --interstim $(((2200-${widths[$i-1]})/2))\
+                --interstim $(((2000-${widths[$i-1]})/2))\
                 --iBranch ${branch[$c-1]}\
                 --suffix ${suffix[$c-1]}$i
         done
@@ -145,13 +147,13 @@ then
            8.2 8.2)
     for c in 1 2 3 4 5 6
     do
-        widths=(50 200 1000)
-        nSeeds=(20 8 4 4) # for debugging
-        #nSeeds=(160 80 20 20)
+        widths=(50 100 200 1000)
+        #nSeeds=(20 8 4 4) # for debugging
+        nSeeds=(160 80 20 20)
         for i in 1 2 3 4
         do
             python step_stim.py\
-                --no_Vm\
+                --with_Vm 0\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\

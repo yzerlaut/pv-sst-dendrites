@@ -82,13 +82,12 @@ def load_sim(RESULTS, cellType,
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/StepSim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/StepStim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
 
     seeds = np.unique(sim.spikeSeed)
-    
     dt = sim.fetch_quantity_on_grid('dt', return_last=True)
     tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
 
@@ -99,6 +98,7 @@ def load_sim(RESULTS, cellType,
     RESULTS['rate_%s' % cellType] = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                            int(rate_smoothing/dt))
     RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
+    print(cellType, RESULTS['stimFreq_%s' % cellType])
     #RESULTS['bgFreqInhFactor_%s' % cellType] = sim.fetch_quantity_on_grid('bgFreqInhFactor', return_last=True)
     RESULTS['t_%s' % cellType] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt    
@@ -181,12 +181,14 @@ for i in np.arange(1,4):
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottinoSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottinoSTPnoNMDA-Step%i' % i)
@@ -198,12 +200,14 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 # %%
 rate_smoothing = 5
 view=[-1200, 1200]
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('BasketwiSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiwiSTP-Step%i' % i)
@@ -303,7 +307,9 @@ fig, AX = pt.figure(axes=(4,
 INSETS = []
 #for ax in pt.flatten(AX):
 #    ax.axis('off')
-for suffix, color, line in zip(['Full', 'NoNMDA'], ['tab:orange', 'tab:purple'], ['-', '-']):
+for suffix, color, line in zip(['Full', 'noNMDA', 'noSTP'],
+                               ['tab:orange', 'tab:purple'],
+                               ['-', '-']):
     for iW, W in enumerate(results['stepWidth_%s' % cellType]):
         for iA, A in enumerate(results['stepAmpFactor_%s' % cellType]):
             try:
@@ -329,6 +335,8 @@ pt.set_common_ylims(AX)
 for ax in pt.flatten(AX):
     pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if ax==AX[0][0] else '',
                        Xbar=100, Xbar_label='100ms' if ax==AX[0][0] else '')
+
+# %%
 
 # %%
 load_sim(results, 'Basket', 'Full')
