@@ -26,7 +26,7 @@ def run_sim(cellType='Basket',
             AMPAboost=0,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
-            with_Vm=0,
+            no_Vm=True,
             spike_threshold=0.,
             dt= 0.01):
 
@@ -148,6 +148,7 @@ def run_sim(cellType='Basket',
     ampaNETCONS, nmdaNETCONS, gabaNETCONS = None, None, None
     STIMS, VECSTIMS = None, None
 
+    Vm = np.array(Vm_soma)
     # save the output
     output = {'Stim':Stim,
               'spikes':dt*\
@@ -161,8 +162,8 @@ def run_sim(cellType='Basket',
               'stepAmpFactor':stepAmpFactor,
               'tstop':tstop}
 
-    if with_Vm>0:
-        output['Vm_soma'] = np.array(Vm_soma)[:with_Vm,:]
+    if not no_Vm:
+        output['Vm_soma'] = Vm
 
     if with_presynaptic_spikes:
         output['presynaptic_exc_events'] = [TRAINS[i]\
@@ -230,7 +231,7 @@ if __name__=='__main__':
                         action="store_true")
     parser.add_argument("-wps", "--with_presynaptic_spikes", 
                         action="store_true")
-    parser.add_argument("--with_Vm", type=int, default=-1)
+    parser.add_argument("--no_Vm", action="store_true")
 
     parser.add_argument("--dt", type=float, default=0.025)
 
@@ -252,7 +253,7 @@ if __name__=='__main__':
                   with_STP=args.with_STP,
                   from_uniform=args.from_uniform,
                   interstim=args.interstim,
-                  with_Vm=args.with_Vm,
+                  no_Vm=args.no_Vm,
                   dt=args.dt)
 
     if args.test:

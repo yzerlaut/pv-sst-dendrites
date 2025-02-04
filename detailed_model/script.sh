@@ -88,7 +88,6 @@ then
             python step_stim.py\
                 --test_with_repeats\
                 -c ${cells[$c-1]} ${args[$c-1]}\
-                --with_Vm 100\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
@@ -119,7 +118,6 @@ then
         do
             python step_stim.py\
                 --test_with_repeats\
-                --with_Vm 30\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
@@ -153,7 +151,7 @@ then
         for i in 1 2 3 4
         do
             python step_stim.py\
-                --with_Vm 0\
+                --no_Vm\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
