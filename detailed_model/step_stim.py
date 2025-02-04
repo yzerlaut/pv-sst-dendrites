@@ -252,7 +252,7 @@ if __name__=='__main__':
                   with_STP=args.with_STP,
                   from_uniform=args.from_uniform,
                   interstim=args.interstim,
-                  no_Vm=args.no_Vm,
+                  with_Vm=args.with_Vm,
                   dt=args.dt)
 
     if args.test:
