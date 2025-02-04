@@ -230,7 +230,7 @@ if __name__=='__main__':
                         action="store_true")
     parser.add_argument("-wps", "--with_presynaptic_spikes", 
                         action="store_true")
-    parser.add_argument("--with_Vm", dtype=int, default=-1)
+    parser.add_argument("--with_Vm", type=int, default=-1)
 
     parser.add_argument("--dt", type=float, default=0.025)
 
