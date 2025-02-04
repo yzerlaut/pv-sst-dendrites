@@ -104,58 +104,32 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=200
-    widths=(200 200 2000)
-    ampFs=(4 2 2)
-    for i in 1 2 3
+    nSeed=160
+    cells=("Martinotti" "Martinotti" "Basket")
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
+    suffix=("noSTP" "noSTPnoNMDA" "noSTP")
+    branch=(0 0 1)
+    freqs=(1.0 1.15 8)
+    for c in 1 2 3
     do
-        ## Basket Cell
-        python step_stim.py\
-            --test_with_repeats\
-            -c Basket\
-            --with_STP \
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 8\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 1\
-            --interstim $(((3000-${widths[$i-1]})/2))\
-            --nSpikeSeed $nSeed\
-            --suffix wiSTP-Step$i
-        # Martinotti Cell - with NMDA
-        python step_stim.py\
-            --test_with_repeats\
-            -c Martinotti\
-            --with_NMDA \
-            --with_STP \
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 1.2\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 0\
-            --interstim $(((3000-${widths[$i-1]})/2))\
-            --nSpikeSeed $nSeed\
-            --suffix wiSTP-Step$i
-        # Martinotti Cell - no NMDA
-        python step_stim.py\
-            --test_with_repeats\
-            -c Martinotti\
-            --with_STP\
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 1.2\
-            --AMPAboost 4.5\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 0\
-            --interstim $(((3000-${widths[$i-1]})/2))\
-            --nSpikeSeed $nSeed\
-            --suffix wiSTPnoNMDA-Step$i
+        widths=(200 800 800)
+        ampFs=(4 2 2)
+        for i in 1 2 3
+        do
+            python step_stim.py\
+                --test_with_repeats\
+                -c ${cells[$c-1]} ${args[$c-1]}\
+                --Inh_fraction 0.2\
+                --synapse_subsampling 1\
+                --stimFreq ${freqs[$c-1]}\
+                --AMPAboost 4.5\
+                --stepAmpFactor ${ampFs[$i-1]}\
+                --stepWidth ${widths[$i-1]}\
+                --nSpikeSeed $nSeed\
+                --interstim $(((2200-${widths[$i-1]})/2))\
+                --iBranch ${branch[$c-1]}\
+                --suffix ${suffix[$c-1]}$i
+        done
     done
 fi
 

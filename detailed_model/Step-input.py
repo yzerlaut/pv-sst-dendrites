@@ -82,7 +82,7 @@ def load_sim(RESULTS, cellType,
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/StepSim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/StepStim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -177,14 +177,14 @@ def plot_sim(RESULTS, cellTypes,
 
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
-    cellTypes.append('BasketNoSTP-Step%i' % i)
+    cellTypes.append('BasketnoSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
 try:
     cellTypes, RESULTS = [], {}
     for i in np.arange(1,4):
-        cellTypes.append('MartinottiNoSTP-Step%i' % i)
+        cellTypes.append('MartinottinoSTP-Step%i' % i)
         RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
         load_sim(RESULTS, cellTypes[-1]) 
     fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
@@ -192,7 +192,7 @@ except BaseException as be:
     pass
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
-    cellTypes.append('MartinottiNoSTPNoNMDA-Step%i' % i)
+    cellTypes.append('MartinottinoSTPnoNMDA-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
