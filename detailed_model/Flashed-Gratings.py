@@ -38,21 +38,19 @@ def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
 P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
-         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
-np.save('../data/detailed_model/grating-stim-input-params.npy', P)
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2, Amp=0.25)
 
-def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
+def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0, Amp=0):
     y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
-            0.25*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
+            Amp*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
     
 tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
 fig, ax = pt.figure(figsize=(1.,1))
-P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
 pt.plot(1e-3*t, signal(1e-3*t-0.5, **P), ax=ax, no_set=True)
 ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
-#pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
+pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
 # %% [markdown]
 # # Test Simulation

@@ -145,7 +145,7 @@ then
            8.2 8.2)
     for c in 1 2 3 4 5 6
     do
-        widths=(50 200 1000 2000)
+        widths=(50 200 1000)
         nSeeds=(20 8 4 4) # for debugging
         #nSeeds=(160 80 20 20)
         for i in 1 2 3 4

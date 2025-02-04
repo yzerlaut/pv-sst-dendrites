@@ -6,6 +6,22 @@ sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
+P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2, Amp=0.25)
+
+from scipy.special import erf
+# Grating Stim Function:
+def sigmoid(x, width=0.1):
+    return (1+erf(x/width))/2.
+
+def func(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0, Amp=0):
+    y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
+            Amp*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
+    return y/y.max()
+
+def input_signal(x, P=P):
+    return func(x, **P)
+
 def run_sim(cellType='Basket', 
             passive_only=False,
             iBranch=0,
@@ -30,6 +46,7 @@ def run_sim(cellType='Basket',
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain,\
                                     STP_release_filter
     from scipy.special import erf
+    from grating_stim import input_signal 
 
     tstop = 4e3 # -0.5s:3.5s
 
@@ -87,19 +104,7 @@ def run_sim(cellType='Basket',
                                             seed=trialSeed)
 
     t = np.arange(int(tstop/dt))*dt
-
-    # Grating Stim Function:
-    def sigmoid(x, width=0.1):
-        return (1+erf(x/width))/2.
-
-    def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
-        y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
-                0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
-        return y/y.max()
-
-    P = np.load('../data/detailed_model/grating-stim-input-params.npy',
-                allow_pickle=True).item()
-    Stim = stimFreq*(1+stepAmpFactor*signal(t*1e-3-0.5, **P))
+    Stim = stimFreq*(1+stepAmpFactor*input_signal(t*1e-3-0.5))
 
     # -- synaptic activity 
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
