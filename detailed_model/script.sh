@@ -507,12 +507,12 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=80
+    nSeed=96
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     branch=(0 0 0 0 1 1)
-    freqs=(1.0 1.0 1.0 1.0 8.0 8.0)
+    freqs=(1.0 0.5 1.0 1.0 8.0 8.0)
     #for c in 1 2 3 4 5 6
     for c in 2
     do
@@ -552,6 +552,45 @@ then
     done
 fi
 
+if [[ $1 == 'all' || $1 == 'grating-ampa-ratio' ]]
+then
+    nSeed=12
+    python grating_stim.py --test_with_repeats\
+        -c Martinotti --with_STP\
+        --with_presynaptic_spikes\
+        --Inh_fraction 0.2\
+        --synapse_subsampling 1\
+        --stimFreq 2.0\
+        --AMPAboost 1.5 2 2.5 3 3.5\
+        --stepAmpFactor 4\
+        --iBranch 0\
+        --nSpikeSeed $nSeed\
+        --suffix AmpaRationoNMDA
+fi
+
+if [[ $1 == 'all' || $1 == 'grating-range' ]]
+then
+    nSeed=48
+    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
+    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP")
+    branch=(0 0 0 0 1 1)
+    freqs=(1.0 1.1 1.0 1.0 8.0 8.0)
+    #for c in 1 2 3 4 5 6
+    for c in 2
+    do
+        python grating_stim.py --test_with_repeats\
+            -c Martinotti ${args[$c-1]}\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8\
+            --AMPAboost 4.5\
+            --stepAmpFactor 4\
+            --iBranch ${branch[$c-1]}\
+            --nSpikeSeed $nSeed\
+            --suffix ${suffix[$c-1]}${i}Range
+    done
+fi
 END=$(date +%s)
 DIFF=$(( $END - $START ))
 H=$(($DIFF/3600))

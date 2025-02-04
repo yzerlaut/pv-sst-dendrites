@@ -1028,7 +1028,8 @@ P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle
 def get_rate(t, stimFreq=1., stepFactor=4.):
     rate = stimFreq+0*t
     rate += stimFreq*stepFactor*signal(t-0.5, **P)
-    return rate 
+    #return rate 
+    return signal(t, **P)
     
 tstop, dt = 4, 1e-3
 t = np.arange(int(tstop/dt))*dt

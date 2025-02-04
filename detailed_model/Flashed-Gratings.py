@@ -37,22 +37,22 @@ import matplotlib.pylab as plt
 def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
-P = dict(t1=0.2, t2=0.4, t3=0.7, t4=2.1,
-         w1=0.05, w2=0.3, w3=0.2, w4=0.2)
+P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
 np.save('../data/detailed_model/grating-stim-input-params.npy', P)
 
 def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
     y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
-            0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
+            0.25*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
     
 tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
-fig, ax = pt.figure(figsize=(1.5,1))
+fig, ax = pt.figure(figsize=(1.,1))
 P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
-pt.plot(1e-3*t, signal(1e-3*t-0.5, **P), ax=ax)
+pt.plot(1e-3*t, signal(1e-3*t-0.5, **P), ax=ax, no_set=True)
 ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
-pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
+#pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
 # %% [markdown]
 # # Test Simulation
@@ -106,7 +106,7 @@ RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
 def load_sim(cellType, RESULTS):
     
     sim = Parallel(\
-            filename='../data/detailed_model/GratingStim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/GratingSim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -137,7 +137,7 @@ def load_sim(cellType, RESULTS):
 def load_example_index(cellType, RESULTS):
     
     sim = Parallel(\
-            filename='../data/detailed_model/GratingStim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/GratingSim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
@@ -232,6 +232,126 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
         RESULTS['%s_example_index' % cellType] = example_index
         load_example_index(cellType, RESULTS) 
         fig, _ = plot_sim(cellType, color=color)
+
+# %% [markdown]
+# ## Input Range
+
+# %%
+
+rate_smoothing = 30. # ms
+
+results = {}
+sim = Parallel(\
+        filename='../data/detailed_model/GratingSim_demo_MartinottinoNMDARange.zip')
+sim.load()
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+sim.fetch_quantity_on_grid('Stim', dtype=list)
+
+results['traceRate'] = np.zeros((len(np.unique(sim.stimFreq)), int(tstop/dt)+1)) # create the array
+results['t'] = np.arange(int(tstop/dt)+1)*dt
+results['stimFreq'] = np.unique(sim.stimFreq)
+    
+for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+
+    # compute time-varying RATE !
+    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+    for k, spikes in enumerate(\
+        [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+        spikes_matrix[k,(spikes/dt).astype('int')] = True
+    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                  int(rate_smoothing/dt))
+    results['traceRate'][iSF,:] = rate
+    results['Stim%i'%iSF] = sim.Stim[0][iSF]
+
+fig, AX = pt.figure(axes=(len(results['stimFreq']), 1), right=4.,
+                    figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+INSETS = []
+for iSF, SF in enumerate(results['stimFreq']):
+    pt.plot(results['t'], results['traceRate'][iSF,:], ax=AX[iSF], 
+                      color=pt.viridis(iSF/(len(results['stimFreq'])-1)))
+    INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+    INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
+    INSETS[-1].axis('off')             
+    
+    pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0)),
+                    (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
+pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
+for ax in pt.flatten(AX):
+    pt.set_plot(ax, ['left'] if ax==AX[0] else [])
+pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+    
+pt.bar_legend(AX[-1], X=results['stimFreq'],
+              ticks_labels=['%.1f' % f for f in results['stimFreq']],
+              colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
+              label='stimFreq (Hz)',
+              colormap=pt.viridis)
+fig.suptitle('SST - no NMDA', color='tab:purple')
+
+#func('Martinotti', 'Full', 'tab:orange')
+
+# %%
+
+rate_smoothing = 30. # ms
+
+results = {}
+sim = Parallel(\
+        filename='../data/detailed_model/GratingSim_demo_MartinottiAmpaRationoNMDA.zip')
+sim.load()
+
+sim.fetch_quantity_on_grid('spikes', dtype=list)
+seeds = np.unique(sim.spikeSeed)
+dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+sim.fetch_quantity_on_grid('Stim', dtype=list)
+
+results['traceRate'] = np.zeros((len(np.unique(sim.AMPAboost)), int(tstop/dt)+1)) # create the array
+results['t'] = np.arange(int(tstop/dt)+1)*dt
+results['AMPAboost'] = np.unique(sim.AMPAboost)
+    
+for iSF, SF in enumerate(np.unique(sim.AMPAboost)):
+
+    # compute time-varying RATE !
+    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+    for k, spikes in enumerate(\
+        [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+        spikes_matrix[k,(spikes/dt).astype('int')] = True
+    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                  int(rate_smoothing/dt))
+    results['traceRate'][iSF,:] = rate
+    results['Stim%i'%iSF] = sim.Stim[0][iSF]
+
+fig, AX = pt.figure(axes=(len(results['AMPAboost']), 1), right=4.,
+                    figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+INSETS = []
+for iSF, SF in enumerate(results['AMPAboost']):
+    pt.plot(results['t'], results['traceRate'][iSF,:], ax=AX[iSF], 
+                      color=pt.viridis(iSF/(len(results['AMPAboost'])-1)))
+    INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+    INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
+    INSETS[-1].axis('off')             
+    
+    pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0)),
+                    (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['AMPAboost'])-1)), fontsize=7)
+pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
+for ax in pt.flatten(AX):
+    pt.set_plot(ax, ['left'] if ax==AX[0] else [])
+pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+    
+pt.bar_legend(AX[-1], X=results['AMPAboost'],
+              ticks_labels=['%.1f' % f for f in results['AMPAboost']],
+              colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
+              label='AMPAboost',
+              colormap=pt.viridis)
+fig.suptitle('SST - no NMDA', color='tab:purple')
+
+#func('Martinotti', 'Full', 'tab:orange')
+
+# %%
+sim.AMPAboost
 
 # %% [markdown]
 # # Summary Effect
