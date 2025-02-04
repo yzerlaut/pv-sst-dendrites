@@ -74,54 +74,33 @@ if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
     nSeed=200
-    widths=(50 50 200)
-    ampFs=(4 2 2)
-    for i in 1 2 3
+    cells=("Martinotti" "Martinotti" "Basket")
+    args=("--with_NMDA" "" "")
+    suffix=("noSTP" "noSTPnoNMDA" "noSTP")
+    branch=(0 0 1)
+    freqs=(1 1 8)
+    for c in 1 2 3
     do
-        ## Basket Cell
-        python step_stim.py\
-            --test_with_repeats\
-            -c Basket\
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 8\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 1\
-            --nSpikeSeed $nSeed\
-            --suffix noSTP-Step$i
-        # Martinotti Cell - with NMDA
-        python step_stim.py\
-            --test_with_repeats\
-            -c Martinotti\
-            --with_NMDA\
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 1.5\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 0\
-            --nSpikeSeed $nSeed\
-            --suffix noSTP-Step$i
-        # Martinotti Cell - no NMDA
-        python step_stim.py\ 
-            --test_with_repeats\
-            -c Martinotti\
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq 1.5\
-            --AMPAboost 4.5\
-            --stepAmpFactor ${ampFs[$i-1]}\
-            --stepWidth ${widths[$i-1]}\
-            --iBranch 0\
-            --nSpikeSeed $nSeed\
-            --suffix noSTPnoNMDA-Step$i
+        widths=(50 50 200)
+        ampFs=(4 2 2)
+        for i in 1 2 3
+        do
+            python step_stim.py\
+                --test_with_repeats\
+                -c ${cells[$c-1]} ${args[$c-1]}\
+                --Inh_fraction 0.2\
+                --synapse_subsampling 1\
+                --stimFreq ${freqs[$c-1]}\
+                --AMPAboost 4.5\
+                --stepAmpFactor ${ampFs[$i-1]}\
+                --stepWidth ${widths[$i-1]}\
+                --nSpikeSeed $nSeed\
+                --iBranch ${branch[$c-1]}\
+                --suffix ${suffix[$c-1]}$i
+        done
     done
-    ### ----- SIMULATIONS WITH STP ----- ###
 fi
+
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
