@@ -192,7 +192,6 @@ then
     python step_stim.py\
         -c Martinotti\
         --with_NMDA\
-        --no_Vm\
         --synapse_subsampling 1\
         --nSpikeSeed $nSeed\
         --stepWidth 200\
@@ -210,7 +209,6 @@ then
     ## Basket Cell
     python step_stim.py\
         -c Basket\
-        --no_Vm\
         --synapse_subsampling 1\
         --nSpikeSeed $nSeed\
         --stepWidth 200\
