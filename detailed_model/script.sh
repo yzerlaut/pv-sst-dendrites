@@ -539,7 +539,8 @@ then
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     branch=(0 0 0 0 1 1)
     freqs=(1.0 1.0 1.0 1.0 8.0 8.0)
-    for c in 1 2 3 4 5 6
+    #for c in 1 2 3 4 5 6
+    for c in 2
     do
         python grating_stim.py --test_with_repeats\
             -c ${cells[$c-1]} ${args[$c-1]}\

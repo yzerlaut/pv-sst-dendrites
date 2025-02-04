@@ -82,7 +82,7 @@ def load_sim(RESULTS, cellType,
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/StepStim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/StepSim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -121,7 +121,7 @@ def load_sim(RESULTS, cellType,
         RESULTS['pre_inh_%s' % cellType] = sim.presynaptic_inh_events[RESULTS['%s_example_index' % cellType]]
         
 def plot_sim(RESULTS, cellTypes,
-             interstim=30, view=[-200, 400],
+             interstim=30, Tbar=50, view=[-200, 400],
              color='k',
              figsize=(1.2,0.6)):
 
@@ -165,7 +165,7 @@ def plot_sim(RESULTS, cellTypes,
 
     pt.set_common_xlims(AX)#, lims=zoom)
     
-    pt.draw_bar_scales(AX[0], Xbar=50, Xbar_label='50ms', Ybar=2*RESULTS['stimFreq_%s' % cellType], ycolor=color,
+    pt.draw_bar_scales(AX[0], Xbar=Tbar, Xbar_label='%ims'%Tbar, Ybar=2*RESULTS['stimFreq_%s' % cellType], ycolor=color,
                        Ybar_label='%.0fHz' % (2*RESULTS['stimFreq_%s' % cellType]))
     #pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
@@ -181,14 +181,15 @@ for i in np.arange(1,4):
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
-"""
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottiNoSTP-Step%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
-"""
+try:
+    cellTypes, RESULTS = [], {}
+    for i in np.arange(1,4):
+        cellTypes.append('MartinottiNoSTP-Step%i' % i)
+        RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+        load_sim(RESULTS, cellTypes[-1]) 
+    fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+except BaseException as be:
+    pass
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiNoSTPNoNMDA-Step%i' % i)
@@ -199,25 +200,25 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 
 # %%
 rate_smoothing = 5
-view=[-500, 700]
+view=[-1200, 1200]
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('BasketwiSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3), view=view)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiwiSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3), view=view)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiwiSTPNoNMDA-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1], rate_smoothing=rate_smoothing) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3), view=view)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
 
 # %% [markdown]
 # ## Look for traces
@@ -466,8 +467,8 @@ def func(cellType='Martinotti', suffix='Full', color='tab:orange'):
 
 
 # %%
-func('Martinotti', 'Full', 'tab:orange')
-func('Martinotti', 'noNMDA', 'tab:purple')
+#func('Martinotti', 'Full', 'tab:orange')
+#func('Martinotti', 'noNMDA', 'tab:purple')
 func('Basket', 'Full', 'tab:red')
 
 # %%

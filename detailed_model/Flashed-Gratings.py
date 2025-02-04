@@ -97,7 +97,7 @@ for ax in AX:
 # # Plot
 
 # %%
-rate_smoothing = 40. # ms
+rate_smoothing = 10. # ms
 zoom = [200,4000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
@@ -198,12 +198,15 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
 for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA','MartinottinoNMDAnoSTP'],
                                   ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
                                   [1, 9, 1, 1]):
-    
-    load_sim(cellType, RESULTS) 
-    RESULTS['%s_example_index' % cellType] = index # change here !
-    load_example_index(cellType, RESULTS) 
-        
-    fig, _ = plot_sim(cellType, color=color, figsize=(2.2,0.4))
+    try:
+        load_sim(cellType, RESULTS) 
+        RESULTS['%s_example_index' % cellType] = index # change here !
+        load_example_index(cellType, RESULTS) 
+            
+        fig, _ = plot_sim(cellType, color=color, figsize=(2.2,0.4))
+    except BaseException as be:
+        print(cellType)
+        print(be)
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %%
