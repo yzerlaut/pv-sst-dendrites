@@ -172,8 +172,8 @@ then
     for c in 1 2 3 4 5 6
     do
         widths=(50 200 1000 2000)
-        #nSeeds=(10 4 2 2) # for debugging
-        nSeeds=(160 80 20 20)
+        nSeeds=(20 8 4 4) # for debugging
+        #nSeeds=(160 80 20 20)
         for i in 1 2 3 4
         do
             python step_stim.py\
@@ -186,7 +186,6 @@ then
                 --stepAmpFactor 2 3 4\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed ${nSeeds[$i-1]}\
-                --dt 10\
                 --suffix vSteps${suffix[$c-1]}$i
         done
     done

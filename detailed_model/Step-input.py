@@ -181,12 +181,14 @@ for i in np.arange(1,4):
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiNoSTP-Step%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
+"""
 cellTypes, RESULTS = [], {}
 for i in np.arange(1,4):
     cellTypes.append('MartinottiNoSTPNoNMDA-Step%i' % i)
@@ -241,28 +243,30 @@ def load_sim(results, cellType, suffix):
 
     rates = []
     results['stepWidth_%s' % cellType] = []
-    for iWidth in range(1, 5):
-
-        filename = '../data/detailed_model/StepStim_sim_%s_vSteps%s%i.zip' % (cellType, suffix, iWidth)
-        try:
-            sim = Parallel(filename=filename)
-            sim.load()
     
-            sim.fetch_quantity_on_grid('spikes', dtype=list)
-            sim.fetch_quantity_on_grid('Stim', dtype=list)
-            seeds = np.unique(sim.spikeSeed)
-            sim.fetch_quantity_on_grid('dt')
-            sim.fetch_quantity_on_grid('tstop')
+    for iWidth in range(1, 5):
+        for iBranch in range(6):
             
-            for iB, B in enumerate(np.unique(sim.iBranch)):
+            filename = '../data/detailed_model/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
+            try:
+                sim = Parallel(filename=filename)
+                sim.load()
+        
+                sim.fetch_quantity_on_grid('spikes', dtype=list)
+                sim.fetch_quantity_on_grid('Stim', dtype=list)
+                seeds = np.unique(sim.spikeSeed)
+                sim.fetch_quantity_on_grid('dt')
+                sim.fetch_quantity_on_grid('tstop')
+                
                 for iA, A in enumerate(np.unique(sim.stepAmpFactor)):
                     # compute time-varying RATE !
-                    dt, tstop = sim.dt[0][iA][iB], sim.tstop[0][iA][iB]
+                    dt, tstop = sim.dt[0][iA], sim.tstop[0][iA]
+                    print(dt)
                     spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
                     for k, spikes in enumerate(\
-                        [np.array(sim.spikes[k][iA][iB]).flatten() for k in range(len(seeds))]):
+                        [np.array(sim.spikes[k][iA]).flatten() for k in range(len(seeds))]):
                         spikes_matrix[k,(spikes/dt).astype('int')] = True
-    
+        
                     rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                   int(rate_smoothing/dt))
                     if 'traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix) in results:
@@ -271,16 +275,15 @@ def load_sim(results, cellType, suffix):
                         results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)] = [rate]
                     if not 't_Width%i'%iWidth in results:
                         results['t_Width%i'%iWidth] = np.arange(len(rate))*dt
-                    results['stim_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType,suffix)] = sim.Stim[0][iA][iB]
-            
-            results['iBranch_%s' % cellType] = np.unique(sim.iBranch[0])
-            results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
-            results['stepWidth_%s' % cellType].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
-            
-        except BaseException as be:
-            print(be)
-            print(' Pb with "%s" ' % filename)
-
+                    results['stim_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType,suffix)] = sim.Stim[0][iA]
+                
+                results['iBranch'] = range(6)
+                results['stepAmpFactor_%s' % cellType] = np.unique(sim.stepAmpFactor[0])
+                results['stepWidth_%s' % cellType].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
+                
+            except BaseException as be:
+                print(be)
+                print(' Pb with "%s" ' % filename)
 
 
 # %%
