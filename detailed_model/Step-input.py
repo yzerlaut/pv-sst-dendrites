@@ -34,6 +34,7 @@ from analyz.processing.signanalysis import autocorrel, crosscorrel
 
 # %% [markdown]
 # # Test Simulation
+# run:
 # ```
 # python step_stim.py --test -c Martinotti\
 #         --with_NMDA\
@@ -43,6 +44,8 @@ from analyz.processing.signanalysis import autocorrel, crosscorrel
 #         --synapse_subsampling 1 --Inh_fraction 0.2\
 #         --iBranch 1 --spikeSeed 3
 # ```
+#
+# then plot with:
 
 # %%
 results = np.load('single_sim.npy', allow_pickle=True).item()
@@ -74,15 +77,16 @@ for ax in AX:
 
 
 # %% [markdown]
-# # Plot
+# # Raw data to illustrate the diverse spiking temporal properties
 
 # %%
 def load_sim(RESULTS, cellType,
              rate_smoothing = 2., # ms
+             n=1,
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/demo-step-1/StepSim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/demo-step-%i/StepSim_demo_%s.zip' % (n,cellType))
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -144,7 +148,7 @@ def plot_sim(RESULTS, cellTypes,
             
         # events
         if 'pre_inh_%s' % cellType in RESULTS:
-            subsampling = 3 if 'Basket' in cellType else 1 # for display only
+            subsampling = 5 if 'Basket' in cellType else 1 # for display only
             for i, events in enumerate(RESULTS['pre_exc_%s' % cellType][::subsampling]):
                 eCond = ((events-RESULTS['t_%s' % cellType].mean())>view[0]) &\
                                 ((events-RESULTS['t_%s' % cellType].mean())<view[1])
@@ -170,69 +174,74 @@ def plot_sim(RESULTS, cellTypes,
     return fig, AX
 
 
+# %% [markdown]
+# ## Short time scale -- no STP
+
 # %%
 cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
+for i, index in zip(np.arange(1,4), [2,23,0]):
     cellTypes.append('BasketnoSTP%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3))
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottinoSTP%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3))
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottinoSTPnoNMDA0%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
-#    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3))
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
 # %%
-rate_smoothing = 5
-view=[-1200, 1200]
+cellTypes, RESULTS = [], {}
+for i, index in zip(np.arange(1,4), [2,2,4]):
+    cellTypes.append('MartinottinoSTP%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(1.6,0.3))
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
+# %%
 cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('BasketwiSTP%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+for i, index in zip(np.arange(1,4), [2,2,4]):
+    cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
+
+# %%
 cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottiwiSTP%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+for i, index in zip(np.arange(1,4), [2,2,4]):
+    cellTypes.append('MartinottinoSTPnoNMDA0%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
-cellTypes, RESULTS = [], {}
-for i in np.arange(1,4):
-    cellTypes.append('MartinottiwiSTPnoNMDA%i' % i)
-    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
-    load_sim(RESULTS, cellTypes[-1]) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3), view=view, interstim=100, Tbar=200)
-#    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
+fig, _ = plot_sim(RESULTS, cellTypes, color='purple', figsize=(2.,0.3))
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
 # %% [markdown]
-# ## Look for traces
+# ## Long timescale -- with STP
 
 # %%
-for cellType, color in zip(['MartinottiNoSTP'], ['tab:orange']):
-    for example_index in range(0, 4):
-        cellTypes, RESULTS = [], {}
-        for i in np.arange(1,4):
-            cellTypes.append('%s-Step%i' % (cellType, i))
-            RESULTS['%s_example_index' % cellTypes[-1]] = example_index
-            load_sim(RESULTS, cellTypes[-1]) 
-        fig, _ = plot_sim(RESULTS, cellTypes, color=color, figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i, index in zip(np.arange(1,4), [2,23,0]):
+    cellTypes.append('BasketwiSTP%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
+    load_sim(RESULTS, cellTypes[-1], n=2) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3), view=[-600, 800], interstim=100, Tbar=200)
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
+
+# %%
+cellTypes, RESULTS = [], {}
+for i, index in zip(np.arange(1,4), [2,2,4]):
+    cellTypes.append('MartinottiwiSTP%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
+    load_sim(RESULTS, cellTypes[-1], n=2) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(1.6,0.3), view=[-600, 800], interstim=100, Tbar=200)
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
+
+# %%
+cellTypes, RESULTS = [], {}
+for i, index in zip(np.arange(1,4), [2,2,4]):
+    cellTypes.append('MartinottiwiSTPnoNMDA%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
+    load_sim(RESULTS, cellTypes[-1],n=2) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3), view=[-600, 800], interstim=100, Tbar=200)
+fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
 
 
 # %% [markdown]
@@ -300,13 +309,13 @@ load_sim(results, 'Martinotti', 'noNMDAnoSTP')
 def make_fig(results, cellTypes, colors,
              views=[[-200,300], [-300,400], [-300,600], [-700,1300]],
              alphas=[1,1,1,1,1,1],
-             subsamplings=[2,2,5,20],
+             subsamplings=[20,20,100,500],
              Ybar = 10,
              Ybar_inset = 2):
              
     fig, AX = pt.figure(axes=(4,
                               len(results['stepAmpFactor'])),
-                        figsize=(1,0.9), left=0, bottom=0., wspace=0.2, hspace=0.7)
+                        figsize=(.9,0.9), left=0, bottom=0., wspace=0.2, hspace=0.7)
     INSETS = []
     
     for cellType, color, alpha, ss in zip(cellTypes, colors, alphas, subsamplings):
@@ -320,9 +329,9 @@ def make_fig(results, cellTypes, colors,
                     if 'Full' in cellType:
                         inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
                         inset.axis('off')
-                        inset.fill_between(results['t_Width%i'%(1+iW)][1:]-results['t_Width%i'%(1+iW)][-1]/2.,
-                                           results['t_Width%i'%(1+iW)][1:]*0,
-                                           results['stim_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], color='lightgray', lw=0)
+                        inset.fill_between(results['t_Width%i'%(1+iW)][1::ss]-results['t_Width%i'%(1+iW)][-1]/2.,
+                                           results['t_Width%i'%(1+iW)][1::ss]*0,
+                                           results['stim_Width%i-Amp%i_%s' % (iW+1, iA, cellType)][::ss], color='lightgray', lw=0)
                         pt.set_plot(AX[iA][iW], [], xlim=[views[iW][0],views[iW][1]])
                         pt.set_plot(inset, [], xlim=[views[iW][0],views[iW][1]])
                         INSETS.append(inset)
@@ -343,6 +352,7 @@ def make_fig(results, cellTypes, colors,
 fig = make_fig(results,
                ['MartinottinoNMDAnoSTP', 'MartinottiFull', 'MartinottinoNMDA'],
                ['tab:cyan', 'tab:orange', 'tab:purple'])         
+fig.savefig('../figures/Temp-Properties-Pred/Summary1.svg')
 
 # %%
 load_sim(results, 'Basket', 'Full')
@@ -353,7 +363,8 @@ fig = make_fig(results,
                ['MartinottiFull', 'BasketnoSTP', 'BasketFull'],
                ['tab:orange', 'lightcoral', 'tab:red'],
                alphas=[0.1,1,1],
-               Ybar_inset=8)
+               Ybar_inset=8)    
+fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
 
 # %% [markdown]
 # # Input Range

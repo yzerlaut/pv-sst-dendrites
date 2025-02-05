@@ -23,6 +23,7 @@ import sys, os
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from scipy.special import erf
+from scipy import stats
 from parallel import Parallel
 
 sys.path.append('..')
@@ -232,6 +233,63 @@ pt.set_plot(ax)
 
 
 # %% [markdown]
+# # Summary Effect
+
+# %%
+rate_smoothing = 20. # ms
+
+zoom = [350, 5000]
+
+def load_sim(cellType, suffix):
+
+    rates = []
+    for iBranch in range(6):
+        sim = Parallel(\
+                filename='../data/detailed_model/full-gratings/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
+        sim.load()
+        sim.fetch_quantity_on_grid('spikes', dtype=list)
+        seeds = np.unique(sim.spikeSeed)
+        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for i, spikes in enumerate(sim.spikes):
+            spikes_matrix[i,(spikes/dt).astype('int')] = True
+        rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                   int(rate_smoothing/dt)))
+        input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+        if iBranch==0:
+            print(cellType, sim.fetch_quantity_on_grid('stimFreq', return_last=True))
+
+    return np.arange(len(rates[0]))*dt, input, rates    
+
+
+def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
+
+    fig, AX = pt.figure(axes_extents=[[(1,6),(1,6)],[(1,1),(1,1)]],
+                        figsize=(1,0.3), left=0, bottom=0., hspace=0.)
+
+    for cellType, suffix, color, line in zip(cellTypes, suffixs, colors, lines):
+        t, input, rates = load_sim(cellType, suffix)
+        pt.plot(t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=AX[0][0], color=color, lw=0)
+        AX[0][0].plot(t, np.mean(rates, axis=0), color=color, linestyle=line)
+        norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
+        pt.plot(t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
+                sy = norm_factor*stats.sem(rates, axis=0),
+                ax=AX[0][1], color=color, lw=1)
+        
+    AX[1][0].fill_between(t[1:], 0*t[1:], input, color='lightgrey');AX[1][0].axis('off')
+    AX[1][1].fill_between(t[1:], 0*t[1:], input, color='lightgrey');AX[1][1].axis('off')
+    pt.draw_bar_scales(AX[0][0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
+    pt.draw_bar_scales(AX[1][0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
+    pt.set_common_xlims(AX[0], lim=zoom)
+    return fig, AX
+
+fig, _ = plot_sim(['Martinotti', 'Martinotti', 'Basket'],
+                  ['Full', 'noNMDA', 'Full'],
+                  ['tab:orange', 'tab:purple', 'tab:red'])
+#fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
+
+# %% [markdown]
 # ## Look for traces
 
 # %%
@@ -364,60 +422,6 @@ fig.suptitle('SST - no NMDA', color='tab:purple')
 
 # %%
 sim.AMPAboost
-
-# %% [markdown]
-# # Summary Effect
-
-# %%
-rate_smoothing = 20. # ms
-
-zoom = [150, 1100]
-
-def load_sim(cellType, suffix):
-
-    rates = []
-    for iBranch in range(6):
-        sim = Parallel(\
-                filename='../data/detailed_model/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
-        sim.load()
-        sim.fetch_quantity_on_grid('spikes', dtype=list)
-        seeds = np.unique(sim.spikeSeed)
-        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-        for i, spikes in enumerate(sim.spikes):
-            spikes_matrix[i,(spikes/dt).astype('int')] = True
-        rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                                   int(rate_smoothing/dt)))
-        input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-
-    return np.arange(len(rates[0]))*dt, input, rates    
-
-
-def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
-
-    fig, AX = pt.figure(axes_extents=[[(1,6),(1,6)],[(1,1),(1,1)]],
-                        figsize=(1.4,0.2), left=0, bottom=0., hspace=0.)
-    for ax in pt.flatten(AX):
-        ax.axis('off')
-    for cellType, suffix, color, line in zip(cellTypes, suffixs, colors, lines):
-        t, input, rates = load_sim(cellType, suffix)
-        pt.plot(t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=AX[0][0], color=color, lw=0)
-        AX[0][0].plot(t, np.mean(rates, axis=0), color=color, linestyle=line)
-        #baseline = 
-        norm = (np.mean(rates, axis=0)-np.mean(rates, axis=0).min())/(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
-        pt.plot(t, norm, ax=AX[0][1], color=color, lw=0)
-        AX[0][1].plot(t, norm, color=color, linestyle=line)
-        
-    AX[1][0].fill_between(t[1:], 0*t[1:], input, color='lightgrey')
-    AX[1][1].fill_between(t[1:], 0*t[1:], input, color='lightgrey')
-    pt.draw_bar_scales(AX[0][0], Xbar=50, Xbar_label='50ms', Ybar=Ybar, Ybar_label='%.0fHz' % Ybar)
-    pt.draw_bar_scales(AX[1][0], Xbar=50, Xbar_label='50ms', Ybar=1e-12)
-    pt.set_common_xlims(AX[0])
-    return fig, AX
-
-fig, _ = plot_sim(['Martinotti', 'Martinotti', 'Basket'], ['Full', 'noNMDA', 'Full'], ['tab:orange', 'tab:purple', 'tab:red'])
-#fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
 plot_sim(['Martinotti', 'Martinotti', 'Martinotti', 'Martinotti'],
