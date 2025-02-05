@@ -508,13 +508,13 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=96
+    nSeed=120
     cells=("Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noNMDAnoSTP" "Full" "noSTP")
     branch=(0 0 0 1 1)
-    freqs=(1.5 1.5 1.5 9 9)
-    for c in 1 2 3 4
+    freqs=(1.2 1.2 1.2 9 9)
+    for c in 1 2 4
     do
         python grating_stim.py --test_with_repeats\
             -c ${cells[$c-1]} ${args[$c-1]}\
