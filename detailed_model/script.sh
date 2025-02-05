@@ -599,10 +599,9 @@ then
     do
         python grating_stim.py --test_with_repeats\
             -c Basket ${args[$c-1]}\
-            --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 6.4 6.6 6.8 70. 7.2 7.4 7.6 7.8 8.0 8.2
+            --stimFreq 6.4 6.6 6.8 70. 7.2 7.4 7.6 7.8 8.0 8.2\
             --stepAmpFactor 4\
             --iBranch ${branch[$c-1]}\
             --nSpikeSeed $nSeed\
