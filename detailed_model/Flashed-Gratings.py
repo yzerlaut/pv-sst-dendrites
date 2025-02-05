@@ -31,7 +31,7 @@ import matplotlib.pylab as plt
 
 
 # %% [markdown]
-# # Input pattern
+# # Drafting the Input pattern
 
 # %%
 def sigmoid(x, width=0.1):
@@ -49,6 +49,17 @@ tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
 fig, ax = pt.figure(figsize=(1.,1))
 pt.plot(1e-3*t, signal(1e-3*t-0.5, **P), ax=ax, no_set=True)
+ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
+pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
+
+# %%
+# now implemented in module
+from grating_stim import input_signal
+
+tstop, dt = 4e3, 0.1
+t = np.arange(int(tstop/dt))*dt
+fig, ax = pt.figure(figsize=(1.,1))
+pt.plot(1e-3*t, input_signal(1e-3*t-0.5), ax=ax, no_set=True)
 ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
 pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
@@ -238,56 +249,59 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 
 rate_smoothing = 30. # ms
 
-results = {}
-sim = Parallel(\
-        filename='../data/detailed_model/GratingSim_demo_MartinottinoNMDARange.zip')
-sim.load()
-
-sim.fetch_quantity_on_grid('spikes', dtype=list)
-seeds = np.unique(sim.spikeSeed)
-dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-sim.fetch_quantity_on_grid('Stim', dtype=list)
-
-results['traceRate'] = np.zeros((len(np.unique(sim.stimFreq)), int(tstop/dt)+1)) # create the array
-results['t'] = np.arange(int(tstop/dt)+1)*dt
-results['stimFreq'] = np.unique(sim.stimFreq)
+for suffix, label, color in zip(['Full', 'noNMDA'],
+                                ['SST - Full', 'SST - no NMDA (AMPA+)'],
+                                ['tab:orange', 'tab:purple']):
+    results = {}
+    sim = Parallel(\
+            filename='../data/detailed_model/GratingSim_demo_Martinotti%sRange.zip' % suffix)
+    sim.load()
     
-for iSF, SF in enumerate(np.unique(sim.stimFreq)):
-
-    # compute time-varying RATE !
-    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-    for k, spikes in enumerate(\
-        [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
-        spikes_matrix[k,(spikes/dt).astype('int')] = True
-    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                  int(rate_smoothing/dt))
-    results['traceRate'][iSF,:] = rate
-    results['Stim%i'%iSF] = sim.Stim[0][iSF]
-
-fig, AX = pt.figure(axes=(len(results['stimFreq']), 1), right=4.,
-                    figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
-INSETS = []
-for iSF, SF in enumerate(results['stimFreq']):
-    pt.plot(results['t'], results['traceRate'][iSF,:], ax=AX[iSF], 
-                      color=pt.viridis(iSF/(len(results['stimFreq'])-1)))
-    INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
-    INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
-    INSETS[-1].axis('off')             
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+    sim.fetch_quantity_on_grid('Stim', dtype=list)
     
-    pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0)),
-                    (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
-pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
-for ax in pt.flatten(AX):
-    pt.set_plot(ax, ['left'] if ax==AX[0] else [])
-pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+    results['traceRate'] = np.zeros((len(np.unique(sim.stimFreq)), int(tstop/dt)+1)) # create the array
+    results['t'] = np.arange(int(tstop/dt)+1)*dt
+    results['stimFreq'] = np.unique(sim.stimFreq)
+        
+    for iSF, SF in enumerate(np.unique(sim.stimFreq)):
     
-pt.bar_legend(AX[-1], X=results['stimFreq'],
-              ticks_labels=['%.1f' % f for f in results['stimFreq']],
-              colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
-              label='stimFreq (Hz)',
-              colormap=pt.viridis)
-fig.suptitle('SST - no NMDA', color='tab:purple')
+        # compute time-varying RATE !
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for k, spikes in enumerate(\
+            [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+            spikes_matrix[k,(spikes/dt).astype('int')] = True
+        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                      int(rate_smoothing/dt))
+        results['traceRate'][iSF,:] = rate
+        results['Stim%i'%iSF] = sim.Stim[0][iSF]
+    
+    fig, AX = pt.figure(axes=(len(results['stimFreq']), 1), right=4.,
+                        figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+    INSETS = []
+    for iSF, SF in enumerate(results['stimFreq']):
+        pt.plot(results['t'], results['traceRate'][iSF,:], ax=AX[iSF], 
+                          color=pt.viridis(iSF/(len(results['stimFreq'])-1)))
+        INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+        INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
+        INSETS[-1].axis('off')             
+        
+        pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0)),
+                        (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
+    pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
+    for ax in pt.flatten(AX):
+        pt.set_plot(ax, ['left'] if ax==AX[0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
+    pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+        
+    pt.bar_legend(AX[-1], X=results['stimFreq'],
+                  ticks_labels=['%.1f' % f for f in results['stimFreq']],
+                  colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
+                  label='stimFreq (Hz)',
+                  colormap=pt.viridis)
+    fig.suptitle(label, color=color)
 
 #func('Martinotti', 'Full', 'tab:orange')
 
