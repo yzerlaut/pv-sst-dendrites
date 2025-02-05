@@ -83,7 +83,7 @@ then
     for c in 1 2 3 4
     do
         widths=(50 50 200)
-        ampFs=(4 2 2)
+        ampFs=(3.5 2 2)
         for i in 1 2 3
         do
             python step_stim.py\
