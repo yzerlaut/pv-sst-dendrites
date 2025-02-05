@@ -79,7 +79,7 @@ then
     suffix=("noSTP" "noSTPnoNMDA" "noSTPnoNMDA0" "noSTP")
     branch=(0 0 0 1)
     boost=(0 4.5 1.0 0)
-    freqs=(1.4 1.4 1.4 8)
+    freqs=(1.5 1.5 1.5 8)
     for c in 1 2 3 4
     do
         widths=(50 50 200)
@@ -508,14 +508,13 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=24
-    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
-    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
-    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    branch=(0 0 0 0 1 1)
-    freqs=(1.6 1.6 1.6 1.6 8.0 8.0)
-    #for c in 1 2 3 4 5 6
-    for c in 2
+    nSeed=48
+    cells=("Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
+    args=("--with_NMDA --with_STP" "--with_NMDA" "" "--with_STP" "")
+    suffix=("Full" "noNMDA" "noNMDAnoSTP" "Full" "noSTP")
+    branch=(0 0 0 1 1)
+    freqs=(1.5 1.5 1.5 8.6 8.6)
+    for c in 4
     do
         python grating_stim.py --test_with_repeats\
             -c ${cells[$c-1]} ${args[$c-1]}\

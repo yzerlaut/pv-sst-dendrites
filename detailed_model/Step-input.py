@@ -82,7 +82,7 @@ def load_sim(RESULTS, cellType,
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/StepSim_demo_%s.zip' % cellType)
+            filename='../data/detailed_model/demo-step-1/StepSim_demo_%s.zip' % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -189,6 +189,12 @@ for i in np.arange(1,4):
     RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
+cellTypes, RESULTS = [], {}
+for i in np.arange(1,4):
+    cellTypes.append('MartinottinoSTPnoNMDA0%i' % i)
+    RESULTS['%s_example_index' % cellTypes[-1]] = 1 # change here !
+    load_sim(RESULTS, cellTypes[-1]) 
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(2.,0.3))
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
 # %%
@@ -234,7 +240,7 @@ for cellType, color in zip(['MartinottiNoSTP'], ['tab:orange']):
 
 # %%
 def load_sim(results, cellType, suffix,
-             rate_smoothing=[1.5, 2.5, 2.5, 5]):
+             rate_smoothing=4):
 
     rates = []
     results['stepWidth'] = []
@@ -262,7 +268,7 @@ def load_sim(results, cellType, suffix,
                         spikes_matrix[k,(spikes/dt).astype('int')] = True
         
                     rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                                  int(rate_smoothing[iWidth-1]/dt))
+                                                  int(rate_smoothing/dt))
                     if 'traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix) in results:
                         results['traceRate_Width%i-Amp%i_%s%s' % (iWidth, iA, cellType, suffix)].append(rate)
                     else:
@@ -294,6 +300,7 @@ load_sim(results, 'Martinotti', 'noNMDAnoSTP')
 def make_fig(results, cellTypes, colors,
              views=[[-200,300], [-300,400], [-300,600], [-700,1300]],
              alphas=[1,1,1,1,1,1],
+             subsamplings=[2,2,5,20],
              Ybar = 10,
              Ybar_inset = 2):
              
@@ -302,13 +309,13 @@ def make_fig(results, cellTypes, colors,
                         figsize=(1,0.9), left=0, bottom=0., wspace=0.2, hspace=0.7)
     INSETS = []
     
-    for cellType, color, alpha in zip(cellTypes, colors, alphas):
+    for cellType, color, alpha, ss in zip(cellTypes, colors, alphas, subsamplings):
         for iW, W in enumerate(results['stepWidth']):
             for iA, A in enumerate(results['stepAmpFactor']):
                 try:
-                    pt.plot(results['t_Width%i'%(1+iW)]-results['t_Width%i'%(1+iW)][-1]/2.,
-                                    np.mean(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0),
-                                    sy = stats.sem(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0),
+                    pt.plot(results['t_Width%i'%(1+iW)][::ss]-results['t_Width%i'%(1+iW)][-1]/2.,
+                                    np.mean(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0)[::ss],
+                                    sy = stats.sem(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0)[::ss],
                                     color=color, ax=AX[iA][iW], alpha=alpha)
                     if 'Full' in cellType:
                         inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])

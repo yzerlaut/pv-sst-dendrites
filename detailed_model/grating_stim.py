@@ -207,7 +207,7 @@ if __name__=='__main__':
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[3.])
     parser.add_argument("--AMPAboost", type=float, 
-                        nargs='*', default=[4])
+                        nargs='*', default=[0])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=0)
 

@@ -107,7 +107,7 @@ for ax in AX:
 
 # %%
 rate_smoothing = 10. # ms
-zoom = [200,4000]
+zoom = [350,4000]
 
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
@@ -212,7 +212,7 @@ for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'Martinottino
         RESULTS['%s_example_index' % cellType] = index # change here !
         load_example_index(cellType, RESULTS) 
             
-        fig, _ = plot_sim(cellType, color=color, figsize=(2.2,0.4))
+        fig, _ = plot_sim(cellType, color=color, figsize=(1.5,1))
     except BaseException as be:
         print(cellType)
         print(be)
