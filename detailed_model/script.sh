@@ -74,12 +74,13 @@ if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
     nSeed=200
-    cells=("Martinotti" "Martinotti" "Basket")
-    args=("--with_NMDA" "" "")
-    suffix=("noSTP" "noSTPnoNMDA" "noSTP")
-    branch=(0 0 1)
-    freqs=(1.4 1.4 8)
-    for c in 1 2 3
+    cells=("Martinotti" "Martinotti" "Martinotti" "Basket")
+    args=("--with_NMDA" "" "" "")
+    suffix=("noSTP" "noSTPnoNMDA" "noSTPnoNMDA0" "noSTP")
+    branch=(0 0 0 1)
+    boost=(0 4.5 1.0 0)
+    freqs=(1.4 1.4 1.4 8)
+    for c in 1 2 3 4
     do
         widths=(50 50 200)
         ampFs=(4 2 2)
@@ -87,11 +88,12 @@ then
         do
             python step_stim.py\
                 --test_with_repeats\
+                --with_presynaptic_spikes\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
-                --AMPAboost 4.5\
+                --AMPAboost ${boost[$c-1]}\
                 --stepAmpFactor ${ampFs[$i-1]}\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed $nSeed\
@@ -107,7 +109,7 @@ then
     nSeed=120
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
-    suffix=("noSTP" "noSTPnoNMDA" "noSTP")
+    suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
     branch=(0 0 1)
     freqs=(1.2 1.2 8)
     for c in 1 2 3
@@ -118,6 +120,7 @@ then
         do
             python step_stim.py\
                 --test_with_repeats\
+                --with_presynaptic_spikes\
                 -c ${cells[$c-1]} ${args[$c-1]}\
                 --Inh_fraction 0.2\
                 --synapse_subsampling 1\
