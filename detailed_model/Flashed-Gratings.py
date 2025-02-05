@@ -404,7 +404,7 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
         t, input, rates = load_sim(cellType, suffix)
         pt.plot(t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=AX[0][0], color=color, lw=0)
         AX[0][0].plot(t, np.mean(rates, axis=0), color=color, linestyle=line)
-        baseline = 
+        #baseline = 
         norm = (np.mean(rates, axis=0)-np.mean(rates, axis=0).min())/(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
         pt.plot(t, norm, ax=AX[0][1], color=color, lw=0)
         AX[0][1].plot(t, norm, color=color, linestyle=line)
@@ -416,7 +416,7 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
     pt.set_common_xlims(AX[0])
     return fig, AX
 
-fig, _ = plot_sim(['Martinotti', 'Basket'], ['',''], ['tab:orange', 'tab:red'])
+fig, _ = plot_sim(['Martinotti', 'Martinotti', 'Basket'], ['', 'noNMDA', ''], ['tab:orange', 'tab:purple', 'tab:red'])
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%

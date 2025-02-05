@@ -564,7 +564,7 @@ then
         --suffix AmpaRationoNMDA
 fi
 
-if [[ $1 == 'all' || $1 == 'grating-range' ]]
+if [[ $1 == 'all' || $1 == 'grating-range-SST' ]]
 then
     nSeed=24
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
@@ -587,6 +587,29 @@ then
             --suffix ${suffix[$c-1]}${i}Range
     done
 fi
+
+if [[ $1 == 'all' || $1 == 'grating-range-PV' ]]
+then
+    nSeed=40
+    args=("--with_STP" "")
+    suffix=("Full" "noSTP")
+    branch=(1 1)
+    #for c in 1 2 3 4 5 6
+    for c in 1
+    do
+        python grating_stim.py --test_with_repeats\
+            -c Basket ${args[$c-1]}\
+            --with_presynaptic_spikes\
+            --Inh_fraction 0.2\
+            --synapse_subsampling 1\
+            --stimFreq 6.4 6.6 6.8 70. 7.2 7.4 7.6 7.8 8.0 8.2
+            --stepAmpFactor 4\
+            --iBranch ${branch[$c-1]}\
+            --nSpikeSeed $nSeed\
+            --suffix ${suffix[$c-1]}${i}Range
+    done
+fi
+
 END=$(date +%s)
 DIFF=$(( $END - $START ))
 H=$(($DIFF/3600))
