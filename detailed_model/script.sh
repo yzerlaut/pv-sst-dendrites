@@ -533,7 +533,7 @@ then
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.6 1.6 1.6 1.6 8.5 8.5)
+    freqs=(1.3 1.3 1.3 1.3 8.5 8.5)
     for c in 1 2 5 # 3 4 5 6
     do
         python grating_stim.py\

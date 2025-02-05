@@ -51,7 +51,7 @@ def run_sim(cellType='Basket',
     tstop = 4e3 # -0.5s:3.5s
 
     trialSeed = int(spikeSeed * (\
-            ( stimFreq*stepAmpFactor*(iBranch+1) ) ) )%1000000 
+            ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
 
     ######################################################
     ##   simulation preparation  #########################

@@ -378,7 +378,7 @@ def load_sim(cellType, suffix):
     rates = []
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/GratingStim_sim_iBranch%i_%s_%s.zip' % (iBranch, cellType, suffix))
+                filename='../data/detailed_model/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
@@ -416,7 +416,7 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
     pt.set_common_xlims(AX[0])
     return fig, AX
 
-fig, _ = plot_sim(['Martinotti', 'Martinotti', 'Basket'], ['', 'noNMDA', ''], ['tab:orange', 'tab:purple', 'tab:red'])
+fig, _ = plot_sim(['Martinotti', 'Martinotti', 'Basket'], ['Full', 'noNMDA', 'Full'], ['tab:orange', 'tab:purple', 'tab:red'])
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
