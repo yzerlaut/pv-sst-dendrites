@@ -249,7 +249,7 @@ def load_sim(cellType, suffix):
     rates = []
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
+                filename='../data/detailed_model/full-gratings/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
@@ -312,15 +312,15 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 # ## Input Range
 
 # %%
-
 rate_smoothing = 30. # ms
 
-for suffix, label, color in zip(['Full', 'noNMDA'],
-                                ['SST - Full', 'SST - no NMDA (AMPA+)'],
-                                ['tab:orange', 'tab:purple']):
+for cellType, suffix, label, color in zip(['Basket', 'Martinotti', 'Martinotti'],
+                                          ['Full', 'Full', 'noNMDA'],
+                                          ['PV - Full', 'SST - Full', 'SST - no NMDA (AMPA+)'],
+                                          ['tab:red', 'tab:orange', 'tab:purple']):
     results = {}
     sim = Parallel(\
-            filename='../data/detailed_model/GratingSim_demo_Martinotti%sRange.zip' % suffix)
+            filename='../data/detailed_model/grating-range/GratingSim_demo_%s%sRange.zip' % (cellType, suffix))
     sim.load()
     
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -362,7 +362,7 @@ for suffix, label, color in zip(['Full', 'noNMDA'],
         pt.set_plot(ax, ['left'] if ax==AX[0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
     pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
         
-    pt.bar_legend(AX[-1], X=results['stimFreq'],
+    pt.bar_legend(AX[-1], X=range(len(results['stimFreq'])),
                   ticks_labels=['%.1f' % f for f in results['stimFreq']],
                   colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
                   label='stimFreq (Hz)',

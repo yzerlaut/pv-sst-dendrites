@@ -566,46 +566,36 @@ then
         --suffix AmpaRationoNMDA
 fi
 
-if [[ $1 == 'all' || $1 == 'grating-range-SST' ]]
+if [[ $1 == 'all' || $1 == 'grating-range' ]]
 then
-    nSeed=24
+    nSeed=4
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP")
-    branch=(0 0 0 0 1 1)
-    freqs=(1.0 1.1 1.0 1.0 8.0 8.0)
-    #for c in 1 2 3 4 5 6
     for c in 1 2
     do
-        python grating_stim.py --test_with_repeats\
+        python grating_stim.py\
             -c Martinotti ${args[$c-1]}\
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.2 1.4 1.6 1.8 2.0 2.2\
+            --stimFreq 1.0 1.1 1.2 1.3 1.4 1.5
             --AMPAboost 1\
             --stepAmpFactor 4\
             --iBranch ${branch[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}${i}Range
     done
-fi
-
-if [[ $1 == 'all' || $1 == 'grating-range-PV' ]]
-then
-    nSeed=16
+    nSeed=4
     args=("--with_STP" "")
     suffix=("Full" "noSTP")
-    branch=(1 1)
-    #for c in 1 2 3 4 5 6
     for c in 1
     do
-        python grating_stim.py --test_with_repeats\
+        python grating_stim.py\
             -c Basket ${args[$c-1]}\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 5 6 6.5 7.0 7.5 8 8.5 9.0\
+            --stimFreq 7 8 9 10 11 12 13 14\
             --stepAmpFactor 4\
-            --iBranch ${branch[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}${i}Range
     done
