@@ -293,8 +293,8 @@ class Cell:
 
 if __name__=='__main__':
 
-    # ID = '864691135571546917_264824' # Martinotti
-    ID = '864691135396580129_296758' # Basket
+    ID = '864691135571546917_264824' # Martinotti
+    # ID = '864691135396580129_296758' # Basket
 
     # cell = Cell(ID=ID, debug=True)
     # cell.check_that_all_dendritic_branches_are_well_covered(show=True)
@@ -317,9 +317,10 @@ if __name__=='__main__':
     for i in range(int(20/dt)):
         h.fadvance()
 
-    for i in range(1, 3):
+    for i in range(1, 5):
 
         ic.amp = i/10.
+        print(i, 'step :', i/10., 'nA')
         for i in range(int(50/dt)):
             h.fadvance()
         ic.amp = 0

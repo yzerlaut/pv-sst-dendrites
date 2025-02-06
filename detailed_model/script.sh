@@ -169,21 +169,29 @@ then
 fi
 
 
-if [[ $1 == 'all' || $1 == 'step-ampa-calib' ]]
+if [[ $1 == 'all' || $1 == 'step-current-calib' ]]
 then
-    nSeed=12
+    nSeed=4
     # Martinotti Cell
-    python step_stim.py --test_with_repeats -c Martinotti\
-                            --AMPAboost 2 3 4 5 6 7\
-                            --with_presynaptic_spikes\
-                            --synapse_subsampling 2\
-                            --stimFreq 1\
-                            --stepAmpFactor 2\
-                            --stepWidth 50 200 400\
-                            --iBranch 5\
-                            --interstim 300\
-                            --nSpikeSeed $nSeed\
-                            --suffix AMPAcalib
+    python step_stim.py\
+                -c Martinotti --no_Vm\
+                --currentDrive 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18\
+                --stimFreq 1.5\
+                --stepAmpFactor 2\
+                --stepWidth 50\
+                --interstim 300\
+                --nSpikeSeed $nSeed\
+                --suffix currentCalibnoSTP
+    python step_stim.py\
+                -c Martinotti --no_Vm\
+                --with_STP\
+                --currentDrive 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18\
+                --stimFreq 1.4\
+                --stepAmpFactor 2\
+                --stepWidth 50\
+                --interstim 300\
+                --nSpikeSeed $nSeed\
+                --suffix currentCalibwiSTP
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range-SST-noSTP' ]]
