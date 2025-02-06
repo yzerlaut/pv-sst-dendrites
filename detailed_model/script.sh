@@ -535,7 +535,7 @@ then
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.1 1.1 1.1 1.1 9.0 9.0)
+    freqs=(1.2 1.2 1.2 1.2 9.0 9.0)
     for c in 1 2 5
     do
         python grating_stim.py\
@@ -592,7 +592,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'grating-range-PV' ]]
 then
-    nSeed=40
+    nSeed=16
     args=("--with_STP" "")
     suffix=("Full" "noSTP")
     branch=(1 1)
@@ -603,7 +603,7 @@ then
             -c Basket ${args[$c-1]}\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 6.4 6.6 6.8 70. 7.2 7.4 7.6 7.8 8.0 8.2\
+            --stimFreq 5 6 6.5 7.0 7.5 8 8.5 9.0\
             --stepAmpFactor 4\
             --iBranch ${branch[$c-1]}\
             --nSpikeSeed $nSeed\
