@@ -29,7 +29,7 @@ def run_sim(cellType='Basket',
             # stim props
             stimFreq=1,
             stepAmpFactor=4.,
-            Inh_fraction=15./100.,
+            Inh_fraction=20./100.,
             synapse_subsampling=1,
             spikeSeed=2,
             # biophysical props
@@ -197,15 +197,13 @@ if __name__=='__main__':
     
     # stim props
     parser.add_argument("--Inh_fraction", type=float, 
-                        nargs='*', default=[15./100.])
+                        nargs='*', default=[20./100.])
     parser.add_argument("--synapse_subsampling", type=int, 
-                        nargs='*', default=[2])
+                        nargs='*', default=[1])
     parser.add_argument("--stimFreq", type=float, 
                         nargs='*', default=[1.0])
-    parser.add_argument("--stepWidth", type=float, 
-                        nargs='*', default=[200.])
     parser.add_argument("--stepAmpFactor", type=float, 
-                        nargs='*', default=[3.])
+                        nargs='*', default=[4.])
     parser.add_argument("--AMPAboost", type=float, 
                         nargs='*', default=[0])
     parser.add_argument("--spikeSeed", type=int, default=1)
@@ -274,7 +272,7 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
         for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                    'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+                    'stepAmpFactor', 'AMPAboost']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
 
@@ -299,7 +297,7 @@ if __name__=='__main__':
 
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
             for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                        'stepWidth', 'stepAmpFactor', 'AMPAboost']:
+                        'stepAmpFactor', 'AMPAboost']:
                 if len(getattr(args, key))>1:
                     grid[key] = getattr(args, key)
 

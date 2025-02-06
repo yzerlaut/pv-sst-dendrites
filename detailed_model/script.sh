@@ -539,23 +539,48 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=96
-    cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
-    args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
-    suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.2 1.2 1.2 1.2 9.0 9.0)
-    for c in 1 2 5
-    do
-        python grating_stim.py\
-            -c ${cells[$c-1]} ${args[$c-1]}\
-            --with_presynaptic_spikes\
-            --Inh_fraction 0.2\
-            --synapse_subsampling 1\
-            --stimFreq ${freqs[$c-1]}\
-            --stepAmpFactor 4\
-            --nSpikeSeed $nSeed\
-            --suffix ${suffix[$c-1]}$i
-    done
+    nSeed=120
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.0 --nSpikeSeed $nSeed\
+        --suffix Full1
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.0 --nSpikeSeed $nSeed\
+        --suffix noNMDA1
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.1 --nSpikeSeed $nSeed\
+        --suffix Full2
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.1 --nSpikeSeed $nSeed\
+        --suffix noNMDA2
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.2 --nSpikeSeed $nSeed\
+        --suffix Full3
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.2 --nSpikeSeed $nSeed\
+        --suffix noNMDA3
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.3 --nSpikeSeed $nSeed\
+        --suffix Full4
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --stimFreq 1.3 --nSpikeSeed $nSeed\
+        --suffix noNMDA4
+    #nSeed=96
+    #cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
+    #args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
+    #suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
+    #freqs=(1.2 1.2 1.2 1.2 9.0 9.0)
+    #for c in 1 2 5
+    #do
+        #python grating_stim.py\
+            #-c ${cells[$c-1]} ${args[$c-1]}\
+            #--with_presynaptic_spikes\
+            #--Inh_fraction 0.2\
+            #--synapse_subsampling 1\
+            #--stimFreq ${freqs[$c-1]}\
+            #--stepAmpFactor 4\
+            #--nSpikeSeed $nSeed\
+            #--suffix ${suffix[$c-1]}$i
+    #done
 fi
 
 if [[ $1 == 'all' || $1 == 'grating-ampa-ratio' ]]

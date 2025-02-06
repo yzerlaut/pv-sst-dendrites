@@ -15,7 +15,7 @@ def run_sim(cellType='Basket',
             interstim=500.,
             stepWidth=50.,
             stepAmpFactor=2.,
-            Inh_fraction=15./100.,
+            Inh_fraction=20./100.,
             synapse_subsampling=1,
             # bg stim
             spikeSeed=2,
@@ -198,9 +198,9 @@ if __name__=='__main__':
     
     # stim props
     parser.add_argument("--Inh_fraction", type=float, 
-                        nargs='*', default=[15./100.])
+                        nargs='*', default=[20./100.])
     parser.add_argument("--synapse_subsampling", type=int, 
-                        nargs='*', default=[2])
+                        nargs='*', default=[1])
     parser.add_argument("--stimFreq", type=float, 
                         nargs='*', default=[1.0])
     parser.add_argument("--stepWidth", type=float, 
