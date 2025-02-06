@@ -578,10 +578,8 @@ then
             --with_presynaptic_spikes\
             --Inh_fraction 0.2\
             --synapse_subsampling 1\
-            --stimFreq 1.0 1.1 1.2 1.3 1.4 1.5
-            --AMPAboost 1\
+            --stimFreq 1.0 1.1 1.2 1.3 1.4 1.5\
             --stepAmpFactor 4\
-            --iBranch ${branch[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}${i}Range
     done
