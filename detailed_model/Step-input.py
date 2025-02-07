@@ -265,7 +265,7 @@ def load_sim(results, cellType, suffix,
     for iWidth in range(1, 5):
         for iBranch in range(6):
             
-            filename = '../data/detailed_model/vSteps/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
+            filename = '../data/detailed_model/vSteps1/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
             try:
                 sim = Parallel(filename=filename)
                 sim.load()
@@ -358,6 +358,8 @@ def make_fig(results, cellTypes, colors,
                            Xbar=100, Xbar_label='100ms' if ax==INSETS[0] else '', fontsize=7, lw=0.5)
     return fig
 
+
+# %%
 fig = make_fig(results,
                ['MartinottinoNMDAnoSTP', 'MartinottiFull', 'MartinottinoNMDA'],
                ['tab:cyan', 'tab:orange', 'tab:purple'])         
@@ -376,6 +378,12 @@ fig = make_fig(results,
 fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
 
 # %%
+load_sim(results, 'Martinotti', 'Full')
+load_sim(results, 'Basket', 'Full')
+fig = make_fig(results,
+               ['MartinottiFull', 'BasketFull'],
+               ['tab:orange', 'tab:red'],
+               Ybar_inset=8)   
 
 # %% [markdown]
 # # Input Range Calibration

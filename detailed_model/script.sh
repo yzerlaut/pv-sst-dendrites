@@ -79,10 +79,10 @@ then
     suffix=("noSTP" "noSTPnoNMDA" "noSTPnoNMDA0" "noSTP")
     branch=(0 0 0 1)
     boost=(0 4.5 1.0 0)
-    freqs=(1.5 1.5 1.5 8)
+    freqs=(1.5 1.5 1.5 8.5)
     for c in 1 2 3 4
     do
-        widths=(50 50 200)
+        widths=(50 50 250)
         ampFs=(3.5 2 2)
         for i in 1 2 3
         do
@@ -111,11 +111,11 @@ then
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
     branch=(0 0 1)
-    freqs=(1.2 1.2 8)
+    freqs=(1.2 1.2 8.5)
     for c in 1 2 3
     do
-        widths=(200 200 1000)
-        ampFs=(4 2 2)
+        widths=(100 100 500)
+        ampFs=(3.5 2 2)
         for i in 1 2 3
         do
             python step_stim.py\
@@ -145,13 +145,13 @@ then
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" 
             "Full" "noSTP")
     freqs=(1.2 1.2 1.2 1.2 
-           8.2 8.2)
+           8.5 8.5)
     for c in 1
     do
         widths=(50 100 200 1000)
-        nSeeds=(20 8 4 4) # for debugging
-        #nSeeds=(160 80 20 20)
-        for i in 1 2 3 4
+        #nSeeds=(20 8 4 4) # for debugging
+        nSeeds=(160 100 80 40)
+        for i in 1 2 3 4 5 6
         do
             python step_stim.py\
                 --no_Vm\
@@ -175,8 +175,8 @@ then
     # Martinotti Cell
     python step_stim.py\
                 -c Martinotti --no_Vm\
-                --currentDrive 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18\
-                --stimFreq 1.5\
+                --currentDrive 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08\
+                --stimFreq 1.2\
                 --stepAmpFactor 2\
                 --stepWidth 50\
                 --interstim 300\

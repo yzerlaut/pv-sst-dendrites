@@ -28,18 +28,18 @@ def run_sim(cellType='Basket',
             from_uniform=False,
             # stim props
             stimFreq=1,
-            stepAmpFactor=4.,
+            stepAmpFactor=1.,
             Inh_fraction=20./100.,
             synapse_subsampling=1,
             spikeSeed=2,
             # biophysical props
             with_STP=False,
             with_NMDA=False,
-            AMPAboost=0,
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
             no_Vm=False,
             spike_threshold=0.,
+            t0=100, # ms
             dt= 0.01):
 
     from cell_template import Cell, h, np
@@ -48,9 +48,9 @@ def run_sim(cellType='Basket',
     from scipy.special import erf
     from grating_stim import input_signal 
 
-    tstop = 3.5e3 # -0.5s:3.5s
+    tstop = t0+2.5e3
 
-    trialSeed = int(spikeSeed * (\
+    trialSeed = int((34+spikeSeed) * (\
             ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
 
     ######################################################
@@ -83,10 +83,6 @@ def run_sim(cellType='Basket',
                 passive_only=passive_only,
                 params_key=params_key)
 
-    # add optional modified AMPA boost:
-    if AMPAboost>0:
-        cell.params['%s_qAMPAonlyBoost'%cell.params_key] = AMPAboost
-
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
                         # for iBranch in range(6)])
@@ -105,7 +101,7 @@ def run_sim(cellType='Basket',
 
     t = np.arange(int(tstop/dt))*dt
     # Stim = stimFreq*(1+stepAmpFactor*input_signal(t*1e-3-0.5))
-    Stim = stimFreq*stepAmpFactor*input_signal(t*1e-3-0.1)
+    Stim = stimFreq*input_signal((t-t0)*1e-3)
 
     # -- synaptic activity 
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
@@ -167,6 +163,7 @@ def run_sim(cellType='Basket',
               'Inh_fraction':Inh_fraction,
               'stimFreq':stimFreq,
               'stepAmpFactor':stepAmpFactor,
+              't0':t0,
               'tstop':tstop}
 
     if not no_Vm:
@@ -205,8 +202,6 @@ if __name__=='__main__':
                         nargs='*', default=[1.0])
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[4.])
-    parser.add_argument("--AMPAboost", type=float, 
-                        nargs='*', default=[0])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=0)
 
@@ -248,7 +243,6 @@ if __name__=='__main__':
                   stimFreq=args.stimFreq[0],
                   stepAmpFactor=args.stepAmpFactor[0],
                   synapse_subsampling=args.synapse_subsampling[0],
-                  AMPAboost=args.AMPAboost[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
@@ -272,8 +266,8 @@ if __name__=='__main__':
                                     (args.cellType, args.suffix))
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-        for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                    'stepAmpFactor', 'AMPAboost']:
+        for key in ['synapse_subsampling', 'Inh_fraction', 
+                    'stimFreq', 'stepAmpFactor']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
 

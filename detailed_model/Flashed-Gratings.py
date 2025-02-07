@@ -360,7 +360,7 @@ for cellType, suffix, label, color in zip(['Basket', 'Martinotti', 'Martinotti']
         INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
         INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
         INSETS[-1].axis('off')             
-        cond = results['t']>500
+        cond = results['t']>100
         pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,:,:].mean(axis=0)[cond]),
                         (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
     pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
@@ -374,8 +374,6 @@ for cellType, suffix, label, color in zip(['Basket', 'Martinotti', 'Martinotti']
                   label='stimFreq (Hz)',
                   colormap=pt.viridis)
     fig.suptitle(label, color=color)
-
-#func('Martinotti', 'Full', 'tab:orange')
 
 # %%
 
