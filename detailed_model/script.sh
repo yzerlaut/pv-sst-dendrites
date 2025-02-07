@@ -144,13 +144,13 @@ then
           "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" 
             "Full" "noSTP")
-    freqs=(1.4 1.2 1.5 1.5 
+    freqs=(1.2 1.2 1.2 1.2 
            8.2 8.2)
-    for c in 1 2 3 4 5 6
+    for c in 1
     do
         widths=(50 100 200 1000)
-        #nSeeds=(20 8 4 4) # for debugging
-        nSeeds=(160 80 20 20)
+        nSeeds=(20 8 4 4) # for debugging
+        #nSeeds=(160 80 20 20)
         for i in 1 2 3 4
         do
             python step_stim.py\

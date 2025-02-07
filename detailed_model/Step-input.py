@@ -43,6 +43,14 @@ from analyz.processing.signanalysis import autocorrel, crosscorrel
 #         --stimFreq 2 --stepAmpFactor 4\
 #         --synapse_subsampling 1 --Inh_fraction 0.2\
 #         --iBranch 1 --spikeSeed 3
+#
+# python step_stim.py --test -c Martinotti\
+#         --currentDrive 0.08\
+#         --with_presynaptic_spikes\
+#         --interstim 500 --stepWidth 200\
+#         --stimFreq 2 --stepAmpFactor 6\
+#         --synapse_subsampling 1 --Inh_fraction 0.2\
+#         --iBranch 1 --spikeSeed 3
 # ```
 #
 # then plot with:
@@ -257,7 +265,7 @@ def load_sim(results, cellType, suffix,
     for iWidth in range(1, 5):
         for iBranch in range(6):
             
-            filename = '../data/detailed_model/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
+            filename = '../data/detailed_model/vSteps/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
             try:
                 sim = Parallel(filename=filename)
                 sim.load()
@@ -290,6 +298,7 @@ def load_sim(results, cellType, suffix,
                 results['stepAmpFactor'] = np.unique(sim.stepAmpFactor[0])
                 if iBranch==0:
                     results['stepWidth'].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
+                    print(cellType, suffix, ' --->', sim.fetch_quantity_on_grid('stimFreq', return_last=True))
                 
             except BaseException as be:
                 print(be)
@@ -366,8 +375,78 @@ fig = make_fig(results,
                Ybar_inset=8)    
 fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
 
+# %%
+
 # %% [markdown]
-# # Input Range
+# # Input Range Calibration
+
+# %%
+
+# %% [markdown]
+# ## Calibration: Depolarizing Current for no-NMDA condition 
+
+# %%
+rate_smoothing = 30. # ms
+
+for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
+                                          ['wiSTP'],
+                                          ['SST - wiSTP', 'SST - no NMDA (AMPA+)'],
+                                          ['tab:purple', 'tab:purple']):
+    results = {}
+
+    for iBranch in range(6):
+        sim = Parallel(\
+                filename='../data/detailed_model/current-calib/StepSim_%scurrentCalib%s_branch%i.zip' % (cellType, suffix, iBranch))
+        sim.load()
+
+        sim.fetch_quantity_on_grid('spikes', dtype=list)
+        seeds = np.unique(sim.spikeSeed)
+        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+        sim.fetch_quantity_on_grid('Stim', dtype=list)
+        if 'traceRate' not in results:
+            results['traceRate'] = np.zeros((len(np.unique(sim.currentDrive)), 6, int(tstop/dt)+1)) # create the array
+            results['t'] = np.arange(int(tstop/dt)+1)*dt
+            results['currentDrive'] = np.unique(sim.currentDrive)
+            
+        for iSF, SF in enumerate(np.unique(sim.currentDrive)):
+        
+            # compute time-varying RATE !
+            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+            for k, spikes in enumerate(\
+                [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+                spikes_matrix[k,(spikes/dt).astype('int')] = True
+            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                          int(rate_smoothing/dt))
+            results['traceRate'][iSF,iBranch,:] = rate
+            results['Stim%i'%iSF] = sim.Stim[0][iSF]
+    
+    fig, AX = pt.figure(axes=(len(results['currentDrive']), 1), right=4.,
+                        figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
+    INSETS = []
+    for iSF, SF in enumerate(results['currentDrive']):
+        pt.plot(results['t'], results['traceRate'][iSF,:,:].mean(axis=0), 
+                sy=np.std(results['traceRate'][iSF,:,:], axis=0),
+                ax=AX[iSF], color=pt.viridis(iSF/(len(results['currentDrive'])-1)))
+        INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+        INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
+        INSETS[-1].axis('off')             
+        cond = results['t']>500
+        pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,:,:].mean(axis=0)[cond]),
+                        (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['currentDrive'])-1)), fontsize=7)
+    pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
+    for ax in pt.flatten(AX):
+        pt.set_plot(ax, ['left'] if ax==AX[0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
+    pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+        
+    pt.bar_legend(AX[-1], X=range(len(results['currentDrive'])),
+                  ticks_labels=['%.2f' % f for f in results['currentDrive']],
+                  colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
+                  label='currentDrive (nA)',
+                  colormap=pt.viridis)
+    fig.suptitle(label, color=color)
+
+#func('Martinotti', 'Full', 'tab:orange')
 
 # %%
 

@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Response to Step inputs
+# # Response to Flashed-Gratings (2s duration)
 #
 # we feed the neuron with spikes drawn from an inhomogeneous Poisson process whose time-varying rate is set by a waveform ressembling activity evoked by full-field-gratings
 
