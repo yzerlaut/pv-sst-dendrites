@@ -48,7 +48,7 @@ def run_sim(cellType='Basket',
     from scipy.special import erf
     from grating_stim import input_signal 
 
-    tstop = 4e3 # -0.5s:3.5s
+    tstop = 3.5e3 # -0.5s:3.5s
 
     trialSeed = int(spikeSeed * (\
             ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
@@ -104,7 +104,8 @@ def run_sim(cellType='Basket',
                                             seed=trialSeed)
 
     t = np.arange(int(tstop/dt))*dt
-    Stim = stimFreq*(1+stepAmpFactor*input_signal(t*1e-3-0.5))
+    # Stim = stimFreq*(1+stepAmpFactor*input_signal(t*1e-3-0.5))
+    Stim = stimFreq*stepAmpFactor*input_signal(t*1e-3-0.1)
 
     # -- synaptic activity 
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
