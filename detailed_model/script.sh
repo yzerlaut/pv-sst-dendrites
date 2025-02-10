@@ -1,4 +1,4 @@
-aTART=$(date +%s)
+START=$(date +%s)
 
 if [[ $1 == 'all' || $1 == 'test' ]]
 then
@@ -74,13 +74,13 @@ if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
     nSeed=200
-    cells=("Martinotti" "Martinotti" "Martinotti" "Basket")
-    args=("--with_NMDA" "" "" "")
-    suffix=("noSTP" "noSTPnoNMDA" "noSTPnoNMDA0" "noSTP")
-    branch=(0 0 0 1)
-    boost=(0 4.5 1.0 0)
-    freqs=(1.5 1.5 1.5 8.5)
-    for c in 1 2 3 4
+    cells=("Martinotti" "Martinotti" "Basket")
+    args=("--with_NMDA" "" "")
+    suffix=("noSTP" "noSTPnoNMDA" "noSTP")
+    branch=(1 1 1)
+    cDrive=(0 0.06 0)
+    freqs=(1.5 1.5 8.5)
+    for c in 1 2
     do
         widths=(50 50 250)
         ampFs=(3.5 2 2)
@@ -90,10 +90,8 @@ then
                 --test_with_repeats\
                 --with_presynaptic_spikes\
                 -c ${cells[$c-1]} ${args[$c-1]}\
-                --Inh_fraction 0.2\
-                --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
-                --AMPAboost ${boost[$c-1]}\
+                --currentDrive ${cDrive[$c-1]}\
                 --stepAmpFactor ${ampFs[$i-1]}\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed $nSeed\
@@ -106,11 +104,12 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-2' ]]
 then
     ### ----- SIMULATIONS WITH STP ----- ###
-    nSeed=120
+    nSeed=200
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
     branch=(0 0 1)
+    cDrive=(0 0.06 0)
     freqs=(1.2 1.2 8.5)
     for c in 1 2 3
     do
@@ -122,10 +121,8 @@ then
                 --test_with_repeats\
                 --with_presynaptic_spikes\
                 -c ${cells[$c-1]} ${args[$c-1]}\
-                --Inh_fraction 0.2\
-                --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
-                --AMPAboost 4.5\
+                --currentDrive ${cDrive[$c-1]}\
                 --stepAmpFactor ${ampFs[$i-1]}\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed $nSeed\
@@ -146,20 +143,17 @@ then
             "Full" "noSTP")
     freqs=(1.2 1.2 1.2 1.2 
            8.5 8.5)
-    for c in 1
+    for c in 1 5 6
     do
         widths=(50 100 200 1000)
         #nSeeds=(20 8 4 4) # for debugging
-        nSeeds=(160 100 80 40)
-        for i in 1 2 3 4 5 6
+        nSeeds=(200 100 100 50)
+        for i in 1 2 3 4
         do
             python step_stim.py\
                 --no_Vm\
                 -c ${cells[$c-1]} ${args[$c-1]}\
-                --Inh_fraction 0.2\
-                --synapse_subsampling 1\
                 --stimFreq ${freqs[$c-1]}\
-                --AMPAboost 4.5\
                 --stepAmpFactor 2 3 4\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed ${nSeeds[$i-1]}\
@@ -171,13 +165,13 @@ fi
 
 if [[ $1 == 'all' || $1 == 'step-current-calib' ]]
 then
-    nSeed=4
+    nSeed=16
     # Martinotti Cell
     python step_stim.py\
                 -c Martinotti --no_Vm\
                 --currentDrive 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08\
                 --stimFreq 1.2\
-                --stepAmpFactor 2\
+                --stepAmpFactor 3.5\
                 --stepWidth 50\
                 --interstim 300\
                 --nSpikeSeed $nSeed\
@@ -187,7 +181,7 @@ then
                 --with_STP\
                 --currentDrive 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18\
                 --stimFreq 1.4\
-                --stepAmpFactor 2\
+                --stepAmpFactor 3.5\
                 --stepWidth 50\
                 --interstim 300\
                 --nSpikeSeed $nSeed\
@@ -633,11 +627,11 @@ then
 fi
 
 END=$(date +%s)
-DIFF=$(( $END - $START ))
-H=$(($DIFF/3600))
-M=$(($(($DIFF%3600))/60))
-S=$(($DIFF%60))
+DIFF=$(( $END-$START ))
+H=$(( $DIFF/3600 ))
+M=$(( $(( $DIFF%3600 )) /60 ))
+S=$(( $DIFF%60 ))
 echo ""
 echo ""
-echo "     ------> Simulations took:" ${H}h:${M}m:${S}s
+echo "     ------> Simulations took: ${H}h:${M}m:${S}s"
 echo ""

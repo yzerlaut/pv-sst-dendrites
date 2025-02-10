@@ -90,11 +90,11 @@ for ax in AX:
 # %%
 def load_sim(RESULTS, cellType,
              rate_smoothing = 2., # ms
-             n=1,
+             n='1',
              with_example_index=None):
 
     sim = Parallel(\
-            filename='../data/detailed_model/demo-step-%i/StepSim_demo_%s.zip' % (n,cellType))
+            filename='../data/detailed_model/demo-step-%s/StepSim_demo_%s.zip' % (n,cellType))
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -118,9 +118,9 @@ def load_sim(RESULTS, cellType,
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
     
     if '%s_example_index' % cellType in RESULTS:
-        sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+        sim.fetch_quantity_on_grid('Stim', dtype=np.ndarray)
         RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
-        sim.fetch_quantity_on_grid('Vm_soma', return_last=True, dtype=np.ndarray)
+        sim.fetch_quantity_on_grid('Vm_soma', dtype=np.ndarray)
         RESULTS['Vm_%s' % cellType] = sim.Vm_soma[RESULTS['%s_example_index' % cellType]]
         sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
         RESULTS['pre_exc_%s' % cellType] = sim.presynaptic_exc_events[RESULTS['%s_example_index' % cellType]]
@@ -192,7 +192,7 @@ for i, index in zip(np.arange(1,4), [2,23,0]):
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3))
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
 # %%
 cellTypes, RESULTS = [], {}
@@ -201,7 +201,7 @@ for i, index in zip(np.arange(1,4), [2,2,4]):
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(1.6,0.3))
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
 # %%
 cellTypes, RESULTS = [], {}
@@ -210,7 +210,7 @@ for i, index in zip(np.arange(1,4), [2,2,4]):
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
 # %%
 cellTypes, RESULTS = [], {}
@@ -219,7 +219,7 @@ for i, index in zip(np.arange(1,4), [2,2,4]):
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1]) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='purple', figsize=(2.,0.3))
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noNMDAnoSTP_%s.svg' % cellTypes[-1])
 
 # %% [markdown]
 # ## Long timescale -- with STP
@@ -229,18 +229,18 @@ cellTypes, RESULTS = [], {}
 for i, index in zip(np.arange(1,4), [2,23,0]):
     cellTypes.append('BasketwiSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
-    load_sim(RESULTS, cellTypes[-1], n=2) 
+    load_sim(RESULTS, cellTypes[-1], n='2') 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3), view=[-600, 800], interstim=100, Tbar=200)
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
 
 # %%
 cellTypes, RESULTS = [], {}
 for i, index in zip(np.arange(1,4), [2,2,4]):
     cellTypes.append('MartinottiwiSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
-    load_sim(RESULTS, cellTypes[-1], n=2) 
+    load_sim(RESULTS, cellTypes[-1], n=1) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(1.6,0.3), view=[-600, 800], interstim=100, Tbar=200)
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
 
 # %%
 cellTypes, RESULTS = [], {}
@@ -249,15 +249,14 @@ for i, index in zip(np.arange(1,4), [2,2,4]):
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1],n=2) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3), view=[-600, 800], interstim=100, Tbar=200)
-fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
-
+#fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
 
 # %% [markdown]
 # # Summary Effect
 
 # %%
 def load_sim(results, cellType, suffix,
-             rate_smoothing=4):
+             rate_smoothing=2):
 
     rates = []
     results['stepWidth'] = []
@@ -265,7 +264,7 @@ def load_sim(results, cellType, suffix,
     for iWidth in range(1, 5):
         for iBranch in range(6):
             
-            filename = '../data/detailed_model/vSteps1/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
+            filename = '../data/detailed_model/vSteps2/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
             try:
                 sim = Parallel(filename=filename)
                 sim.load()
@@ -298,7 +297,8 @@ def load_sim(results, cellType, suffix,
                 results['stepAmpFactor'] = np.unique(sim.stepAmpFactor[0])
                 if iBranch==0:
                     results['stepWidth'].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
-                    print(cellType, suffix, ' --->', sim.fetch_quantity_on_grid('stimFreq', return_last=True))
+                    if iWidth==1:
+                        print(cellType, suffix, ' --->', sim.fetch_quantity_on_grid('stimFreq', return_last=True))
                 
             except BaseException as be:
                 print(be)
@@ -318,7 +318,7 @@ load_sim(results, 'Martinotti', 'noNMDAnoSTP')
 def make_fig(results, cellTypes, colors,
              views=[[-200,300], [-300,400], [-300,600], [-700,1300]],
              alphas=[1,1,1,1,1,1],
-             subsamplings=[20,20,100,500],
+             subsamplings=[2,10,200,1000],
              Ybar = 10,
              Ybar_inset = 2):
              
@@ -375,9 +375,10 @@ fig = make_fig(results,
                ['tab:orange', 'lightcoral', 'tab:red'],
                alphas=[0.1,1,1],
                Ybar_inset=8)    
-fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
+#fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
 
 # %%
+results = {}
 load_sim(results, 'Martinotti', 'Full')
 load_sim(results, 'Basket', 'Full')
 fig = make_fig(results,
@@ -397,7 +398,7 @@ fig = make_fig(results,
 rate_smoothing = 30. # ms
 
 for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
-                                          ['wiSTP'],
+                                          ['wiSTP', 'noSTP'],
                                           ['SST - wiSTP', 'SST - no NMDA (AMPA+)'],
                                           ['tab:purple', 'tab:purple']):
     results = {}
@@ -455,6 +456,14 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
     fig.suptitle(label, color=color)
 
 #func('Martinotti', 'Full', 'tab:orange')
+
+# %%
+sim = Parallel(\
+        filename='../data/detailed_model/current-calib/StepSim_MartinotticurrentCalibnoSTP_branch0.zip')
+sim.load()
+
+# %%
+sim.fetch_quantity_on_grid('Vm_soma', dtype=np.ndarray)
 
 # %%
 
