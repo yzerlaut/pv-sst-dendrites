@@ -295,10 +295,11 @@ def load_sim(results, cellType, suffix,
                 
                 results['iBranch'] = range(6)
                 results['stepAmpFactor'] = np.unique(sim.stepAmpFactor[0])
+                results['stimFreq_%s%s' % (cellType, suffix)] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
                 if iBranch==0:
                     results['stepWidth'].append(sim.fetch_quantity_on_grid('stepWidth', return_last=True))
                     if iWidth==1:
-                        print(cellType, suffix, ' --->', sim.fetch_quantity_on_grid('stimFreq', return_last=True))
+                        print(cellType, suffix, ' --->', results['stimFreq_%s%s' % (cellType, suffix)])
                 
             except BaseException as be:
                 print(be)
@@ -314,48 +315,52 @@ load_sim(results, 'Martinotti', 'noNMDAnoSTP')
 
 
 # %%
-
 def make_fig(results, cellTypes, colors,
-             views=[[-200,300], [-300,400], [-300,600], [-700,1300]],
+             views=[[-150,250], [-200,350], [-250,500], [-600,1200]],
              alphas=[1,1,1,1,1,1],
-             subsamplings=[2,10,200,1000],
+             subsamplings=[1,10,200,1000],
              Ybar = 10,
-             Ybar_inset = 2):
+             Ybar_inset = 2,
+             with_annot=True):
              
     fig, AX = pt.figure(axes=(4,
                               len(results['stepAmpFactor'])),
                         figsize=(.9,0.9), left=0, bottom=0., wspace=0.2, hspace=0.7)
     INSETS = []
     
-    for cellType, color, alpha, ss in zip(cellTypes, colors, alphas, subsamplings):
+    for c, cellType, color, alpha, ss in zip(range(len(cellTypes)), cellTypes, colors, alphas, subsamplings):
         for iW, W in enumerate(results['stepWidth']):
             for iA, A in enumerate(results['stepAmpFactor']):
+                rate = np.array(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)])
                 try:
                     pt.plot(results['t_Width%i'%(1+iW)][::ss]-results['t_Width%i'%(1+iW)][-1]/2.,
-                                    np.mean(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0)[::ss],
-                                    sy = stats.sem(results['traceRate_Width%i-Amp%i_%s' % (iW+1, iA, cellType)], axis=0)[::ss],
-                                    color=color, ax=AX[iA][iW], alpha=alpha)
+                            np.mean(rate[:,::ss], axis=0), sy = stats.sem(rate, axis=0)[::ss],
+                            color=color, ax=AX[iA][iW], alpha=alpha)
                     if 'Full' in cellType:
                         inset = pt.inset(AX[iA][iW], [0,1, 1, 0.4])
                         inset.axis('off')
                         inset.fill_between(results['t_Width%i'%(1+iW)][1::ss]-results['t_Width%i'%(1+iW)][-1]/2.,
                                            results['t_Width%i'%(1+iW)][1::ss]*0,
-                                           results['stim_Width%i-Amp%i_%s' % (iW+1, iA, cellType)][::ss], color='lightgray', lw=0)
+                                           results['stim_Width%i-Amp%i_%s' % (iW+1, iA, cellType)][::ss]/results['stimFreq_%s'%cellType],
+                                           color='lightgray', lw=0)
                         pt.set_plot(AX[iA][iW], [], xlim=[views[iW][0],views[iW][1]])
                         pt.set_plot(inset, [], xlim=[views[iW][0],views[iW][1]])
                         INSETS.append(inset)
-                        if iA==0:
-                            pt.annotate(inset, ('%ims' % results['stepWidth'][iW]).replace('000m', ''), (0.5,1), va='top', ha='center')
+                        if (iA==0 and with_annot):
+                            pt.annotate(inset, ('%ims' % results['stepWidth'][iW]).replace('000m', ''), (0.5,1), 
+                                        color='gray', va='top', ha='center')
+                    if (iW==0 and iA==0 and with_annot):
+                        pt.annotate(INSETS[0], c*'\n'+'%.1fHz' % results['stimFreq_%s'%cellType],
+                                    (0,1), va='top', ha='right', fontsize=6, color=color)
                 except BaseException as be:
-                    pass
+                    print(be)
     pt.set_common_ylims(INSETS)
     pt.set_common_ylims(AX)        
     for i, ax in enumerate(pt.flatten(AX)):
-        pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if i%4==0 else '',
+        pt.draw_bar_scales(ax, Ybar=Ybar, Ybar_label='%i Hz' % Ybar if (i%4==0 and with_annot) else '',
                            Xbar=100, Xbar_label='', fontsize=7, lw=0.5)
     for ax in INSETS:
-        pt.draw_bar_scales(ax, Ybar=Ybar_inset, Ybar_label='%i Hz' % Ybar_inset if ax==INSETS[0] else '',
-                           Xbar=100, Xbar_label='100ms' if ax==INSETS[0] else '', fontsize=7, lw=0.5)
+        pt.draw_bar_scales(ax, Ybar=1, Xbar=100, Xbar_label='100ms' if (ax==INSETS[0] and with_annot) else '', fontsize=7, lw=0.5)
     return fig
 
 
@@ -366,25 +371,20 @@ fig = make_fig(results,
 fig.savefig('../figures/Temp-Properties-Pred/Summary1.svg')
 
 # %%
+results = {}
+load_sim(results, 'Martinotti', 'Full')
 load_sim(results, 'Basket', 'Full')
 load_sim(results, 'Basket', 'noSTP')
 
 # %%
-fig = make_fig(results,
-               ['MartinottiFull', 'BasketnoSTP', 'BasketFull'],
-               ['tab:orange', 'lightcoral', 'tab:red'],
-               alphas=[0.1,1,1],
-               Ybar_inset=8)    
-#fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
-
-# %%
-results = {}
-load_sim(results, 'Martinotti', 'Full')
-load_sim(results, 'Basket', 'Full')
-fig = make_fig(results,
-               ['MartinottiFull', 'BasketFull'],
-               ['tab:orange', 'tab:red'],
-               Ybar_inset=8)   
+for Annot in [False, True]:
+    fig = make_fig(results,
+                   ['MartinottiFull', 'BasketnoSTP', 'BasketFull'],
+                   ['tab:orange', 'lightcoral', 'tab:red'],
+                   alphas=[0.5,1,1], Ybar_inset=8, with_annot=Annot)
+    if not Annot:
+        fig.savefig('../figures/Temp-Properties-Pred/Summary2.svg')
+        plt.close()
 
 # %% [markdown]
 # # Input Range Calibration

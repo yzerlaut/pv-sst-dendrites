@@ -352,26 +352,26 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
                 results['traceRate'][iSF,iAL,iBranch,:] = rate
                 results['Stim%i'%iSF] = sim.Stim[0][iSF][iAL]
         
-    fig, AX = pt.figure(axes=(len(np.unique(sim.stimFreq)), 1), right=4.,
+    fig, AX = pt.figure(axes=(len(np.unique(sim.stimFreq)), len(np.unique(sim.ampLongLasting))), right=4.,
                         figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
     INSETS = []
     for iSF, SF in enumerate(np.unique(sim.stimFreq)):
         for iAL, AL in enumerate(np.unique(sim.ampLongLasting)):
             pt.plot(results['t'], results['traceRate'][iSF,iAL,:,:].mean(axis=0), 
                     sy=stats.sem(results['traceRate'][iSF,iAL,:,:], axis=0),
-                    ax=AX[iSF], color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)))
-            pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0))+iAL*'\n',
+                    ax=AX[iAL][iSF], color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)))
+            pt.annotate(AX[iAL][iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0))+iAL*'\n',
                 (0.5, 1), ha='center', color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)), fontsize=6)
 
-        INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
+        INSETS.append(pt.inset(AX[iAL][iSF], [0,-0.4,1,0.38]))
         INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
         INSETS[-1].axis('off')             
     pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
     for ax in pt.flatten(AX):
-        pt.set_plot(ax, ['left'] if ax==AX[0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
-    pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
+        pt.set_plot(ax, ['left'] if ax==AX[0][0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
+    pt.draw_bar_scales(AX[-1][-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
         
-    pt.bar_legend(AX[-1], X=range(len(np.unique(sim.ampLongLasting))),
+    pt.bar_legend(AX[-1][-1], X=range(len(np.unique(sim.ampLongLasting))),
                   ticks_labels=['%.1f' % f for f in np.unique(sim.ampLongLasting)],
                   colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
                   label='amp (norm.)',

@@ -79,8 +79,8 @@ then
     suffix=("noSTP" "noSTPnoNMDA" "noSTP")
     branch=(1 1 1)
     cDrive=(0 0.06 0)
-    freqs=(1.5 1.5 8.5)
-    for c in 1 2
+    freqs=(1.2 1.2 8.5)
+    for c in 1 2 3
     do
         widths=(50 50 250)
         ampFs=(3.5 2 2)
@@ -108,7 +108,7 @@ then
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
-    branch=(0 0 1)
+    branch=(1 1 1)
     cDrive=(0 0.06 0)
     freqs=(1.2 1.2 8.5)
     for c in 1 2 3
@@ -148,7 +148,7 @@ then
         widths=(50 100 200 1000)
         #nSeeds=(20 8 4 4) # for debugging
         nSeeds=(160 100 100 50)
-        for i in 1 # 2 3 4
+        for i in 1 2 3 4
         do
             python step_stim.py\
                 --no_Vm\
