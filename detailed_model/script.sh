@@ -147,8 +147,8 @@ then
     do
         widths=(50 100 200 1000)
         #nSeeds=(20 8 4 4) # for debugging
-        nSeeds=(200 100 100 50)
-        for i in 1 2 3 4
+        nSeeds=(160 100 100 50)
+        for i in 1 # 2 3 4
         do
             python step_stim.py\
                 --no_Vm\
@@ -169,7 +169,7 @@ then
     # Martinotti Cell
     python step_stim.py\
                 -c Martinotti --no_Vm\
-                --currentDrive 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08\
+                --currentDrive 0.005 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09\
                 --stimFreq 1.2\
                 --stepAmpFactor 3.5\
                 --stepWidth 50\
@@ -179,8 +179,8 @@ then
     python step_stim.py\
                 -c Martinotti --no_Vm\
                 --with_STP\
-                --currentDrive 0.02 0.04 0.06 0.08 0.1 0.12 0.14 0.16 0.18\
-                --stimFreq 1.4\
+                --currentDrive 0.005 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09\
+                --stimFreq 1.2\
                 --stepAmpFactor 3.5\
                 --stepWidth 50\
                 --interstim 300\
