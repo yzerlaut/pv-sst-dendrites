@@ -577,7 +577,7 @@ fi
 
 if [[ $1 == 'all' || $1 == 'grating-range' ]]
 then
-    nSeed=16
+    nSeed=4
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP")
     for c in 1 2

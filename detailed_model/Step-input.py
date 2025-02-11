@@ -264,7 +264,7 @@ def load_sim(results, cellType, suffix,
     for iWidth in range(1, 5):
         for iBranch in range(6):
             
-            filename = '../data/detailed_model/vSteps2/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
+            filename = '../data/detailed_model/vSteps3/StepSim_%svSteps%s%i_branch%i.zip' % (cellType, suffix, iWidth, iBranch)
             try:
                 sim = Parallel(filename=filename)
                 sim.load()
