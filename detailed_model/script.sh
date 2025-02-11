@@ -533,31 +533,16 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=120
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.0 --nSpikeSeed $nSeed\
-        --suffix Full1
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.0 --nSpikeSeed $nSeed\
-        --suffix noNMDA1
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.1 --nSpikeSeed $nSeed\
-        --suffix Full2
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.1 --nSpikeSeed $nSeed\
-        --suffix noNMDA2
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.2 --nSpikeSeed $nSeed\
-        --suffix Full3
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.2 --nSpikeSeed $nSeed\
-        --suffix noNMDA3
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.3 --nSpikeSeed $nSeed\
-        --suffix Full4
-    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
-        --stimFreq 1.3 --nSpikeSeed $nSeed\
-        --suffix noNMDA4
+    nSeed=32
+    for i in 0 1 2 3 4 5
+    do
+        python grating_stim.py -c Martinotti --no_Vm --with_NMDA --with_STP\
+            --stimFreq 1.%i --nSpikeSeed $nSeed\
+            --suffix Full%i
+        python grating_stim.py -c Martinotti --no_Vm --with_STP\
+            --stimFreq 1.%i --nSpikeSeed $nSeed\
+            --suffix noNMDA%i
+    done
     #nSeed=96
     #cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     #args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")

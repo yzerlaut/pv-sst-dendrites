@@ -117,10 +117,10 @@ zoom = [350,4000]
 RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
            'Basket_example_index':2} # 31
 
+PATH = '../data/detailed_model/grating-demo0/GratingSim_demo_%s.zip'
 def load_sim(cellType, RESULTS):
     
-    sim = Parallel(\
-            filename='../data/detailed_model/grating-demo/GratingSim_demo_%s.zip' % cellType)
+    sim = Parallel(filename=PATH % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -150,8 +150,7 @@ def load_sim(cellType, RESULTS):
 
 def load_example_index(cellType, RESULTS):
     
-    sim = Parallel(\
-            filename='../data/detailed_model/GratingSim_demo_%s.zip' % cellType)
+    sim = Parallel(filename=PATH % cellType)
     sim.load()
 
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
@@ -244,12 +243,14 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
+PATH = '../data/detailed_model/grating-full0/GratingSim_%s%s_branch%i.zip'
+
 def load_sim(cellType, suffix):
 
     rates = []
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/full-gratings/GratingSim_%s%s_branch%i.zip' % (cellType, suffix, iBranch))
+                filename=PATH % (cellType, suffix, iBranch))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
