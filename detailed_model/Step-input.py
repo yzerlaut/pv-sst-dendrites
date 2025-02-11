@@ -458,14 +458,6 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
 #func('Martinotti', 'Full', 'tab:orange')
 
 # %%
-sim = Parallel(\
-        filename='../data/detailed_model/current-calib/StepSim_MartinotticurrentCalibnoSTP_branch0.zip')
-sim.load()
-
-# %%
-sim.fetch_quantity_on_grid('Vm_soma', dtype=np.ndarray)
-
-# %%
 
 rate_smoothing = 10. # ms
 

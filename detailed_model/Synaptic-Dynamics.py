@@ -1013,40 +1013,42 @@ for i, freq in enumerate([2, 4, 6, 8, 10]):
 # ## Flashed-Grating Dynamics
 
 # %%
-from scipy.special import erf
-
+from scipy.special import erf 
 def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
-def signal(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0):
+P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
+         Amp=0.25,
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
+
+def inputRate(x,
+              t1=0, t2=0, t3=0, t4=0,
+              w1=0, w2=0, w3=0, w4=0,
+              Amp=0):
     y = sigmoid(x-t1, w1)*sigmoid(-(x-t2), w2)+\
-            0.35*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
+            Amp*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
     
-P = np.load('../data/detailed_model/grating-stim-input-params.npy', allow_pickle=True).item()
-
-def get_rate(t, stimFreq=1., stepFactor=4.):
-    rate = stimFreq+0*t
-    rate += stimFreq*stepFactor*signal(t-0.5, **P)
-    #return rate 
-    return signal(t, **P)
-    
-tstop, dt = 4, 1e-3
+tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
-fig, ax = pt.figure()
-pt.plot(t, get_rate(t), ax=ax)
-pt.set_plot(ax, xlabel='time (s)', ylabel='input rate')
+fig, ax = pt.figure(figsize=(1.,1))
+pt.plot(1e-3*t, inputRate(1e-3*t-0.5, **P), ax=ax, no_set=True)
+ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
+pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
 
 # %%
+def get_rate(t, stimFreq=1.):
+    return 4*stimFreq*inputRate(t-0.5, **P)+1e-3 # to avoid 0 proba
+
 def sim_release(release_proba_params={},
-                stimFreq = 1., stepFactor=4.,
+                stimFreq = 1., #stepFactor=4.,
                 nSyns = 1000, tau=0.05,
                 dt = 1e-3, tstop=4,
                 seed=1):
 
     t = np.arange(int(tstop/dt))*dt
-    rate = get_rate(t, stimFreq=stimFreq, stepFactor=stepFactor)
+    rate = get_rate(t, stimFreq=stimFreq)#, stepFactor=stepFactor)
 
     Release = 0*t    
     for i in range(nSyns):
@@ -1067,7 +1069,7 @@ SIMS = {\
     'SST-no-STP':  {'P0':0.3, 'P1':0.3, 'dP':0.00, 'tauP':1.0, 'Nmax':1},
 }
 
-Freqs = [8.2, 8.2, 1.2, 1.4]
+Freqs = [8.2, 8.2, 1.2, 1.2]
 
 for i, model in enumerate(SIMS['models']):
     SIMS['t'], SIMS['release_%s'%model] = sim_release(release_proba_params=SIMS[model],
@@ -1076,6 +1078,7 @@ for i, model in enumerate(SIMS['models']):
 COLORS = ['tab:red', 'darkred', 'tab:orange', 'gold']
 fig, ax = pt.figure(figsize=(2, 2))
 for i, model in enumerate(SIMS['models']):
+    print(SIMS['release_%s'%model].max())
     ax.plot(SIMS['t'], SIMS['release_%s'%model]/np.max(SIMS['release_%s'%model]), color=COLORS[i])
     pt.annotate(ax, i*'\n'+model+'(%.1fHz)' % Freqs[i], (1,.8), color=COLORS[i], va='top')
 ax.plot(SIMS['t'], get_rate(SIMS['t'])/np.max(get_rate(SIMS['t'])), color='lightgray', lw=2)
@@ -1084,7 +1087,7 @@ pt.draw_bar_scales(ax, Xbar=0.1, Xbar_label='100ms ')
 pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
 
 # %%
-Freqs = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2]
+Freqs = [0.5, 1.0, 1.5, 2, 2.5, 3]
 
 fig, ax = pt.figure(figsize=(2, 2), right=5)
 
@@ -1110,7 +1113,7 @@ Freqs = [6, 8, 10 , 12]
 fig, ax = pt.figure(figsize=(2, 2), right=5)
 
 for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS['PV'], stimFreq=f, stepFactor=4.)
+    t, rel = sim_release(release_proba_params=SIMS['PV'], stimFreq=f)
     ax.plot(t, rel/np.max(rel), color=pt.viridis(i/(len(Freqs)-1)))
     
 ax.plot(SIMS['t'], get_rate(SIMS['t'])/np.max(get_rate(SIMS['t'])), color='lightgray', lw=2)
@@ -1123,32 +1126,5 @@ pt.bar_legend(ax, X=range(len(Freqs)),
               label='step factor',
               colormap=pt.viridis)
 fig.suptitle('PV STP', color='tab:red')
-
-# %%
-Freqs = [0.25, 0.5, 1.0, 1.5]
-
-fig, ax = pt.figure(figsize=(2, 2))
-
-for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS['SST'], stimFreq=f, stepFactor=12.)
-    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
-    
-pt.draw_bar_scales(AX[0], Xbar=0.1)
-pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
-
-# %%
-SIMS['SST-no-STP']
-
-# %%
-Freqs = [6, 8, 10, 12]
-
-fig, ax = pt.figure(figsize=(2, 2))
-
-for i, f in enumerate(Freqs):
-    t, rel = sim_release(release_proba_params=SIMS['PV'], stimFreq=f, stepFactor=4.)
-    ax.plot(t, rel/np.max(rel), color=pt.viridis(i/3.9))
-    
-pt.draw_bar_scales(AX[0], Xbar=0.1)
-pt.annotate(ax, 'glut. release (a.u.)', (0.,0.), ha='right', rotation=90)
 
 # %%

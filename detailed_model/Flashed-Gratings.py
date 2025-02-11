@@ -39,8 +39,8 @@ def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
 P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
-         w1=0.08, w2=0.3, w3=0.2, w4=0.2,
-         Amp=0.25)
+         #Amp=0.25,
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
 
 def inputRate(x,
               t1=0, t2=0, t3=0, t4=0,
@@ -53,7 +53,8 @@ def inputRate(x,
 tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
 fig, ax = pt.figure(figsize=(1.,1))
-pt.plot(1e-3*t, inputRate(1e-3*t-0.5, **P), ax=ax, no_set=True)
+for i, a in enumerate([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45]):
+    pt.plot(1e-3*t, inputRate(1e-3*t-0.5, Amp=a, **P), ax=ax, no_set=True, color=pt.viridis(i/8))
 ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
 pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
@@ -112,12 +113,9 @@ for ax in AX:
 
 # %%
 rate_smoothing = 10. # ms
-zoom = [350,4000]
+zoom = [0,4000]
 
-RESULTS = {'Martinotti_example_index':1, # *50* 33, 42, 49, 50
-           'Basket_example_index':2} # 31
-
-PATH = '../data/detailed_model/grating-demo0/GratingSim_demo_%s.zip'
+PATH = '../data/detailed_model/grating-demo1/GratingSim_demo_%s.zip'
 def load_sim(cellType, RESULTS):
     
     sim = Parallel(filename=PATH % cellType)
@@ -137,6 +135,7 @@ def load_sim(cellType, RESULTS):
     RESULTS['rate_%s' % cellType] = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                            int(rate_smoothing/dt))
     RESULTS['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
+    print(cellType, ' --->', sim.fetch_quantity_on_grid('stimFreq', return_last=True))
     RESULTS['t'] = np.arange(len(RESULTS['rate_%s' % cellType]))*dt
     RESULTS['dt'] = dt    
 
@@ -144,8 +143,8 @@ def load_sim(cellType, RESULTS):
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
     mean_input_rate = np.mean(sim.Stim[0])*RESULTS['stimFreq_%s' % cellType]
     syn_exc_rates = [np.mean([1e3*len(E)/tstop for E in sim.presynaptic_exc_events[i]]) for i in range(len(seeds))]
-    print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
-    print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/mean_input_rate))
+    #print('           exc syn. rate: %.1f +/- %.1f Hz' % (np.mean(syn_exc_rates), np.std(syn_exc_rates)))
+    #print('              --> average release proba (of single events): %.2f ' % (np.mean(syn_exc_rates)/mean_input_rate))
 
 
 def load_example_index(cellType, RESULTS):
@@ -207,6 +206,7 @@ def plot_sim(cellType, color='k', example_index=None, figsize=(1.2,0.6)):
     pt.draw_bar_scales(AX[3], Xbar=1e-12, Ybar=10,Ybar_label='10Hz')
     return fig, AX
 
+RESULTS = {}
 #for cellType, color, index in zip(['Martinotti', 'Basket'],
 for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA','MartinottinoNMDAnoSTP'],
                                   ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
@@ -228,7 +228,7 @@ fig, ax = pt.figure(figsize=(0.9,1.1))
 for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA'],
                                   ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
                                   [1, 9, 1, 1]):
-    cond = (RESULTS['t']>0.3e3) & (RESULTS['t']<4e3)
+    cond = (RESULTS['t']>0e3) & (RESULTS['t']<4e3)
     ax.plot(1e-3*RESULTS['t'][cond]-0.5, RESULTS['rate_%s' % cellType][cond]/np.max(RESULTS['rate_%s' % cellType]),
             color=color, lw=1)
 
@@ -315,16 +315,15 @@ for cellType, color in zip(['Martinotti'], ['tab:orange']):
 # %%
 rate_smoothing = 30. # ms
 
-
-for cellType, suffix, label, color in zip(['Basket', 'Martinotti', 'Martinotti'],
-                                          ['Full', 'Full', 'noNMDA'],
-                                          ['PV - Full', 'SST - Full', 'SST - no NMDA (AMPA+)'],
-                                          ['tab:red', 'tab:orange', 'tab:purple']):
+for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
+                                          ['Full', 'noNMDA'],
+                                          ['SST - Full', 'SST - no NMDA (AMPA+)', 'PV - Full'],
+                                          ['tab:orange', 'tab:purple', 'tab:red']):
     results = {}
 
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/grating-range/GratingSim_%s%sRange_branch%i.zip' % (cellType, suffix, iBranch))
+                filename='../data/detailed_model/grating-range0/GratingSim_%s%sRange_branch%i.zip' % (cellType, suffix, iBranch))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
 
@@ -335,44 +334,47 @@ for cellType, suffix, label, color in zip(['Basket', 'Martinotti', 'Martinotti']
         tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
         sim.fetch_quantity_on_grid('Stim', dtype=list)
         if 'traceRate' not in results:
-            results['traceRate'] = np.zeros((len(np.unique(sim.stimFreq)), 6, int(tstop/dt)+1)) # create the array
+            results['traceRate'] = np.zeros((len(np.unique(sim.stimFreq)),
+                                             len(np.unique(sim.ampLongLasting)),
+                                             6, int(tstop/dt)+1)) # create the array
             results['t'] = np.arange(int(tstop/dt)+1)*dt
-            results['stimFreq'] = np.unique(sim.stimFreq)
             
         for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+            for iAL, AL in enumerate(np.unique(sim.ampLongLasting)):
         
-            # compute time-varying RATE !
-            spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-            for k, spikes in enumerate(\
-                [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
-                spikes_matrix[k,(spikes/dt).astype('int')] = True
-            rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                          int(rate_smoothing/dt))
-            results['traceRate'][iSF,iBranch,:] = rate
-            results['Stim%i'%iSF] = sim.Stim[0][iSF]
-    
-    fig, AX = pt.figure(axes=(len(results['stimFreq']), 1), right=4.,
+                # compute time-varying RATE !
+                spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+                for k, spikes in enumerate(\
+                    [np.array(sim.spikes[k][iSF][iAL]).flatten() for k in range(len(seeds))]):
+                    spikes_matrix[k,(spikes/dt).astype('int')] = True
+                rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                              int(rate_smoothing/dt))
+                results['traceRate'][iSF,iAL,iBranch,:] = rate
+                results['Stim%i'%iSF] = sim.Stim[0][iSF][iAL]
+        
+    fig, AX = pt.figure(axes=(len(np.unique(sim.stimFreq)), 1), right=4.,
                         figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
     INSETS = []
-    for iSF, SF in enumerate(results['stimFreq']):
-        pt.plot(results['t'], results['traceRate'][iSF,:,:].mean(axis=0), 
-                sy=stats.sem(results['traceRate'][iSF,:,:], axis=0),
-                ax=AX[iSF], color=pt.viridis(iSF/(len(results['stimFreq'])-1)))
+    for iSF, SF in enumerate(np.unique(sim.stimFreq)):
+        for iAL, AL in enumerate(np.unique(sim.ampLongLasting)):
+            pt.plot(results['t'], results['traceRate'][iSF,iAL,:,:].mean(axis=0), 
+                    sy=stats.sem(results['traceRate'][iSF,iAL,:,:], axis=0),
+                    ax=AX[iSF], color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)))
+            pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0))+iAL*'\n',
+                (0.5, 1), ha='center', color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)), fontsize=6)
+
         INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
         INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
         INSETS[-1].axis('off')             
-        cond = results['t']>100
-        pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,:,:].mean(axis=0)[cond]),
-                        (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['stimFreq'])-1)), fontsize=7)
     pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
     for ax in pt.flatten(AX):
         pt.set_plot(ax, ['left'] if ax==AX[0] else [], ylabel='firing (Hz)' if ax==AX[0] else '')
     pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
         
-    pt.bar_legend(AX[-1], X=range(len(results['stimFreq'])),
-                  ticks_labels=['%.1f' % f for f in results['stimFreq']],
+    pt.bar_legend(AX[-1], X=range(len(np.unique(sim.ampLongLasting))),
+                  ticks_labels=['%.1f' % f for f in np.unique(sim.ampLongLasting)],
                   colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
-                  label='stimFreq (Hz)',
+                  label='amp (norm.)',
                   colormap=pt.viridis)
     fig.suptitle(label, color=color)
 

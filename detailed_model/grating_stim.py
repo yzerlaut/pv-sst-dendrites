@@ -7,7 +7,8 @@ import plot_tools as pt
 import matplotlib.pylab as plt
 
 P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
-         w1=0.08, w2=0.3, w3=0.2, w4=0.2, Amp=0.25)
+         #Amp=0.25,
+         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
 
 from scipy.special import erf
 # Grating Stim Function:
@@ -19,8 +20,8 @@ def func(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0, Amp=0):
             Amp*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
 
-def input_signal(x, P=P):
-    return func(x, **P)
+def input_signal(x, Amp=0.25, P=P):
+    return func(x, Amp=Amp, **P)
 
 def run_sim(cellType='Basket', 
             passive_only=False,
@@ -29,6 +30,7 @@ def run_sim(cellType='Basket',
             # stim props
             stimFreq=1,
             stepAmpFactor=1.,
+            ampLongLasting=0.25,
             Inh_fraction=20./100.,
             synapse_subsampling=1,
             spikeSeed=2,
@@ -101,7 +103,8 @@ def run_sim(cellType='Basket',
 
     t = np.arange(int(tstop/dt))*dt
     # Stim = stimFreq*(1+stepAmpFactor*input_signal(t*1e-3-0.5))
-    Stim = stimFreq*input_signal((t-t0)*1e-3)
+    Stim = stimFreq*stepAmpFactor*\
+                input_signal((t-t0)*1e-3, Amp=ampLongLasting)
 
     # -- synaptic activity 
     TRAINS = [[] for s in range(len(synapses)*STP_model['Nmax'])]
@@ -163,6 +166,7 @@ def run_sim(cellType='Basket',
               'Inh_fraction':Inh_fraction,
               'stimFreq':stimFreq,
               'stepAmpFactor':stepAmpFactor,
+              'ampLongLasting':ampLongLasting,
               't0':t0,
               'tstop':tstop}
 
@@ -202,6 +206,8 @@ if __name__=='__main__':
                         nargs='*', default=[1.0])
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[4.])
+    parser.add_argument("--ampLongLasting", type=float, 
+                        nargs='*', default=[0.25])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=0)
 
@@ -242,6 +248,7 @@ if __name__=='__main__':
                   Inh_fraction=args.Inh_fraction[0],
                   stimFreq=args.stimFreq[0],
                   stepAmpFactor=args.stepAmpFactor[0],
+                  ampLongLasting=args.ampLongLasting[0],
                   synapse_subsampling=args.synapse_subsampling[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
@@ -267,7 +274,7 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
         for key in ['synapse_subsampling', 'Inh_fraction', 
-                    'stimFreq', 'stepAmpFactor']:
+                    'stimFreq', 'stepAmpFactor', 'ampLongLasting']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
 
@@ -291,8 +298,8 @@ if __name__=='__main__':
                                     (args.cellType, args.suffix, iBranch))
 
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
-            for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                        'stepAmpFactor', 'AMPAboost']:
+            for key in ['synapse_subsampling', 'Inh_fraction', 
+                        'stimFreq', 'stepAmpFactor', 'ampLongLasting']:
                 if len(getattr(args, key))>1:
                     grid[key] = getattr(args, key)
 
