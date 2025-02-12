@@ -428,13 +428,13 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=200
+    nSeed=96
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     freqs=(1.1 1.1 1.1 1.1 8.0 8.0)
     cDrives=(0.0 0.0 0.0 0.0 0.0 0.0)
-    for c in 2
+    for c in 1 2 5
     do
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
@@ -442,7 +442,6 @@ then
             --currentDrive ${cDrives[$c-1]}\
             --stimFreq ${freqs[$c-1]}\
             --nSpikeSeed $nSeed\
-            --dt 0.1\
             --suffix ${suffix[$c-1]}
     done
 fi

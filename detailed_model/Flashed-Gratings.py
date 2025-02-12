@@ -435,7 +435,7 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
-PATH = '../data/detailed_model/Test2/GratingSim_MartinottiTest2_branch%i.zip'
+PATH = '../data/detailed_model/Test1/GratingSim_MartinottiTest1_branch%i.zip'
 
 rates = []
 for iBranch in range(6):

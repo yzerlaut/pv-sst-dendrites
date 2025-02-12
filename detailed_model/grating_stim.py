@@ -51,7 +51,7 @@ def run_sim(cellType='Basket',
     from scipy.special import erf
     from grating_stim import input_signal 
 
-    tstop = t0+2.5e3
+    tstop = t0+3e3
 
     trialSeed = int((200+spikeSeed) * (\
             ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
