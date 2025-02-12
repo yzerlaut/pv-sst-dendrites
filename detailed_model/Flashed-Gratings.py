@@ -381,53 +381,48 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
 rate_smoothing = 30. # ms
 
 results = {}
-sim = Parallel(\
-        filename='../data/detailed_model/GratingSim_demo_MartinottiAmpaRationoNMDA.zip')
-sim.load()
 
-sim.fetch_quantity_on_grid('spikes', dtype=list)
-seeds = np.unique(sim.spikeSeed)
-dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-sim.fetch_quantity_on_grid('Stim', dtype=list)
-
-results['traceRate'] = np.zeros((len(np.unique(sim.AMPAboost)), int(tstop/dt)+1)) # create the array
-results['t'] = np.arange(int(tstop/dt)+1)*dt
-results['AMPAboost'] = np.unique(sim.AMPAboost)
+for iBranch in range(6):
+    sim = Parallel(\
+            filename='../data/detailed_model/GratingSim_MartinotticurrentCalib_branch%i.zip' % iBranch)
+    sim.load()
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
     
-for iSF, SF in enumerate(np.unique(sim.AMPAboost)):
+    if 'traceRate' not in results:
+        results['traceRate'] = np.zeros((len(np.unique(sim.currentDrive)),
+                                         6, int(tstop/dt)+1)) # create the array
 
-    # compute time-varying RATE !
-    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-    for k, spikes in enumerate(\
-        [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
-        spikes_matrix[k,(spikes/dt).astype('int')] = True
-    rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                  int(rate_smoothing/dt))
-    results['traceRate'][iSF,:] = rate
-    results['Stim%i'%iSF] = sim.Stim[0][iSF]
+    for iSF, SF in enumerate(np.unique(sim.currentDrive)):
+    
+        # compute time-varying RATE !
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for k, spikes in enumerate(\
+            [np.array(sim.spikes[k][iSF]).flatten() for k in range(len(seeds))]):
+            spikes_matrix[k,(spikes/dt).astype('int')] = True
+        rate = 1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                      int(rate_smoothing/dt))
+        results['traceRate'][iSF,iBranch,:] = rate
 
-fig, AX = pt.figure(axes=(len(results['AMPAboost']), 1), right=4.,
+fig, AX = pt.figure(axes=(len(np.unique(sim.currentDrive)), 1), right=4.,
                     figsize=(.8,1), wspace=0., hspace=0., left=0.5, bottom=0.)
-INSETS = []
-for iSF, SF in enumerate(results['AMPAboost']):
-    pt.plot(results['t'], results['traceRate'][iSF,:], ax=AX[iSF], 
-                      color=pt.viridis(iSF/(len(results['AMPAboost'])-1)))
-    INSETS.append(pt.inset(AX[iSF], [0,-0.4,1,0.38]))
-    INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')
-    INSETS[-1].axis('off')             
-    
+for iSF, SF in enumerate(np.unique(sim.currentDrive)):
+    pt.plot(results['traceRate'][iSF,:].mean(axis=0), ax=AX[iSF], 
+            sy=stats.sem(results['traceRate'][iSF,:], axis=0),
+                      color=pt.viridis(iSF/(len(np.unique(sim.currentDrive))-1)))
     pt.annotate(AX[iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0)),
-                    (0.5, 1), ha='center', color=pt.viridis(iSF/(len(results['AMPAboost'])-1)), fontsize=7)
+                    (0.5, 1), ha='center', color=pt.viridis(iSF/(len(np.unique(sim.currentDrive))-1)), fontsize=7)
 pt.set_common_ylims(AX); pt.set_common_ylims(INSETS)
 for ax in pt.flatten(AX):
     pt.set_plot(ax, ['left'] if ax==AX[0] else [])
 pt.draw_bar_scales(AX[-1], loc='bottom-right', Xbar=200, Xbar_label='200ms', Ybar=1e-12)
     
-pt.bar_legend(AX[-1], X=results['AMPAboost'],
-              ticks_labels=['%.1f' % f for f in results['AMPAboost']],
+pt.bar_legend(AX[-1], X=np.unique(sim.currentDrive),
+              ticks_labels=['%.2f' % f for f in np.unique(sim.currentDrive)],
               colorbar_inset={'rect': [1.2, -0.3, 0.15, 1.6], 'facecolor': None},
-              label='AMPAboost',
+              label='currentDrive',
               colormap=pt.viridis)
 fig.suptitle('SST - no NMDA', color='tab:purple')
 
