@@ -243,7 +243,7 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
-PATH = '../data/detailed_model/grating-full0/GratingSim_%s%s_branch%i.zip'
+PATH = '../data/detailed_model/full-grating/GratingSim_%s%s_branch%i.zip'
 
 def load_sim(cellType, suffix):
 
@@ -275,10 +275,10 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
 
     for c in range(len(cellTypes)):
         t, input, rates = load_sim(cellTypes[c], suffixs[c])
-        pt.plot(1e-3*t-0.5, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, color=colors[c], lw=1)
+        pt.plot(1e-3*t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, color=colors[c], lw=1)
 
         norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
-        pt.plot(1e-3*t-0.5, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
+        pt.plot(1e-3*t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
                 sy = norm_factor*stats.sem(rates, axis=0),
                 ax=ax2, color=colors[c], lw=1)
         pt.annotate(ax2, c*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),

@@ -433,12 +433,13 @@ then
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     freqs=(1.1 1.1 1.1 1.1 8.0 8.0)
-    cDrives=(0 0.05 0 0.05 0 0)
+    cDrives=(0 0.04 0 0.04 0 0)
     for c in 1 2 5
     do
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
             --no_Vm\
+            --currentDrive ${cDrive[$c-1]}\
             --stimFreq ${freqs[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}
