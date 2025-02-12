@@ -439,7 +439,7 @@ then
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
             --no_Vm\
-            --currentDrive ${cDrive[$c-1]}\
+            --currentDrive ${cDrives[$c-1]}\
             --stimFreq ${freqs[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}
