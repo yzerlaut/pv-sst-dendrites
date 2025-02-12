@@ -450,15 +450,12 @@ fi
 if [[ $1 == 'all' || $1 == 'grating-test' ]]
 then
     nSeed=96
-    #python grating_stim.py -c Martinotti --with_STP\
-        #--no_Vm --stimFreq 1.1 --nSpikeSeed $nSeed\
-        #--suffix Test1
+    python grating_stim.py -c Martinotti --with_STP\
+        --no_Vm --stimFreq 1.1 --nSpikeSeed $nSeed\
+        --dt 0.05 --suffix Test1
     python grating_stim.py -c Martinotti --with_STP\
         --no_Vm --stimFreq 1.15 --nSpikeSeed $nSeed\
         --dt 0.05 --suffix Test2
-    #python grating_stim.py -c Martinotti --with_STP\
-        #--no_Vm --stimFreq 1.2 --nSpikeSeed $nSeed\
-        #--suffix Test3
 fi
 
 if [[ $1 == 'all' || $1 == 'grating-current-calib' ]]

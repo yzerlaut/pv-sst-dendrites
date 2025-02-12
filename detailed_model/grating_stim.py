@@ -124,7 +124,7 @@ def run_sim(cellType='Basket',
             # STP only in excitatory
             N = STP_release_filter(train_s, 
                                    seed=trialSeed+2000+i,
-                                   Pstart=STP_model['P1'],
+                                   Pstart=.5*(STP_model['P1']+STP_model['P0']), # no activity before, so we replace with non-zero init
                                    **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **
