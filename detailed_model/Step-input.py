@@ -386,7 +386,7 @@ for Annot in [False, True]:
 # ## Calibration: Depolarizing Current for no-NMDA condition 
 
 # %%
-rate_smoothing = 30. # ms
+rate_smoothing = 5. # ms
 
 for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
                                           ['wiSTP', 'noSTP'],
@@ -396,7 +396,7 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
 
     for iBranch in range(6):
         sim = Parallel(\
-                filename='../data/detailed_model/current-calib/StepSim_%scurrentCalib%s_branch%i.zip' % (cellType, suffix, iBranch))
+                filename='../data/detailed_model/current-calib3/StepSim_%scurrentCalib%s_branch%i.zip' % (cellType, suffix, iBranch))
         sim.load()
 
         sim.fetch_quantity_on_grid('spikes', dtype=list)
@@ -515,9 +515,8 @@ def func(cellType='Martinotti', suffix='Full', color='tab:orange'):
 
 
 # %%
-#func('Martinotti', 'Full', 'tab:orange')
-#func('Martinotti', 'noNMDA', 'tab:purple')
-func('Basket', 'Full', 'tab:red')
+func('Martinotti', 'Full', 'tab:orange')
+func('Martinotti', 'noNMDA', 'tab:purple')
 
 # %%
 rate_smoothing = 20. # ms

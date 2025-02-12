@@ -8,7 +8,7 @@ fi
 
 
 ###########################################################
-########### stimulation on top of background (Fig. 4) ####
+########### stimulation on top of background (Fig. 5) ####
 ##########################################################
 # demo sim
 if [[ $1 == 'all' || $1 == 'demo-input-output' ]]
@@ -41,7 +41,7 @@ fi
 
 
 #########################################
-########### clustered input (Fig. 4) ####
+########### clustered input (Fig. 5) ####
 #########################################
 if [[ $1 == 'all' || $1 == 'clustered-input' ]]
 then
@@ -66,9 +66,9 @@ then
 fi
 
 
-################################
-######## step rate (Fig. 5) ####
-################################
+##########################################################
+#####    (time-varying) Step Input     (Fig. 6)    #######
+##########################################################
 #
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
@@ -78,9 +78,9 @@ then
     args=("--with_NMDA" "" "")
     suffix=("noSTP" "noSTPnoNMDA" "noSTP")
     branch=(1 1 1)
-    cDrive=(0 0.06 0)
+    cDrive=(0 0.07 0)
     freqs=(1.2 1.2 8.5)
-    for c in 1 2 3
+    for c in 2 # /!\ all: 1 2 3
     do
         widths=(50 50 250)
         ampFs=(3.5 2 2)
@@ -109,9 +109,9 @@ then
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
     branch=(1 1 1)
-    cDrive=(0 0.06 0)
+    cDrive=(0 0.07 0)
     freqs=(1.2 1.2 8.5)
-    for c in 1 2 3
+    for c in 2 # /!\ all: 1 2 3
     do
         widths=(100 100 500)
         ampFs=(3.5 2 2)
@@ -143,7 +143,9 @@ then
             "Full" "noSTP")
     freqs=(1.2 1.2 1.2 1.2 
            8.5 8.5)
-    for c in 1 5 6
+    cDrive=(0 0.07 0 0.07
+            0 0)
+    for c in 2 3 4
     do
         widths=(50 100 200 1000)
         #nSeeds=(20 8 4 4) # for debugging
@@ -157,6 +159,7 @@ then
                 --stepAmpFactor 2 3 4\
                 --stepWidth ${widths[$i-1]}\
                 --nSpikeSeed ${nSeeds[$i-1]}\
+                --currentDrive ${cDrive[$c-1]}\
                 --suffix vSteps${suffix[$c-1]}$i
         done
     done
@@ -183,41 +186,6 @@ then
                 --stepWidth 50\
                 --nSpikeSeed $nSeed\
                 --suffix currentCalibwiSTP
-fi
-
-if [[ $1 == 'all' || $1 == 'step-range-SST-noSTP' ]]
-then
-    nSeed=8
-    ## Basket Cell
-    python step_stim.py\
-        -c Martinotti\
-        --with_NMDA\
-        --synapse_subsampling 1\
-        --nSpikeSeed $nSeed\
-        --stepWidth 200\
-        --interstim 500\
-        --dt 0.05\
-        --suffix InputRangeNoSTP\
-        --Inh_fraction 0.2\
-        --stimFreq 0.8 1 1.2 1.4 1.6 1.8 2\
-        --stepAmpFactor 2 4
-fi
-
-if [[ $1 == 'all' || $1 == 'step-range-PV-noSTP' ]]
-then
-    nSeed=8
-    ## Basket Cell
-    python step_stim.py\
-        -c Basket\
-        --synapse_subsampling 1\
-        --nSpikeSeed $nSeed\
-        --stepWidth 200\
-        --interstim 500\
-        --dt 0.05\
-        --suffix InputRangeNoSTP\
-        --Inh_fraction 0.2\
-        --stimFreq 6 6.5 7 7.5 8 8.5 9\
-        --stepAmpFactor 2 4
 fi
 
 if [[ $1 == 'all' || $1 == 'step-range' ]]
@@ -259,74 +227,7 @@ fi
 
 
 ##########################################################
-##### time-varying rate Stochastic Inputs (Fig. 5) #######
-##########################################################
-#
-if [[ $1 == 'all' || $1 == 'demo-tvRate' ]]
-then
-    ## Basket Cell
-    python tvRate_sim.py --test_with_repeats\
-                        -c Basket\
-                        --with_presynaptic_spikes\
-                        --stimFreq 6e-3\
-                        --bgFreqInhFactor 1\
-                        --iBranch 1\
-                        --nSpikeSeed 56
-    # Martinotti Cell
-    python tvRate_sim.py --test_with_repeats\
-                         -c Martinotti\
-                         --with_NMDA --with_presynaptic_spikes\
-                         --stimFreq 1.65e-4\
-                         --bgFreqInhFactor 1\
-                         --iBranch 1\
-                         --nSpikeSeed 56
-    # Martinotti Cell, no NMDA
-    python tvRate_sim.py --test_with_repeats\
-                         -c Martinotti\
-                         --with_presynaptic_spikes\
-                         --stimFreq 1e-3\
-                         --bgFreqInhFactor 1\
-                         --iBranch 1\
-                         --nSpikeSeed 56\
-                         --suffix noNMDA 
-fi
-
-if [[ $1 == 'all' || $1 == 'tvRate' ]]
-then
-    ## Basket Cell
-    python tvRate_sim.py -c Basket\
-                        --with_presynaptic_spikes\
-                        --stimFreq 6e-3\
-                        --bgFreqInhFactor 1\
-                        --iBranch 1\
-                         --nStochProc 4 --no_Vm\
-                         --fix_missing_only\
-                        --nSpikeSeed 56
-    # Martinotti Cell
-    python tvRate_sim.py -c Martinotti\
-                         --with_NMDA\
-                         --with_presynaptic_spikes\
-                         --stimFreq 1.65e-4\
-                         --bgFreqInhFactor 1\
-                         --iBranch 1\
-                         --nStochProc 4 --no_Vm\
-                         --fix_missing_only\
-                         --nSpikeSeed 56
-    # Martinotti Cell, no NMDA
-    python tvRate_sim.py -c Martinotti\
-                         --with_presynaptic_spikes\
-                         --stimFreq 1e-3\
-                         --bgFreqInhFactor 1\
-                         --iBranch 1\
-                         --nSpikeSeed 56\
-                         --nStochProc 4 --no_Vm\
-                         --fix_missing_only\
-                         --suffix noNMDA 
-fi
-
-
-##########################################################
-#####     Natural Movie Input Dynamics (Fig. x)    #######
+#####     Natural Movie Input Dynamics (Fig. 7)    #######
 ##########################################################
 #
 if [[ $1 == 'all' || $1 == 'demo-natMovie' ]]
@@ -501,9 +402,9 @@ then
 fi
 
 
-#########################################
-######## grating stim. rate (Fig. 8) ####
-#########################################
+##########################################################
+##### Input emulating Flashed-Gratings (Fig. 8)    #######
+##########################################################
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
