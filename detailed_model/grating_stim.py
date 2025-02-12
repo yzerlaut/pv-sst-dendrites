@@ -216,7 +216,7 @@ if __name__=='__main__':
     parser.add_argument("--currentDrive", type=float, 
                         nargs='*', default=[0])
     parser.add_argument("--ampLongLasting", type=float, 
-                        nargs='*', default=[0.35])
+                        nargs='*', default=[0.4])
     parser.add_argument("--spikeSeed", type=int, default=1)
     parser.add_argument("--nSpikeSeed", type=int, default=0)
 

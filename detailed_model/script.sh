@@ -448,12 +448,12 @@ fi
 
 if [[ $1 == 'all' || $1 == 'grating-current-calib' ]]
 then
-    nSeed=12
+    nSeed=48
     python grating_stim.py\
         -c Martinotti --with_STP\
         --with_presynaptic_spikes\
         --stimFreq 1.1\
-        --currentDrive 0.03 0.05 0.07\
+        --currentDrive 0 0.01 0.02 0.03 0.04 0.05 0.06 0.07\
         --nSpikeSeed $nSeed\
         --suffix currentCalib
 fi

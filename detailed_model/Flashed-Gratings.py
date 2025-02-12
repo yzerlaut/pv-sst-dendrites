@@ -291,8 +291,8 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
     return fig1, fig2
 
 fig1, fig2 = plot_sim(['Martinotti', 'Martinotti', 'Basket'],
-                  ['Full', 'noNMDA', 'Full'],
-                  ['tab:orange', 'tab:purple', 'tab:red'])
+                      ['Full', 'noNMDA', 'Full'],
+                      ['tab:orange', 'tab:purple', 'tab:red'])
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
