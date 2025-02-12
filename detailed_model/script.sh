@@ -167,8 +167,7 @@ if [[ $1 == 'all' || $1 == 'step-current-calib' ]]
 then
     nSeed=12
     # Martinotti Cell
-    python step_stim.py\ 
-                -c Martinotti\
+    python step_stim.py -c Martinotti\
                 --no_Vm\
                 --currentDrive 0.04 0.05 0.06 0.07 0.08 0.09\
                 --stimFreq 1.2\
@@ -176,8 +175,7 @@ then
                 --stepWidth 50\
                 --nSpikeSeed $nSeed\
                 --suffix currentCalibnoSTP
-    python step_stim.py\ 
-                -c Martinotti --with_STP\
+    python step_stim.py -c Martinotti --with_STP\
                 --no_Vm\
                 --currentDrive 0.04 0.05 0.06 0.07 0.08 0.09\
                 --stimFreq 1.2\
