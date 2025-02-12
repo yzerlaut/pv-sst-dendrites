@@ -429,3 +429,50 @@ pt.bar_legend(AX[-1], X=np.unique(sim.currentDrive),
 fig.suptitle('SST - no NMDA', color='tab:purple')
 
 #func('Martinotti', 'Full', 'tab:orange')
+
+# %%
+rate_smoothing = 50. # ms
+
+zoom = [-.2, 3.7]
+
+PATH = '../data/detailed_model/Test2/GratingSim_MartinottiTest2_branch%i.zip'
+
+rates = []
+for iBranch in range(6):
+    sim = Parallel(\
+            filename=PATH % (iBranch))
+    sim.load()
+    sim.fetch_quantity_on_grid('spikes', dtype=list)
+    seeds = np.unique(sim.spikeSeed)
+    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+    for i, spikes in enumerate(sim.spikes):
+        spikes_matrix[i,(spikes/dt).astype('int')] = True
+    rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                               int(rate_smoothing/dt)))
+    input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+    if iBranch==0:
+        print(cellType, sim.fetch_quantity_on_grid('stimFreq', return_last=True))
+
+t = np.arange(len(rates[0]))*dt
+
+
+fig1, ax1 = pt.figure(figsize=(0.95,1.))
+fig2, ax2 = pt.figure(figsize=(0.95,1.))
+
+pt.plot(1e-3*t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, lw=1)
+
+norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
+pt.plot(1e-3*t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
+        sy = norm_factor*stats.sem(rates, axis=0),
+        ax=ax2, lw=1)
+pt.annotate(ax2, '%.1fHz' % (0.2/norm_factor), (0, 1),
+            ha='right', va='top', fontsize=7)
+    
+#ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
+pt.set_plot(ax1, xlim=zoom, xlabel='time (s)', ylabel='rate (Hz)')
+pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2], xlim=zoom)
+pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
+
+# %%

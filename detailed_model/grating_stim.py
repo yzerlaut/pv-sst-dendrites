@@ -53,7 +53,7 @@ def run_sim(cellType='Basket',
 
     tstop = t0+2.5e3
 
-    trialSeed = int((70+spikeSeed) * (\
+    trialSeed = int((200+spikeSeed) * (\
             ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
 
     ######################################################
@@ -124,6 +124,7 @@ def run_sim(cellType='Basket',
             # STP only in excitatory
             N = STP_release_filter(train_s, 
                                    seed=trialSeed+2000+i,
+                                   Pstart=(STP_model['P1']+STP_model['P0'])/2.,
                                    **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **

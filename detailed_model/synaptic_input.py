@@ -34,6 +34,7 @@ def STP_release_filter(pre_spikes,
                        P0 = 1.0, # proba at 0-frequency
                        P1 = 1.0, # proba at oo-frequency
                        dP = 0.0, # proba increment
+                       Pstart=None,
                        tauP = 1.0, # seconds
                        Nmax=1,
                        seed=None):
@@ -46,8 +47,11 @@ def STP_release_filter(pre_spikes,
         seed = np.random.randint(1000)
     np.random.seed(seed)
 
+    if Pstart is None:
+        Pstart=P0
+
     # build the time-varing release probability:
-    P = np.ones(len(pre_spikes))*P0 # initialized
+    P = np.ones(len(pre_spikes))*Pstart # initialized
     for i in range(len(pre_spikes)-1):
         P[i+1] = P0 + ( P[i]+dP*(P1-P[i])/(abs(P1-P0)+1e-4) - P0 )*np.exp( -(pre_spikes[i+1]-pre_spikes[i])/tauP )
     # build the probabilities of each number of vesicles ([!!] from Nmax to 1 [!!] ) :
