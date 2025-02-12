@@ -376,9 +376,11 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
                   colormap=pt.viridis)
     fig.suptitle(label, color=color)
 
-# %%
+# %% [markdown]
+# ## Current Calibration
 
-rate_smoothing = 30. # ms
+# %%
+rate_smoothing = 5. # ms
 
 results = {}
 
@@ -427,23 +429,3 @@ pt.bar_legend(AX[-1], X=np.unique(sim.currentDrive),
 fig.suptitle('SST - no NMDA', color='tab:purple')
 
 #func('Martinotti', 'Full', 'tab:orange')
-
-# %%
-sim.AMPAboost
-
-# %%
-plot_sim(['Martinotti', 'Martinotti', 'Martinotti', 'Martinotti'],
-         ['', 'withSTP', 'noNMDA', 'noNMDAwithSTP'],
-         ['tab:orange', 'k', 'tab:purple', 'tab:cyan'],
-         lines=['-','--', '-', '-'])
-#fig.savefig('../figures/Temp-Properties-Pred/SST-models.svg')
-
-# %%
-plot_sim(['Basket', 'Basket'],
-         ['', 'noNMDAwithSTP'],
-         ['tab:red', 'tab:grey'])
-
-# %%
-plot_sim(['Basket', 'Basket'],
-         ['', 'withSTP'],
-         ['tab:red', 'tab:grey'])
