@@ -281,8 +281,7 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
         for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                    'stepWidth', 'stepAmpFactor', 
-                    'AMPAboost', 'currentDrive']:
+                    'stepWidth', 'stepAmpFactor', 'currentDrive']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
 

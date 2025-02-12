@@ -556,20 +556,16 @@ then
     #done
 fi
 
-if [[ $1 == 'all' || $1 == 'grating-ampa-ratio' ]]
+if [[ $1 == 'all' || $1 == 'grating-current-calib' ]]
 then
     nSeed=12
-    python grating_stim.py --test_with_repeats\
+    python grating_stim.py\
         -c Martinotti --with_STP\
         --with_presynaptic_spikes\
-        --Inh_fraction 0.2\
-        --synapse_subsampling 1\
-        --stimFreq 2.0\
-        --AMPAboost 1.5 2 2.5 3 3.5\
-        --stepAmpFactor 4\
-        --iBranch 0\
+        --stimFreq 1.1\
+        --currentDrive 0.03 0.05 0.07\
         --nSpikeSeed $nSeed\
-        --suffix AmpaRationoNMDA
+        --suffix currentCalib
 fi
 
 if [[ $1 == 'all' || $1 == 'grating-range' ]]

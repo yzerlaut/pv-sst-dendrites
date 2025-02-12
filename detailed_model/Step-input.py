@@ -221,7 +221,7 @@ for i, index in zip(np.arange(1,4), [2,23,0]):
     cellTypes.append('BasketwiSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1], n=2.1) 
-fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3), view=[-600, 800], interstim=100, Tbar=200)
+fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3), view=[-350, 400], interstim=50, Tbar=100)
 #fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_wiSTP_%s.svg' % cellTypes[-1])
 
 # %%

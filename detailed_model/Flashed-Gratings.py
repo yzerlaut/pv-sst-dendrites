@@ -327,8 +327,6 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
 
- 
-        sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
         dt = sim.fetch_quantity_on_grid('dt', return_last=True)
         tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
@@ -360,8 +358,8 @@ for cellType, suffix, label, color in zip(['Martinotti', 'Martinotti'],
             pt.plot(results['t'], results['traceRate'][iSF,iAL,:,:].mean(axis=0), 
                     sy=stats.sem(results['traceRate'][iSF,iAL,:,:], axis=0),
                     ax=AX[iAL][iSF], color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)))
-            pt.annotate(AX[iAL][iSF], '%.1fHz' % np.max(results['traceRate'][iSF,1:].mean(axis=0))+iAL*'\n',
-                (0.5, 1), ha='center', color=pt.viridis(iAL/(len(np.unique(sim.ampLongLasting))-1)), fontsize=6)
+            pt.annotate(AX[iAL][iSF], ' f=%.1fHz\n a=%.1f' % (sim.stimFreq[0][iSF][iAL], sim.ampLongLasting[0][iSF][iAL]),
+                (0.5, 1), ha='center', va='top', fontsize=6)
 
         INSETS.append(pt.inset(AX[iAL][iSF], [0,-0.4,1,0.38]))
         INSETS[-1].fill_between(results['t'][1:], 0*results['t'][1:], results['Stim%i'%iSF], color='lightgray')

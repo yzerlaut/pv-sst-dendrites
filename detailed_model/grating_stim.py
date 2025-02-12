@@ -34,6 +34,7 @@ def run_sim(cellType='Basket',
             Inh_fraction=20./100.,
             synapse_subsampling=1,
             spikeSeed=2,
+            currentDrive=0, # in nA
             # biophysical props
             with_STP=False,
             with_NMDA=False,
@@ -84,6 +85,12 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, 
                 passive_only=passive_only,
                 params_key=params_key)
+
+    if currentDrive>0:
+        ic = h.IClamp(cell.soma[0](0.5))
+        ic.amp = currentDrive
+        ic.dur =  1e9 * ms
+        ic.delay = 0 * ms
 
     if from_uniform:
         synapses = cell.set_of_synapses_spatially_uniform[iBranch]
@@ -206,6 +213,8 @@ if __name__=='__main__':
                         nargs='*', default=[1.0])
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[4.])
+    parser.add_argument("--currentDrive", type=float, 
+                        nargs='*', default=[0])
     parser.add_argument("--ampLongLasting", type=float, 
                         nargs='*', default=[0.25])
     parser.add_argument("--spikeSeed", type=int, default=1)
@@ -250,6 +259,7 @@ if __name__=='__main__':
                   stepAmpFactor=args.stepAmpFactor[0],
                   ampLongLasting=args.ampLongLasting[0],
                   synapse_subsampling=args.synapse_subsampling[0],
+                  currentDrive=args.currentDrive[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
                           args.with_presynaptic_spikes,
@@ -274,7 +284,8 @@ if __name__=='__main__':
 
         grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
         for key in ['synapse_subsampling', 'Inh_fraction', 
-                    'stimFreq', 'stepAmpFactor', 'ampLongLasting']:
+                    'stimFreq', 'stepAmpFactor', 
+                    'ampLongLasting', 'currentDrive']:
             if len(getattr(args, key))>1:
                 grid[key] = getattr(args, key)
 
@@ -299,7 +310,8 @@ if __name__=='__main__':
 
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
             for key in ['synapse_subsampling', 'Inh_fraction', 
-                        'stimFreq', 'stepAmpFactor', 'ampLongLasting']:
+                        'stimFreq', 'stepAmpFactor', 
+                        'ampLongLasting', 'currentDrive']:
                 if len(getattr(args, key))>1:
                     grid[key] = getattr(args, key)
 
