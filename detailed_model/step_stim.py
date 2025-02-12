@@ -23,7 +23,6 @@ def run_sim(cellType='Basket',
             # biophysical props
             with_STP=False,
             with_NMDA=False,
-            AMPAboost=0,
             currentDrive=0, # in nA
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
@@ -69,10 +68,6 @@ def run_sim(cellType='Basket',
     cell = Cell(ID=ID, 
                 passive_only=passive_only,
                 params_key=params_key)
-
-    # add optional modified AMPA boost:
-    if AMPAboost>0:
-        cell.params['%s_qAMPAonlyBoost'%cell.params_key] = AMPAboost
 
     if currentDrive>0:
         ic = h.IClamp(cell.soma[0](0.5))
@@ -207,8 +202,6 @@ if __name__=='__main__':
                         nargs='*', default=[200.])
     parser.add_argument("--stepAmpFactor", type=float, 
                         nargs='*', default=[3.])
-    parser.add_argument("--AMPAboost", type=float, 
-                        nargs='*', default=[0])
     parser.add_argument("--currentDrive", type=float, 
                         nargs='*', default=[0])
     parser.add_argument("--spikeSeed", type=int, default=1)
@@ -254,7 +247,6 @@ if __name__=='__main__':
                   stepWidth=args.stepWidth[0], 
                   stepAmpFactor=args.stepAmpFactor[0],
                   synapse_subsampling=args.synapse_subsampling[0],
-                  AMPAboost=args.AMPAboost[0],
                   currentDrive=args.currentDrive[0],
                   iBranch=args.iBranch,
                   with_presynaptic_spikes=\
@@ -306,8 +298,7 @@ if __name__=='__main__':
 
             grid = dict(spikeSeed=np.arange(args.nSpikeSeed))
             for key in ['synapse_subsampling', 'Inh_fraction', 'stimFreq',
-                        'stepWidth', 'stepAmpFactor', 
-                        'AMPAboost', 'currentDrive']:
+                        'stepWidth', 'stepAmpFactor', 'currentDrive']:
                 if len(getattr(args, key))>1:
                     grid[key] = getattr(args, key)
 

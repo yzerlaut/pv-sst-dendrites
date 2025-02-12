@@ -45,7 +45,7 @@ def run_sim(cellType='Basket',
             t0=100, # ms
             dt= 0.01):
 
-    from cell_template import Cell, h, np
+    from cell_template import Cell, h, np, ms
     from synaptic_input import add_synaptic_input, PoissonSpikeTrain,\
                                     STP_release_filter
     from scipy.special import erf
