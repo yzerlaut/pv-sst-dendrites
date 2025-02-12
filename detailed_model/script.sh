@@ -428,13 +428,13 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=96
+    nSeed=200
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
     freqs=(1.1 1.1 1.1 1.1 8.0 8.0)
-    cDrives=(0.0 0.04 0.0 0.04 0.0 0.0)
-    for c in 1 2 5
+    cDrives=(0.0 0.0 0.0 0.0 0.0 0.0)
+    for c in 2
     do
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
@@ -442,8 +442,20 @@ then
             --currentDrive ${cDrives[$c-1]}\
             --stimFreq ${freqs[$c-1]}\
             --nSpikeSeed $nSeed\
+            --dt 0.1\
             --suffix ${suffix[$c-1]}
     done
+fi
+
+if [[ $1 == 'all' || $1 == 'grating-test' ]]
+then
+    nSeed=192
+    python grating_stim.py -c Martinotti --with_STP\
+        --no_Vm --stimFreq 1.1 --nSpikeSeed $nSeed\
+        --dt 0.1 --suffix Test1
+    python grating_stim.py -c Martinotti --with_STP\
+        --no_Vm --stimFreq 1.15 --nSpikeSeed $nSeed\
+        --dt 0.1 --suffix Test2
 fi
 
 if [[ $1 == 'all' || $1 == 'grating-current-calib' ]]
@@ -451,6 +463,7 @@ then
     nSeed=48
     python grating_stim.py\
         -c Martinotti --with_STP\
+        --no_Vm\
         --with_presynaptic_spikes\
         --stimFreq 1.1\
         --currentDrive 0 0.01 0.02 0.03 0.04 0.05 0.06 0.07\
