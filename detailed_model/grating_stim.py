@@ -20,7 +20,7 @@ def func(x, t1=0, t2=0, t3=0, t4=0, w1=0, w2=0, w3=0, w4=0, Amp=0):
             Amp*(sigmoid(x-t3, w3)*sigmoid(-(x-t4), w4))
     return y/y.max()
 
-def input_signal(x, Amp=0.25, P=P):
+def input_signal(x, Amp=0.4, P=P):
     return func(x, Amp=Amp, **P)
 
 def run_sim(cellType='Basket', 
@@ -30,7 +30,7 @@ def run_sim(cellType='Basket',
             # stim props
             stimFreq=1,
             stepAmpFactor=1.,
-            ampLongLasting=0.25,
+            ampLongLasting=0.4,
             Inh_fraction=20./100.,
             synapse_subsampling=1,
             spikeSeed=2,
@@ -51,7 +51,7 @@ def run_sim(cellType='Basket',
     from scipy.special import erf
     from grating_stim import input_signal 
 
-    tstop = t0+3e3
+    tstop = t0+2.5e3
 
     trialSeed = int((200+spikeSeed) * (\
             ( stimFreq*stepAmpFactor*(iBranch**2+1) ) ) )%1000000 
@@ -124,7 +124,8 @@ def run_sim(cellType='Basket',
             # STP only in excitatory
             N = STP_release_filter(train_s, 
                                    seed=trialSeed+2000+i,
-                                   Pstart=.5*(STP_model['P1']+STP_model['P0']), # no activity before, so we replace with non-zero init
+                                   Pstart=STP_model['P0']+\
+                                      .25*(STP_model['P1']-STP_model['P0']), # no activity before, so we replace with non-zero init
                                    **STP_model)
             for n in range(1, STP_model['Nmax']+1):
                 # we split according to release number ++ train to ** ms **

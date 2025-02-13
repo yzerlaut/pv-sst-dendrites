@@ -65,7 +65,7 @@ from grating_stim import input_signal
 tstop, dt = 4e3, 0.1
 t = np.arange(int(tstop/dt))*dt
 fig, ax = pt.figure(figsize=(1.,1))
-pt.plot(1e-3*t, input_signal(1e-3*t-0.5), ax=ax, no_set=True)
+pt.plot(1e-3*t, input_signal(1e-3*t-0.5, Amp=.35), ax=ax, no_set=True)
 ax.fill_between([0.5,2.5], [0,0], [1,1], color='gray', alpha=0.2, lw=0)
 pt.set_plot(ax, yticks=[0,1],  xlabel='time (s)', ylabel='input rate\n(norm.)')
 
@@ -243,7 +243,7 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
-PATH = '../data/detailed_model/full-grating/GratingSim_%s%s_branch%i.zip'
+PATH = '../data/detailed_model/grating-full3/GratingSim_%s%s_branch%i.zip'
 
 def load_sim(cellType, suffix):
 
@@ -435,44 +435,42 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
-PATH = '../data/detailed_model/Test1/GratingSim_MartinottiTest1_branch%i.zip'
-
-rates = []
-for iBranch in range(6):
-    sim = Parallel(\
-            filename=PATH % (iBranch))
-    sim.load()
-    sim.fetch_quantity_on_grid('spikes', dtype=list)
-    seeds = np.unique(sim.spikeSeed)
-    dt = sim.fetch_quantity_on_grid('dt', return_last=True)
-    tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-    spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
-    for i, spikes in enumerate(sim.spikes):
-        spikes_matrix[i,(spikes/dt).astype('int')] = True
-    rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
-                                               int(rate_smoothing/dt)))
-    input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-    if iBranch==0:
-        print(cellType, sim.fetch_quantity_on_grid('stimFreq', return_last=True))
-
-t = np.arange(len(rates[0]))*dt
-
-
 fig1, ax1 = pt.figure(figsize=(0.95,1.))
 fig2, ax2 = pt.figure(figsize=(0.95,1.))
 
-pt.plot(1e-3*t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, lw=1)
+for i, key, color in zip(range(2), ['Full', 'noNMDA'], ['tab:orange', 'tab:purple']):
 
-norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
-pt.plot(1e-3*t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
-        sy = norm_factor*stats.sem(rates, axis=0),
-        ax=ax2, lw=1)
-pt.annotate(ax2, '%.1fHz' % (0.2/norm_factor), (0, 1),
-            ha='right', va='top', fontsize=7)
     
-#ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
-pt.set_plot(ax1, xlim=zoom, xlabel='time (s)', ylabel='rate (Hz)')
-pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2], xlim=zoom)
-pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
+    rates = []
+    for iBranch in range(6):
+        sim = Parallel(\
+                filename='../data/detailed_model/GratingSim_Martinotti%sTest1_branch%i.zip' % (key, iBranch))
+        sim.load()
+        sim.fetch_quantity_on_grid('spikes', dtype=list)
+        seeds = np.unique(sim.spikeSeed)
+        dt = sim.fetch_quantity_on_grid('dt', return_last=True)
+        tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
+        spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
+        for i, spikes in enumerate(sim.spikes):
+            spikes_matrix[i,(spikes/dt).astype('int')] = True
+        rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
+                                                   int(rate_smoothing/dt)))
+        input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
+    
+    t = np.arange(len(rates[0]))*dt
+    
+    pt.plot(1e-3*t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, lw=1, color=color)
+    
+    norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
+    pt.plot(1e-3*t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
+            sy = norm_factor*stats.sem(rates, axis=0),
+            ax=ax2, lw=1, color=color)
+    pt.annotate(ax2, i*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),
+                ha='right', va='top', fontsize=7)
+    print(0.2/norm_factor)
+    #ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
+    pt.set_plot(ax1, xlim=zoom, xlabel='time (s)', ylabel='rate (Hz)')
+    pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2], xlim=zoom)
+    pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
 
 # %%

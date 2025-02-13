@@ -408,12 +408,12 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=48
+    nSeed=96
     cells=("Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noNMDAnoSTP" "Full" "noSTP")
     branch=(1 1 1 1 1)
-    freqs=(1.4 1.4 1.4 9 9)
+    freqs=(1.0 1.0 1.0 9 9)
     for c in 1 2 4
     do
         python grating_stim.py --test_with_repeats\
@@ -432,14 +432,12 @@ then
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.1 1.1 1.1 1.1 8.0 8.0)
-    cDrives=(0.0 0.0 0.0 0.0 0.0 0.0)
+    freqs=(1.0 1.0 1.0 1.0 9.0 9.0)
     for c in 1 2 5
     do
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
             --no_Vm\
-            --currentDrive ${cDrives[$c-1]}\
             --stimFreq ${freqs[$c-1]}\
             --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}
@@ -448,13 +446,19 @@ fi
 
 if [[ $1 == 'all' || $1 == 'grating-test' ]]
 then
-    nSeed=96
+    nSeed=12
+    python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        --no_Vm --stimFreq 1.0 --nSpikeSeed $nSeed\
+        --dt 0.05 --suffix FullTest1
     python grating_stim.py -c Martinotti --with_STP\
-        --no_Vm --stimFreq 1.1 --nSpikeSeed $nSeed\
-        --dt 0.05 --suffix Test1
-    python grating_stim.py -c Martinotti --with_STP\
-        --no_Vm --stimFreq 1.15 --nSpikeSeed $nSeed\
-        --dt 0.05 --suffix Test2
+        --no_Vm --stimFreq 1.0 --nSpikeSeed $nSeed\
+        --dt 0.05 --suffix noNMDATest1
+    #python grating_stim.py -c Martinotti --with_NMDA --with_STP\
+        #--no_Vm --stimFreq 1.0 --nSpikeSeed $nSeed\
+        #--dt 0.05 --suffix FullTest2
+    #python grating_stim.py -c Martinotti --with_STP\
+        #--no_Vm --stimFreq 1.0 --nSpikeSeed $nSeed\
+        #--dt 0.05 --suffix noNMDATest2
 fi
 
 if [[ $1 == 'all' || $1 == 'grating-current-calib' ]]
