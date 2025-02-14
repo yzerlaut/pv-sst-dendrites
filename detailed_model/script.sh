@@ -413,7 +413,8 @@ then
     args=("--with_NMDA --with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noNMDAnoSTP" "Full" "noSTP")
     branch=(1 1 1 1 1)
-    freqs=(1.0 1.0 1.0 9 9)
+    freqs=(1.1 1.1 1.1 11.0 11.0)
+    nSeeds=(96 192 192 96 96)
     for c in 1 2 4
     do
         python grating_stim.py --test_with_repeats\
@@ -421,7 +422,7 @@ then
             --with_presynaptic_spikes\
             --stimFreq ${freqs[$c-1]}\
             --iBranch ${branch[$c-1]}\
-            --nSpikeSeed $nSeed\
+            --nSpikeSeed --suffix ${nSeeds[$c-1]}\
             --suffix ${suffix[$c-1]}$i
     done
 fi
@@ -432,14 +433,15 @@ then
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.1 1.1 1.0 1.0 11.0 11.0)
+    freqs=(1.1 1.1 1.1 1.1 11.0 11.0)
+    nSeeds=(96 192 96 192 96 96)
     for c in 2
     do
         python grating_stim.py\
             -c ${cells[$c-1]} ${args[$c-1]}\
             --no_Vm\
             --stimFreq ${freqs[$c-1]}\
-            --nSpikeSeed $nSeed\
+            --nSpikeSeed --suffix ${nSeeds[$c-1]}\
             --suffix ${suffix[$c-1]}
     done
 fi

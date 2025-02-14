@@ -162,6 +162,7 @@ def run_sim(cellType='Basket',
               'stimFreq':stimFreq,
               'stepWidth':stepWidth, 
               'stepAmpFactor':stepAmpFactor,
+              'currentDrive':currentDrive,
               'tstop':tstop}
 
     if not no_Vm:

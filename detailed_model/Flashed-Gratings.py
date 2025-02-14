@@ -226,7 +226,7 @@ for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'Martinottino
 # # Summary Effect
 
 # %%
-rate_smoothing = 30. # ms
+rate_smoothing = 60. # ms
 
 def load_sim(results, cellType):
 
@@ -245,9 +245,8 @@ def load_sim(results, cellType):
         rates.append(1e3*gaussian_filter1d(np.mean(spikes_matrix, axis=0)/dt,
                                                    int(rate_smoothing/dt)))
         input = sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-        if iBranch==0:
-            print(cellType, sim.fetch_quantity_on_grid('stimFreq', return_last=True))
 
+    results['stimFreq_%s' % cellType] = sim.fetch_quantity_on_grid('stimFreq', return_last=True)
     results['rate_%s' % cellType] = rates
     results['input_%s' % cellType] = input
     results['t'] = np.arange(len(rates[0]))*dt
@@ -256,14 +255,11 @@ def load_sim(results, cellType):
 results = {}
 for cellType in ['MartinottiFull', 'MartinottinoNMDA', 'BasketFull']:
     load_sim(results, cellType)
-  
 
 # %%
-
-zoom = [-.2, 3.7]
-
-fig1, ax1 = pt.figure(figsize=(0.95,1.))
-fig2, ax2 = pt.figure(figsize=(0.95,1.))
+fig1, ax1 = pt.figure(figsize=(1,1.1))
+fig2, ax2 = pt.figure(figsize=(1,1.1))
+pt.annotate(ax2, '2s', (0.2, 0), va='top', color='k', fontsize=7)
 
 for c, cellType, color in zip(range(3),\
     ['MartinottiFull', 'MartinottinoNMDA', 'BasketFull'],
@@ -276,14 +272,21 @@ for c, cellType, color in zip(range(3),\
     pt.plot(1e-3*results['t'], norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
             sy = norm_factor*stats.sem(rates, axis=0),
             ax=ax2, color=color, lw=1)
-    pt.annotate(ax2, c*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),
-                ha='right', va='top', color=color, fontsize=7)
         
-    #ax2.fill_between(1e-3*results['t'], 0*results['t'], input/np.max(input), color='lightgrey')
     pt.set_plot(ax1, xlabel='time (s)', ylabel='rate (Hz)')
-    pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2])
-    pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
-
+    if c==0:
+        pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.14, loc='top-right')
+        input = results['input_%s' % cellType]
+        inset = pt.inset(ax2, [0,1,1,0.4])
+        inset.fill_between(1e-3*results['t'][1:], 0*results['t'][1:], input/np.max(input), color='lightgrey')
+        pt.draw_bar_scales(inset, Ybar=0.25, Xbar=1e-12, loc='bottom-right')
+        inset.axis('off')
+        ax2.plot([0,2], [0,0], 'k-', lw=1)
+    pt.set_plot(ax2, [])
+    pt.annotate(ax2, '%.1fHz' % (0.14/norm_factor)+c*'\n', (1, 0),
+                color=color, fontsize=7)
+    pt.annotate(inset, '%.1fHz' % (results['stimFreq_%s' % cellType])+c*'\n', (1, 0),
+                color=color, fontsize=7)
 
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 

@@ -116,7 +116,8 @@ def load_sim(RESULTS, cellType,
     sim.fetch_quantity_on_grid('presynaptic_exc_events', dtype=list)
     sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
-    
+
+    print(sim.fetch_quantity_on_grid('currentDrive', return_last=True, dtype=list))
     if '%s_example_index' % cellType in RESULTS:
         sim.fetch_quantity_on_grid('Stim', dtype=np.ndarray)
         RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
@@ -208,7 +209,7 @@ cellTypes, RESULTS = [], {}
 for i, index in zip(np.arange(1,4), [2,2,4]):
     cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
-    load_sim(RESULTS, cellTypes[-1], n=1.1) 
+    load_sim(RESULTS, cellTypes[-1], n=1.3) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
 #fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 
