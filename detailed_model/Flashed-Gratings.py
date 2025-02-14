@@ -226,18 +226,14 @@ for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'Martinottino
 # # Summary Effect
 
 # %%
-rate_smoothing = 50. # ms
+rate_smoothing = 30. # ms
 
-zoom = [-.2, 3.7]
-
-PATH = '../data/detailed_model/full-grating4/GratingSim_%s%s_branch%i.zip'
-
-def load_sim(cellType, suffix):
+def load_sim(results, cellType):
 
     rates = []
     for iBranch in range(6):
         sim = Parallel(\
-                filename=PATH % (cellType, suffix, iBranch))
+                filename='../data/detailed_model/full-grating5/GratingSim_%s_branch%i.zip' % (cellType, iBranch))
         sim.load()
         sim.fetch_quantity_on_grid('spikes', dtype=list)
         seeds = np.unique(sim.spikeSeed)
@@ -252,34 +248,43 @@ def load_sim(cellType, suffix):
         if iBranch==0:
             print(cellType, sim.fetch_quantity_on_grid('stimFreq', return_last=True))
 
-    return np.arange(len(rates[0]))*dt, input, rates    
+    results['rate_%s' % cellType] = rates
+    results['input_%s' % cellType] = input
+    results['t'] = np.arange(len(rates[0]))*dt
+    
 
+results = {}
+for cellType in ['MartinottiFull', 'MartinottinoNMDA', 'BasketFull']:
+    load_sim(results, cellType)
+  
 
-def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
+# %%
 
-    fig1, ax1 = pt.figure(figsize=(0.95,1.))
-    fig2, ax2 = pt.figure(figsize=(0.95,1.))
+zoom = [-.2, 3.7]
 
-    for c in range(len(cellTypes)):
-        t, input, rates = load_sim(cellTypes[c], suffixs[c])
-        pt.plot(1e-3*t, np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, color=colors[c], lw=1)
+fig1, ax1 = pt.figure(figsize=(0.95,1.))
+fig2, ax2 = pt.figure(figsize=(0.95,1.))
 
-        norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
-        pt.plot(1e-3*t, norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
-                sy = norm_factor*stats.sem(rates, axis=0),
-                ax=ax2, color=colors[c], lw=1)
-        pt.annotate(ax2, c*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),
-                    ha='right', va='top', color=colors[c], fontsize=7)
+for c, cellType, color in zip(range(3),\
+    ['MartinottiFull', 'MartinottinoNMDA', 'BasketFull'],
+    ['tab:orange', 'tab:purple', 'tab:red']):
+
+    rates = results['rate_%s' % cellType]
+    pt.plot(1e-3*results['t'], np.mean(rates, axis=0), sy=np.std(rates, axis=0), ax=ax1, color=color, lw=1)
+
+    norm_factor = 1./(np.mean(rates, axis=0).max()-np.mean(rates, axis=0).min())
+    pt.plot(1e-3*results['t'], norm_factor*(np.mean(rates, axis=0)-np.mean(rates, axis=0).min()),
+            sy = norm_factor*stats.sem(rates, axis=0),
+            ax=ax2, color=color, lw=1)
+    pt.annotate(ax2, c*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),
+                ha='right', va='top', color=color, fontsize=7)
         
-    ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
-    pt.set_plot(ax1, xlim=zoom, xlabel='time (s)', ylabel='rate (Hz)')
-    pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2], xlim=zoom)
+    #ax2.fill_between(1e-3*results['t'], 0*results['t'], input/np.max(input), color='lightgrey')
+    pt.set_plot(ax1, xlabel='time (s)', ylabel='rate (Hz)')
+    pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2])
     pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
-    return fig1, fig2
 
-fig1, fig2 = plot_sim(['Martinotti', 'Martinotti', 'Basket'],
-                      ['Full', 'noNMDA', 'Full'],
-                      ['tab:orange', 'tab:purple', 'tab:red'])
+
 #fig.savefig('../figures/Temp-Properties-Pred/PV-vs-SST.svg')
 
 # %%
