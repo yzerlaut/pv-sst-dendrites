@@ -6,9 +6,9 @@ sys.path.append('..')
 import plot_tools as pt
 import matplotlib.pylab as plt
 
-P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
+P = dict(t1=0.2, t2=0.45, t3=0.7, t4=2.1,
          #Amp=0.25,
-         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
+         w1=0.08, w2=0.35, w3=0.3, w4=0.2)
 
 from scipy.special import erf
 # Grating Stim Function:

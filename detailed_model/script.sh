@@ -428,11 +428,11 @@ fi
 
 if [[ $1 == 'all' || $1 == 'full-grating' ]]
 then
-    nSeed=96
+    nSeed=48
     cells=("Martinotti" "Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noSTP" "noNMDAnoSTP" "Full" "noSTP")
-    freqs=(1.0 1.0 1.0 1.0 9.0 9.0)
+    freqs=(1.1 1.1 1.0 1.0 11.0 11.0)
     for c in 1 2 5
     do
         python grating_stim.py\

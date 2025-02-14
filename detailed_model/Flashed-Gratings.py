@@ -38,9 +38,9 @@ import matplotlib.pylab as plt
 def sigmoid(x, width=0.1):
     return (1+erf(x/width))/2.
 
-P = dict(t1=0.2, t2=0.45, t3=0.75, t4=2.1,
+P = dict(t1=0.2, t2=0.45, t3=0.7, t4=2.1,
          #Amp=0.25,
-         w1=0.08, w2=0.3, w3=0.2, w4=0.2)
+         w1=0.08, w2=0.35, w3=0.3, w4=0.2)
 
 def inputRate(x,
               t1=0, t2=0, t3=0, t4=0,
@@ -222,19 +222,6 @@ for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'Martinottino
         print(be)
 #    fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_%s.svg' % cellType)
 
-# %%
-fig, ax = pt.figure(figsize=(0.9,1.1))
-
-for cellType, color, index in zip(['MartinottiFull', 'BasketFull', 'MartinottinoNMDA'],
-                                  ['tab:orange', 'tab:red', 'tab:purple', 'tab:cyan'],
-                                  [1, 9, 1, 1]):
-    cond = (RESULTS['t']>0e3) & (RESULTS['t']<4e3)
-    ax.plot(1e-3*RESULTS['t'][cond]-0.5, RESULTS['rate_%s' % cellType][cond]/np.max(RESULTS['rate_%s' % cellType]),
-            color=color, lw=1)
-
-pt.set_plot(ax)
-
-
 # %% [markdown]
 # # Summary Effect
 
@@ -243,7 +230,7 @@ rate_smoothing = 50. # ms
 
 zoom = [-.2, 3.7]
 
-PATH = '../data/detailed_model/grating-full3/GratingSim_%s%s_branch%i.zip'
+PATH = '../data/detailed_model/full-grating4/GratingSim_%s%s_branch%i.zip'
 
 def load_sim(cellType, suffix):
 
@@ -284,7 +271,7 @@ def plot_sim(cellTypes, suffixs, colors, lines=['-','-','-','-'], Ybar=10):
         pt.annotate(ax2, c*'\n'+'%.1fHz' % (0.2/norm_factor), (0, 1),
                     ha='right', va='top', color=colors[c], fontsize=7)
         
-    #ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
+    ax2.fill_between(1e-3*t[1:]-0.5, 0*t[1:], input/np.max(input), color='lightgrey')
     pt.set_plot(ax1, xlim=zoom, xlabel='time (s)', ylabel='rate (Hz)')
     pt.set_plot(ax2, ['bottom'], xlabel='time (s)', xticks=[0,2], xlim=zoom)
     pt.draw_bar_scales(ax2, Xbar=1e-12, Ybar=0.2)
