@@ -408,13 +408,12 @@ fi
 #
 if [[ $1 == 'all' || $1 == 'demo-grating' ]]
 then
-    nSeed=96
+    nSeed=12
     cells=("Martinotti" "Martinotti" "Martinotti" "Basket" "Basket")
     args=("--with_NMDA --with_STP" "--with_NMDA" "" "--with_STP" "")
     suffix=("Full" "noNMDA" "noNMDAnoSTP" "Full" "noSTP")
-    branch=(1 1 1 1 1)
+    branch=(1 1 1 0 0)
     freqs=(1.1 1.1 1.1 11.0 11.0)
-    nSeeds=(96 192 192 96 96)
     for c in 1 2 4
     do
         python grating_stim.py --test_with_repeats\
@@ -422,7 +421,7 @@ then
             --with_presynaptic_spikes\
             --stimFreq ${freqs[$c-1]}\
             --iBranch ${branch[$c-1]}\
-            --nSpikeSeed --suffix ${nSeeds[$c-1]}\
+            --nSpikeSeed $nSeed\
             --suffix ${suffix[$c-1]}$i
     done
 fi

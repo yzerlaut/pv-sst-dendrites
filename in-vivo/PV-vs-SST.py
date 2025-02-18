@@ -240,65 +240,37 @@ fig, AX = pt.figure(axes=(2,1),figsize=(1.1,1.),wspace=0.1, right=7.)
 
 cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
 
-inset = pt.inset(AX[1], [1.6, 0., 0.3, 1.1])
-
-fitInterval = [0.7, 2.5]
-Widths = {}
 for i, case in enumerate(cases):
-    Widths[case] = []
 
     for c, contrast in enumerate([0.5, 1.0]):
 
         resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
 
-        # Z-score:
-        #norm = np.array([np.std(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
-        #resp = np.transpose((resp.T-np.mean(resp,axis=1))/norm)
-        
         pt.plot(SUMMARY['t'], np.mean(resp, axis=0),
                 sy=stats.sem(resp, axis=0),
                 color=colors[i], ax=AX[c])
-        if c:
-            pt.annotate(AX[i],'N=%i sess.' % len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
-                        (1,1), va='top', ha='right', color=colors[i])
 
-    # fit here, i.e. at full contrast
-    cond = (SUMMARY['t']>fitInterval[0]) & (SUMMARY['t']<fitInterval[1]) 
-    for iSession in range(len(resp)):
-        Widths[case].append(fit_gaussian_width(SUMMARY['t'][cond]-fitInterval[0],
-                            resp[iSession][cond]/np.max(resp[iSession]
-                                                        [cond]))[0])
-    print(case, '%.2f +/- %.2f ms' % (np.mean(Widths[case]), stats.sem(Widths[case])))
-    inset.bar([i], [np.mean(Widths[case])], yerr=[stats.sem(Widths[case])], color=colors[i])
-
-#AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
-
-pt.set_plot(inset, ['left'], 
-            title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
-            ylabel=u'\u00bd' + ' width (s)')
 
 for c, contrast in enumerate([0.5, 1.0]):
     #AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
     pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                xlim=[-1,6], xticks=[0,2,4], yticks=[],
-                #yticks_labels=['0','1'] if c==0 else [],
+                xlim=[-1,6], xticks=[0,2,4], 
+                #yticks=[0, 1], yticks_labels=['0','1'] if c==0 else [],
                 #ylim=[0,1], 
                 ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
                 title='c=%.1f' % contrast,
                 xlabel=20*' '+'time from stim. (s)' if c==0 else '')
 
 # %%
-
-# %%
 SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
 
-fig, ax = pt.figure(figsize=(1.,1.),wspace=0.1, right=7.)
+fig, ax = pt.figure(figsize=(0.9,1.05),wspace=0.1, right=7.)
 
 contrast = 1.0
 cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
 
 inset = pt.inset(ax, [1.15, 0., 0.45, 1.0])
-fitInterval = [0.5, 1.8]
+fitInterval = [0.8, 1.8]
 Levels = {}
 
 for i, case in enumerate(cases):
@@ -312,7 +284,7 @@ for i, case in enumerate(cases):
     resp = np.transpose((resp.T-through)/(peak-through))
     
     pt.plot(SUMMARY['t'], np.mean(np.transpose(resp.T-np.min(resp, axis=1)), axis=0),
-            sy=stats.sem(resp, axis=0),
+            sy=1.5*stats.sem(resp, axis=0),
             color=colors[i], ax=ax)
     pt.annotate(ax, 'N=%i sess. (n=%i ROIs, %i mice)' % (\
                         len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
@@ -330,14 +302,15 @@ ax.annotate(pt.from_pval_to_star(stats.mannwhitneyu(Levels['PV'], Levels['SST'])
         
 ax.plot(fitInterval, [0,0], '-', color='tab:grey', lw=4)
 
-pt.set_plot(inset, xlim=[-0.15,0.32], xticks=[0, 0.3], xticks_labels=['0', '0.3'], yticks=[0,1], yticks_labels=[], ylim=[0,1])
+pt.set_plot(inset,
+            xlim=[-0.15,0.32], xticks=[0, 0.3], xticks_labels=['0', '0.3'],
+            yticks=[0,1], yticks_labels=[], ylim=[0,1])
 #pt.draw_bar_scales(inset, Xbar=0.2, Xbar_label='0.2s', Ybar=1e-12, fontsize=7, lw=0.5)
     
 ax.fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
 pt.set_plot(ax, ['left','bottom'],
-            xlim=[-1,5], xticks=[0,2,4], yticks=[0,1], ylim=[0,1],
-            ylabel='deconv. resp.\n (peak norm.)',
-            xlabel=20*' '+'time from stim. (s)')
+            xlim=[-0.5,2.6], xticks=[0,1,2], yticks=[0,1], ylim=[0,1],
+            ylabel='deconv. resp.\n (peak norm.)')
 fig.savefig('../figures/in-vivo/PV-SST-summary-evoked-resp.svg')
 
 # %% [markdown]
@@ -382,8 +355,6 @@ print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Delays['SST'], Delays['PV']).p
 
 
 # %%
-
-# %%
 SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
 
 fig, ax = pt.figure(figsize=(1.1,1.),wspace=0.1, right=7.)
@@ -419,101 +390,6 @@ pt.set_plot(ax, ['left','bottom'] if c==0 else ['bottom'],
             ylabel='deconvolved \n resp. (norm.)',
             title='c=%.1f' % contrast,
             xlabel='time from stim. (s)')
-
-# %%
-np.transpose(np.ones((10,11)).T/np.ones(10))
-
-# %%
-pt.plot(np.mean(SUMMARY['PV']['WAVEFORMS_c=1.0'][0], axis=0))
-
-# %%
-from scipy.optimize import minimize
-
-def gaussian(t, X):
-    return (1-X[1])*np.exp(-t**2/2/X[0]**2)+X[1]
-                 
-def fit_gaussian_width(shift, array,
-                       min_time=0.1,
-                       max_time=2.5):
-    def func(X):
-        return np.sum(np.abs(gaussian(shift, X)-array/np.max(array)))
-    res = minimize(func, [3*min_time,0,1],
-                   bounds=[[min_time, max_time],
-                           [-max_time, max_time],
-                           [0,1]], method='L-BFGS-B')
-    return res.x
-
-
-# %%
-SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle=True).item()
-
-fig, AX = pt.figure(axes=(2,1),figsize=(1.1,1.),wspace=0.1, right=7.)
-
-cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
-
-inset = pt.inset(AX[1], [1.6,0.,0.3,1.1])
-
-fitInterval = [0.7, 2.5]
-Widths = {}
-for i, case in enumerate(cases):
-    Widths[case] = []
-    
-    c1 = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=1.0'] if len(r)>0]
-    for c, contrast in enumerate([1.0]):
-
-        resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
-        #resp = np.divide(resp, np.max(resp, axis=1, keepdims=True))
-        resp = np.divide(resp, np.max(c1, axis=1, keepdims=True))
-        pt.plot(SUMMARY['t'], np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
-                sy=stats.sem(resp, axis=0),
-                #sy=np.std(resp, axis=0),
-                color=colors[i], ax=AX[c])
-        if c:
-            pt.annotate(AX[i],'N=%i sess.' % len(SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]),
-                        (1,1), va='top', ha='right', color=colors[i])
-    # fit here, i.e. at full contrast
-    cond = (SUMMARY['t']>fitInterval[0]) & (SUMMARY['t']<fitInterval[1]) 
-    for iSession in range(len(resp)):
-        Widths[case].append(fit_gaussian_width(SUMMARY['t'][cond]-fitInterval[0],
-                            resp[iSession][cond]/np.max(resp[iSession]
-                                                        [cond]))[0])
-    print(case, '%.2f +/- %.2f ms' % (np.mean(Widths[case]), stats.sem(Widths[case])))
-    inset.bar([i], [np.mean(Widths[case])], yerr=[stats.sem(Widths[case])], color=colors[i])
-
-AX[1].plot(fitInterval, [0,0], 'k-', lw=3, alpha=0.5)
-
-pt.set_plot(inset, ['left'], 
-            title='p=%.1e' % stats.mannwhitneyu(Widths['PV'], Widths['SST']).pvalue,
-            ylabel=u'\u00bd' + ' width (s)')
-
-for c, contrast in enumerate([1.0]):
-    AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
-    pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                xlim=[-1,5], yticks=[0,1], xticks=[0,2,4],
-                yticks_labels=['0','1'] if c==0 else [],
-                #ylim=[0,1], 
-                ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
-                title='c=%.1f' % contrast,
-                xlabel=20*' '+'time from stim. (s)' if c==0 else '')
-fig.savefig('../figures/in-vivo/PV-SST-summary-evoked-resp.svg')
-#fig.savefig('../figures/Figure7/PV-SST-summary-evoked-resp.pdf')
-
-# %%
-case = 'PV'
-fig, ax = pt.figure()
-contrast=0.5
-resp = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast][::5] if len(r)>0]
-#print(np.max(c1, axis=1, keepdims=True))
-print(len(resp), len(c1))
-ax.plot(np.mean(resp, axis=0))
-contrast=1.0
-resp = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0]
-print(len(resp), len(c1))
-ax.plot(np.mean(resp, axis=0))
-#SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast][19]
-
-# %%
-print(resp)
 
 # %% [markdown]
 # # Orientation tuning
