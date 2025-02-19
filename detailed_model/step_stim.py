@@ -24,6 +24,7 @@ def run_sim(cellType='Basket',
             with_STP=False,
             with_NMDA=False,
             currentDrive=0, # in nA
+            AMPAboost=2.5, # AMPA boost factor, when no NMDA in SST
             filename='single_sim.npy',
             with_presynaptic_spikes=False,
             no_Vm=True,
@@ -62,12 +63,15 @@ def run_sim(cellType='Basket',
                                 allow_pickle=True).item()
         else:
             STP_model = {'P0':0.30, 'P1':0.30, 'dP':0.00, 'tauP':1.0, 'Nmax':1}
+        # factor to boost AMPA when no NMDA:
+        cell.params['%s_qAMPAonlyBoost'%cell.params_key] = AMPAboost
     else:
         raise Exception(' cell type not recognized  !')
 
     cell = Cell(ID=ID, 
                 passive_only=passive_only,
                 params_key=params_key)
+
 
     if currentDrive>0:
         ic = h.IClamp(cell.soma[0](0.5))
