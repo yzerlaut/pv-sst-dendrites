@@ -73,12 +73,12 @@ fi
 if [[ $1 == 'all' || $1 == 'demo-step-1' ]]
 then
     ### ----- SIMULATIONS WITHOUT STP ----- ###
-    nSeed=200
+    nSeed=400
     cells=("Martinotti" "Martinotti" "Basket")
     args=("--with_NMDA" "" "")
     suffix=("noSTP" "noSTPnoNMDA" "noSTP")
     branch=(1 1 1)
-    cDrive=(0 0.09 0)
+    cDrive=(0 0.065 0)
     freqs=(1.2 1.2 8.5)
     for c in 2 # /!\ all: 1 2 3
     do
