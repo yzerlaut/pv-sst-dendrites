@@ -102,7 +102,7 @@ def load_sim(RESULTS, cellType,
     seeds = np.unique(sim.spikeSeed)
     dt = sim.fetch_quantity_on_grid('dt', return_last=True)
     tstop = sim.fetch_quantity_on_grid('tstop', return_last=True)
-
+    print(len(seeds))
     spikes_matrix= np.zeros((len(seeds), int(tstop/dt)+1))
     RESULTS['%s_rate' % cellType] = []
     for i, spikes in enumerate(sim.spikes):
@@ -117,7 +117,7 @@ def load_sim(RESULTS, cellType,
     sim.fetch_quantity_on_grid('presynaptic_inh_events', dtype=list)
     sim.fetch_quantity_on_grid('Stim', return_last=True, dtype=np.ndarray)
 
-    print(sim.fetch_quantity_on_grid('currentDrive', return_last=True, dtype=list))
+    #print(sim.fetch_quantity_on_grid('currentDrive', return_last=True, dtype=list))
     if '%s_example_index' % cellType in RESULTS:
         sim.fetch_quantity_on_grid('Stim', dtype=np.ndarray)
         RESULTS['Input_%s' % cellType] = sim.Stim[RESULTS['%s_example_index' % cellType]]
@@ -173,8 +173,8 @@ def plot_sim(RESULTS, cellTypes,
 
     pt.set_common_xlims(AX)#, lims=zoom)
     
-    pt.draw_bar_scales(AX[0], Xbar=Tbar, Xbar_label='%ims'%Tbar, Ybar=2*RESULTS['stimFreq_%s' % cellType], ycolor=color,
-                       Ybar_label='%.0fHz' % (2*RESULTS['stimFreq_%s' % cellType]))
+    pt.draw_bar_scales(AX[0], Xbar=Tbar, Xbar_label='%ims'%Tbar, Ybar=RESULTS['stimFreq_%s' % cellType], ycolor=color,
+                       Ybar_label='%.0fHz' % (RESULTS['stimFreq_%s' % cellType]))
     #pt.annotate(AX[2], '-60mV ', (zoom[0],-60), xycoords='data', ha='right', va='center')
     pt.draw_bar_scales(AX[2], Xbar=1e-12, Ybar=20,Ybar_label='20mV')
     for ax in AX:
@@ -188,7 +188,7 @@ def plot_sim(RESULTS, cellTypes,
 
 # %%
 cellTypes, RESULTS = [], {}
-for i, index in zip(np.arange(1,4), [2,23,0]):
+for i, index in zip(np.arange(1,4), [2, 10, 9]):
     cellTypes.append('BasketnoSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1], n=1.1) 
@@ -197,7 +197,7 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:red', figsize=(1.5,0.3))
 
 # %%
 cellTypes, RESULTS = [], {}
-for i, index in zip(np.arange(1,4), [2,2,4]):
+for i, index in zip(np.arange(1,4), [8, 8, 8]):
     cellTypes.append('MartinottinoSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
     load_sim(RESULTS, cellTypes[-1], n=1.1) 
@@ -206,10 +206,10 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:orange', figsize=(1.6,0.3))
 
 # %%
 cellTypes, RESULTS = [], {}
-for i, index in zip(np.arange(1,4), [2,2,4]):
+for i, index in zip(np.arange(1,4), [2, 2, 4]):
     cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
-    load_sim(RESULTS, cellTypes[-1], n=1.3) 
+    load_sim(RESULTS, cellTypes[-1], n=1.4) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
 #fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 

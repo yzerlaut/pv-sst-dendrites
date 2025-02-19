@@ -270,7 +270,7 @@ contrast = 1.0
 cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
 
 inset = pt.inset(ax, [1.15, 0., 0.45, 1.0])
-fitInterval = [0.8, 1.8]
+fitInterval = [0.8, 2]
 Levels = {}
 
 for i, case in enumerate(cases):
@@ -300,7 +300,7 @@ for i, case in enumerate(cases):
 ax.annotate(pt.from_pval_to_star(stats.mannwhitneyu(Levels['PV'], Levels['SST']).pvalue),
             (np.sum(fitInterval)/2., 0.05), ha='center')
         
-ax.plot(fitInterval, [0,0], '-', color='tab:grey', lw=4)
+ax.plot(fitInterval, [0,0], '-', color='tab:grey', lw=3)
 
 pt.set_plot(inset,
             xlim=[-0.15,0.32], xticks=[0, 0.3], xticks_labels=['0', '0.3'],
@@ -322,16 +322,22 @@ SUMMARY = np.load('../data/in-vivo/summary-deconvolved-PV-SST.npy', allow_pickle
 contrast = 1.0
 cases, colors = ['SST', 'PV'], ['tab:orange', 'tab:red']
 
-Delays = {}
+window = [0.8,2]
+
+Levels = {}
 for i, case in enumerate(cases):
     
     resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
-    nROIs = np.sum([len(r) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
-
-    Delays[case] = [SUMMARY['t'][np.argmax(resp[r,:])] for r in range(resp.shape[0])]
-    print(case, ' %.2f +/- %.2f (N=%i sess.) ' % (np.mean(Delays[case]), stats.sem(Delays[case]), resp.shape[0] ) )
+    peak = np.array([np.max(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    through = np.array([np.min(np.mean(r, axis=0)) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast] if len(r)>0])
+    resp = np.transpose((resp.T-through)/(peak-through))
     
-print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Delays['SST'], Delays['PV']).pvalue)
+    cond = (SUMMARY['t']>window[0]) & (SUMMARY['t']<window[1]) 
+    Levels[case] = np.mean(resp[:,cond], axis=1)
+    
+    print(case, ' %.2f +/- %.2f (N=%i sess.) ' % (np.mean(Levels[case]), stats.sem(Levels[case]), resp.shape[0] ) )
+    
+print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Levels['SST'], Levels['PV']).pvalue)
 
 # %% [markdown]
 # ## Peak Delay
