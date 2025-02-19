@@ -208,7 +208,7 @@ cellTypes, RESULTS = [], {}
 for i, index in zip(np.arange(1,4), [14, 35, 90]):
     cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = index # change here !
-    load_sim(RESULTS, cellTypes[-1], n=1.3, rate_smoothing=5) 
+    load_sim(RESULTS, cellTypes[-1], n=1.8) 
 fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
 #fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
 

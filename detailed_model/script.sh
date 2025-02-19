@@ -109,13 +109,13 @@ then
     args=("--with_NMDA --with_STP" "--with_STP" "--with_STP")
     suffix=("wiSTP" "wiSTPnoNMDA" "wiSTP")
     branch=(1 1 1)
-    cDrive=(0 0.07 0)
+    cDrive=(0 0.04 0)
     freqs=(1.2 1.2 8.5)
     for c in 2 # /!\ all: 1 2 3
     do
         widths=(100 100 500)
         ampFs=(3.5 2 2)
-        for i in 1 2 3
+        for i in 2 # 1 2 3
         do
             python step_stim.py\
                 --test_with_repeats\
@@ -143,7 +143,7 @@ then
             "Full" "noSTP")
     freqs=(1.2 1.2 1.2 1.2 
            8.5 8.5)
-    cDrive=(0 0.07 0 0.07
+    cDrive=(0 0.04 0 0.04
             0 0)
     for c in 2 3 4
     do
