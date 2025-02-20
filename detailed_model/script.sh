@@ -115,7 +115,7 @@ then
     do
         widths=(100 100 500)
         ampFs=(3.5 2 2)
-        for i in 2 # 1 2 3
+        for i in 1 2 3
         do
             python step_stim.py\
                 --test_with_repeats\

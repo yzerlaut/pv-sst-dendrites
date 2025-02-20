@@ -215,14 +215,14 @@ fig, _ = plot_sim(RESULTS, cellTypes, color='tab:purple', figsize=(1.6,0.3))
 # %%
 i=1
 
-for I in range(00, 30):
+for I in range(00, 10):
     cellTypes, RESULTS = [], {}
     cellTypes.append('MartinottinoSTP%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = I # change here !
     load_sim(RESULTS, cellTypes[-1], n=1.1) 
     cellTypes.append('MartinottinoSTPnoNMDA%i' % i)
     RESULTS['%s_example_index' % cellTypes[-1]] = I # change here !
-    load_sim(RESULTS, cellTypes[-1], n=1.3) 
+    load_sim(RESULTS, cellTypes[-1], n=1.8) 
     fig, _ = plot_sim(RESULTS, cellTypes, color='k', figsize=(1.5,0.3))
     fig.suptitle('%i' % I)
 #fig.savefig('../figures/Temp-Properties-Pred/StepSim_example_noSTP_%s.svg' % cellTypes[-1])
