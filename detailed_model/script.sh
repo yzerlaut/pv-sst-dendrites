@@ -145,11 +145,11 @@ then
            8.5 8.5)
     cDrive=(0 0.04 0 0.04
             0 0)
-    for c in 2 3 4
+    for c in 1 2 3 4 5 6
     do
         widths=(50 100 200 1000)
         #nSeeds=(20 8 4 4) # for debugging
-        nSeeds=(160 100 100 50)
+        nSeeds=(160 160 160 160)
         for i in 1 2 3 4
         do
             python step_stim.py\
