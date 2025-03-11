@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -524,9 +524,9 @@ for cellType in TYPES:
     RESULTS['Input_%s' % cellType] = []
     RESULTS['CC_%s' % cellType] = [] # cross-correl
     
-    for iBranch in range(6):
         
-        try:
+    try:
+        for iBranch in range(6):
             fn = '../data/detailed_model/natMovieStim_simBranch%i_%s.zip' % (iBranch,
                          cellType.replace('Basket', 'BasketFull').replace('Martinotti', 'MartinottiFull'))
             sim = Parallel(filename=fn)
@@ -556,12 +556,13 @@ for cellType in TYPES:
                                               tmax, subsampling*dt)
                 RESULTS['ACF'] = CCF
                 RESULTS['time_shift'] = time_shift
-        except BaseException as be:
-            print(cellType, 'branch', iBranch, 'no data', be)
-    print(' %s: output rate: %.1f +/- %.1f Hz' % (cellType,
-                                                 np.mean(RESULTS['rate_%s' % cellType],axis=1).mean(),
-                                                 np.mean(RESULTS['rate_%s' % cellType],axis=1).std()))
-    print('   ', np.mean(RESULTS['rate_%s' % cellType],axis=1))
+        print(' %s: output rate: %.1f +/- %.1f Hz' % (cellType,
+                                                     np.mean(RESULTS['rate_%s' % cellType],axis=1).mean(),
+                                                     np.mean(RESULTS['rate_%s' % cellType],axis=1).std()))
+        print('   ', np.mean(RESULTS['rate_%s' % cellType],axis=1))
+    except BaseException as be:
+        print(cellType, 'branch', iBranch, 'no data', be)
+
 
 
 # %%
@@ -577,7 +578,8 @@ pt.set_plot(ax, xlabel='jitter (s)',
             xticks=[-0.9,0,0.9], xlim=[-0.95,1.1],
             #ylim = [-0.35, 0.95],
             ylabel='corr. coef.')
-fig.savefig('../figures/Natural-Movie/model-CrossCorrel-Func-Example.svg')
+
+#fig.savefig('../figures/Natural-Movie/model-CrossCorrel-Func-Example.svg')
 
 # %%
 fig, ax = pt.figure(figsize=(1.1,0.85))
@@ -599,12 +601,16 @@ ax.bar([0], [1e-3*RESULTS['tau_ACF']], color='tab:grey')
     
 pt.set_plot(ax, ['left'], ylabel=u'\u00bd' + ' width$^{+}$ (s)', yticks=[0,0.2,0.4])
 
-fig.savefig('../figures/Natural-Movie/model-Widths-Summary.svg')
+#fig.savefig('../figures/Natural-Movie/model-Widths-Summary.svg')
 
 # %%
 import itertools
 from scipy import stats
 keys = TYPES
+for i in range(len(keys)):
+    print(keys[i], ', %.3f +/- %.2f ' % (1e-3*np.mean(RESULTS['tau_%s' % keys[i]]),
+                                         1e-3*stats.sem(RESULTS['tau_%s' % keys[i]])))
+    
 for i, j in itertools.product(range(len(keys)), range(len(keys))):
     if i>j:
         try:
