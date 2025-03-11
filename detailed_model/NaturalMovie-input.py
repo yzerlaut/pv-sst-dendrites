@@ -509,6 +509,10 @@ pt.set_plot(ax, ['left'], title='single seed',
 # %%
 from scipy.ndimage import gaussian_filter1d
 
+TYPES = ['Basket', 'BasketnoSTP', 'Martinotti', 'MartinottinoNMDA', 'MartinottinoSTP', 'MartinottinoSTPnoNMDA']
+COLORS = ['tab:red', 'rosybrown', 'tab:orange', 'tab:purple', 'gold', 'y']
+
+
 rate_smoothing = 10. # ms
 subsampling, tmax = 100, 1500
 
