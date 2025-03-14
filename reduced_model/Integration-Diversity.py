@@ -21,11 +21,37 @@
 # %%
 from single_cell_integration import initialize, load_params # code to run the model: (see content below)
 import sys
-sys.path.append('../../')
+sys.path.append('../')
 from neural_network_dynamics import nrn, utils
 import plot_tools as pt
 import matplotlib.pylab as plt
 import numpy as np
+
+# %%
+import pandas as pd
+data = pd.read_csv('../data/SSTDendrites.csv', sep=';')
+expected, real= [], []
+iKey = 2
+while iKey<len(data.keys()):
+    array = np.array(data[data.keys()[iKey]], dtype=float)
+    if len(array[np.isfinite(array)])>0:
+        expected.append(np.array(data['Expected '][np.isfinite(array)], dtype=float))
+        real.append(array[np.isfinite(array)])
+    iKey += 2
+
+# %%
+fig, ax = pt.figure(figsize=(1.2,1.8), right=5)
+
+means = np.array([np.mean(e) for e in expected])
+
+for e, r, m in zip(expected, real, means):
+    ax.plot(e, r, '-', lw=0.5, ms=0.5,color=pt.copper(1-(m-means.min())/(means.max()-means.min())))
+
+pt.set_plot(ax, xlabel='expected EPSP (mV)', ylabel='recorded EPSP (mV)   ',
+            xticks=3*np.arange(5), yticks=3*np.arange(5))
+pt.bar_legend(ax, colormap=pt.copper_r, orientation='horizontal',
+              colorbar_inset={'rect': [0.1, 1.2, 0.8, 0.08], 'facecolor': None})
+pt.save(fig)
 
 # %% [markdown]
 # ### Locations where to simulate/record along the dendritic tree
@@ -52,16 +78,18 @@ fig.savefig('../figures/reduced_model/morpho-with-stim-loc.svg')
 # %%
 BL
 
+# %%
+Model
+
 # %% [markdown]
 # ### Run Input Impedance Profile Characterization
 
 # %%
-Model['qAMPA'] = 0.23
+Model['qAMPA'] = 0.25
 Model['gL'] = 1.
-Model['cm'] = 1.
 syn = {
     'qAMPA':Model['qAMPA'],# [nS] # Destexhe et al., 1998: "0.35 to 1.0 nS"
-    'qNMDA':Model['qAMPA']*5,# [nS] # NMDA-AMPA ratio=2.7
+    'qNMDA':Model['qAMPA']*4,# [nS] # NMDA-AMPA ratio=2.7
     'tauRiseAMPA':0.5,# [ms], Destexhe et al. 1998: 0.4 to 0.8 ms
     'tauDecayAMPA':5,# [ms], Destexhe et al. 1998: "the decay time constant is about 5 ms (e.g., Hestrin, 1993)"
     'tauRiseGABA':0.5,# [ms] Destexhe et al. 1998
@@ -93,13 +121,19 @@ EXC_SYNAPSES_EQUATIONS = '''dgRiseAMPA/dt = -gRiseAMPA/({tauRiseAMPA}*ms) : 1 (c
 ON_EXC_EVENT = 'gDecayAMPA += 1; gRiseAMPA += 1; gDecayNMDA += 1; gRiseNMDA += 1'
 
 
-results = {'Nsyn':10, 'interstim':300}
+results = {'Nsyn':6, 'interstim':300}
 
-for l, loc in enumerate(BL):
+#VALUES, key = [0.8, 0.9, 1, 1.1, 1.2], 'root-diameter'
+#VALUES, key = [100, 125, 150, 175, 200], 'Ri'
+VALUES, key = [0.6, 0.65, 0.7, 0.75, 0.8], 'diameter-reduction-factor'
+
+for k, value in enumerate(VALUES):
+
+    l, loc = 3, BL[3]
     
-    case=str(loc)
+    case=str(k)
     results[case] = {}
-    
+    Model[key] = value
     net, BRT, neuron = None, None, None
     stimulation, ES, M = None, None, None
     
@@ -140,13 +174,13 @@ for l, loc in enumerate(BL):
 # np.save('results.npy', results)
 
 # %%
-def build_linear_pred_trace(results, BL):
+def build_linear_pred_trace(results):
 
     # build a dicionary with the individual responses
-    
-    for l, loc in enumerate(BL):
-        
-        case=str(loc)
+    k=0
+    while str(k) in results:
+
+        case=str(k)
 
         results[case]['depol-real'] = []
         results[case]['depol-linear'] = []
@@ -171,29 +205,30 @@ def build_linear_pred_trace(results, BL):
                                                    results[case]['Vm'][i0])
             results[case]['depol-linear'].append(np.max(results['%s-linear-pred' % case]['Vm'][i0:i0+N])-\
                                                    results['%s-linear-pred' % case]['Vm'][i0])
-            
+        k+=1
     return results
 
 
 # %%
-results = build_linear_pred_trace(results, BL)
-pt.plt.plot(results[str(BL[3])]['Vm-loc'], label='real')
-pt.plt.plot(results[str(BL[3])+'-linear-pred']['Vm-loc'], 'r:', label='linear')
+results = build_linear_pred_trace(results)
+k=1
+pt.plt.plot(results[str(k)]['Vm-loc'], label='real')
+pt.plt.plot(results[str(k)+'-linear-pred']['Vm-loc'], 'r:', label='linear')
 pt.plt.legend(loc=(1,1))
 
 # %%
 length = 300
-fig, AX = pt.figure(axes=(4,1), figsize=(0.9,1.3), wspace=0.03, left=0)
-for l, loc in enumerate(BL):
+fig, AX = pt.figure(axes=(len(VALUES),1), figsize=(0.9,1.3), wspace=0.03, left=0)
+for k in range(len(VALUES)):
     for nsyn in range(1, results['Nsyn']):
         tstart = nsyn*results['interstim']
         tCond = (results[case]['t']>tstart) & (results[case]['t']<(length+tstart))
-        case=str(loc)
-        AX[l].plot(1.1*length+results[case]['t'][tCond]-results[case]['t'][tCond][0],
-                   results[case]['Vm-loc'][tCond], color=COLORS[l], lw=0.5)
-        AX[l].plot(results[case]['t'][tCond]-results[case]['t'][tCond][0],
-                   results[case+'-linear-pred']['Vm-loc'][tCond], ':', color=COLORS[l], lw=0.5)
-    AX[l].axis('off')
+        case=str(k)
+        AX[k].plot(1.1*length+results[case]['t'][tCond]-results[case]['t'][tCond][0],
+                   results[case]['Vm-loc'][tCond], color=pt.viridis(k/(len(VALUES)-1)), lw=0.5)
+        AX[k].plot(results[case]['t'][tCond]-results[case]['t'][tCond][0],
+                   results[case+'-linear-pred']['Vm-loc'][tCond], ':', color=pt.viridis(k/(len(VALUES)-1)), lw=0.5)
+    AX[k].axis('off')
 AX[2].plot(results[case]['t'][tCond]-results[case]['t'][tCond][0], 0*results[case]['t'][tCond], 'k:', lw=0.5)
 pt.set_common_ylims(AX)   
 pt.draw_bar_scales(AX[0], Xbar=20, Xbar_label='20ms',
@@ -202,11 +237,11 @@ pt.draw_bar_scales(AX[0], Xbar=20, Xbar_label='20ms',
 # %%
 length = 150
 fig, AX = pt.figure(axes=(1,1), figsize=(1.4,1.3), wspace=0.03, left=0)
-l, loc = l , BL[3]
+k=0
 for nsyn in range(1, results['Nsyn']):
+    case=str(k)
     tstart = nsyn*results['interstim']
     tCond = (results[case]['t']>tstart) & (results[case]['t']<(length+tstart))
-    case=str(loc)
     AX.plot(1.1*length+results[case]['t'][tCond]-results[case]['t'][tCond][0],
                results[case]['Vm'][tCond], color='k', lw=0.5)
     AX.plot(results[case]['t'][tCond]-results[case]['t'][tCond][0],
@@ -214,35 +249,25 @@ for nsyn in range(1, results['Nsyn']):
     AX.axis('off')
 pt.draw_bar_scales(AX, Xbar=20, Xbar_label='20ms',
                    Ybar=2, Ybar_label='2mV ')
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'fig.svg'))
+pt.save(fig)
 
 # %%
-fig, ax = pt.figure(figsize=(1.1,1.4))
-import os
-l, loc = 3, BL[3]
-case=str(loc)
-ax.plot(results[case]['depol-linear'][1:], results[case]['depol-real'][1:],
-            'o-', color='k')
-ax.plot(results[case]['depol-linear'][1:], results[case]['depol-linear'][1:],
-            ':', color='k')
-pt.set_plot(ax, xlabel='expected peak EPSP  (mV)  ', 
-            xticks=[2,6,10],yticks=[2,6,10],
-            ylabel='observed EPSP (mV)    ')
-fig.savefig(os.path.join(os.path.expanduser('~'), 'fig.svg'))
+fig, ax = pt.figure(figsize=(1.2,1.8), right=5)
 
-# %%
-fig, ax = pt.figure(figsize=(1.1,1.4))
-import os
-for l in range(4):
-    loc = BL[l]
-    case=str(loc)
+COLORS = [plt.cm.copper_r(i/(len(VALUES))) for i in range(len(VALUES))]
+
+for k in range(len(VALUES)):
+    case=str(k)
     ax.plot(results[case]['depol-linear'][1:], results[case]['depol-real'][1:],
-                'o-', color='k')
-    ax.plot(results[case]['depol-linear'][1:], results[case]['depol-linear'][1:],
-                ':', color='k')
-pt.set_plot(ax, xlabel='expected peak EPSP  (mV)  ', 
-            #xticks=[2,6,10],yticks=[2,6,10],
-            ylabel='observed EPSP (mV)    ')
-#fig.savefig(os.path.join(os.path.expanduser('~'), 'fig.svg'))
+                'o-', color=COLORS[k])
+ax.plot(ax.get_xlim(), ax.get_xlim(), 'k:', lw=0.5)
+    
+
+pt.set_plot(ax, xlabel='expected EPSP (mV)', ylabel='recorded EPSP (mV)   ')
+
+pt.bar_legend(ax, X=VALUES,
+              colormap=pt.copper_r, orientation='horizontal',
+              colorbar_inset={'rect': [-0.1, 1.2, 1.2, 0.08], 'facecolor': None})
+pt.save(fig)
 
 # %%
