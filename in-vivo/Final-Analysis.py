@@ -123,9 +123,10 @@ def compute_summary_responses(DATASET,
     
     return SUMMARY
 
-SUMMARY = compute_summary_responses(DATASET,
-                                    verbose=False)
-np.save('../data/in-vivo/summary-episodes.npy', SUMMARY)
+if False:
+    SUMMARY = compute_summary_responses(DATASET,
+                                        verbose=False)
+    np.save('../data/in-vivo/summary-episodes.npy', SUMMARY)
 
 # %% [markdown]
 # # Responsiveness to visual stimulation
@@ -157,7 +158,7 @@ for c, contrast in enumerate([0.5, 1.0]):
 stats.mannwhitneyu(SUMMARY['WT']['FRAC_RESP_c=1.0'], SUMMARY['KO']['FRAC_RESP_c=1.0'])
 
 fig1.savefig('../figures/in-vivo/summary-responsiveness.svg')
-fig1.savefig('../figures/Figure7/summary-responsiveness.pdf')
+#fig1.savefig('../figures/Figure7/summary-responsiveness.pdf')
 
 # %% [markdown]
 # # Temporal Dynamics of Visually-Evoked Responses
@@ -285,24 +286,56 @@ pt.set_plot(inset, ['left'],
             ylabel=u'\u00bd' + ' width (s)')
 
 for c, contrast in enumerate([0.5, 1.0]):
+    AX[c].fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
     pt.set_plot(AX[c], ['left','bottom'] if c==0 else ['bottom'],
-                xlim=[-1,3.5], yticks=[0,1], xticks=[0,2],
+                xlim=[-1,4.], yticks=[0,1], xticks=[0,2],
                 yticks_labels=['0','1'] if c==0 else [],
                 ylim=[0,1], 
                 ylabel='deconvolved \n resp. (norm.)' if c==0 else '',
                 title='c=%.1f' % contrast,
                 xlabel=20*' '+'time from stim. (s)' if c==0 else '')
 fig.savefig('../figures/in-vivo/summary-evoked-resp.svg')
-fig.savefig('../figures/Figure7/summary-evoked-resp.pdf')
+#fig.savefig('../figures/Figure7/summary-evoked-resp.pdf')
 
 # %%
-[len(r) for r in SUMMARY['WT']['RESPONSES_c=1.0']]
+SUMMARY = np.load('../data/in-vivo/summary-deconvolved.npy', allow_pickle=True).item()
 
-# %%
-[len(r) for r in SUMMARY['WT']['WAVEFORMS_c=1.0']]
+fig, ax = pt.figure(figsize=(0.92,1.05))
 
-# %%
-[len(r) for r in SUMMARY['WT']['SIGNIFICANT_c=1.0']]
+cases, colors = ['KO', 'WT'], ['tab:purple', 'tab:orange']
+
+
+fitInterval = [0.8, 2.0]
+
+Levels = {}
+for i, case in enumerate(cases):
+    c1 = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=1.0']]
+
+    resp = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=1.0']]
+    resp = np.divide(resp, np.max(c1, axis=1, keepdims=True))
+        
+    pt.plot(SUMMARY['t'], np.mean(resp, axis=0),
+            sy=stats.sem(resp, axis=0),
+            color=colors[i], ax=ax)
+
+    cond = (SUMMARY['t']>fitInterval[0]) & (SUMMARY['t']<fitInterval[1])
+    Levels[case] = np.mean(resp[:,cond], axis=1)
+
+    print(case, ' %.2f +/- %.2f (N=%i sess.) ' % (np.mean(Levels[case]), stats.sem(Levels[case]), resp.shape[0] ) )
+    
+print('Mann-Whitney: p=%.1e' % stats.mannwhitneyu(Levels['KO'], Levels['WT']).pvalue)
+
+ax.annotate(pt.from_pval_to_star(stats.mannwhitneyu(Levels['KO'], Levels['WT']).pvalue),
+            (np.sum(fitInterval)/2., 0.1), ha='center')
+        
+ax.plot(fitInterval, [0,0], '-', color='tab:grey', lw=4)
+ax.fill_between([0,2], [0,0], [1,1], color='lightgray', alpha=.2, lw=0)
+pt.set_plot(ax, 
+            xlim=[-0.5,2.7], yticks=[0,1], xticks=[0,1,2],
+            yticks_labels=['0','1'],
+            ylim=[0,1], 
+            ylabel='deconv. resp.\n(peak norm.)')
+fig.savefig('../figures/in-vivo/summary-evoked-resp.svg')
 
 # %% [markdown]
 # # Orientation tuning
@@ -430,5 +463,166 @@ fig4, ax = generate_comparison_figs(SUMMARY, ['WT', 'WT'], [1., 0.5],
 fig4.savefig('../figures/in-vivo/orientation-tuning-WT-c=1-vs-c=05-ROIS.svg')
 fig4.savefig('../figures/Figure7/orientation-tuning-WT-c=1-vs-c=05-ROIS.pdf')
 print('')
+
+# %%
+dFoF_parameters['smoothing'] = 1.5
+
+def compute_summary_responses(DATASET,
+                              Nmax=999, # max datafiles (for debugging)
+                              verbose=True):
+    
+    SUMMARY = np.load('../data/in-vivo/summary-episodes.npy', allow_pickle=True).item()
+
+    SUMMARY['dFoF_args'] = dFoF_parameters
+    
+    for key in ['WT', 'KO']:
+        SUMMARY[key]['subjects'] = []
+        SUMMARY[key]['tstart'] = []
+        SUMMARY[key]['tstop'] = []
+        
+        for contrast in [0.5, 1]:
+            SUMMARY[key]['WAVEFORMS_c=%.1f' % contrast] = []
+            
+        for f, s, significant in zip(DATASET[key]['files'][:Nmax],
+                                     DATASET[key]['subjects'],
+                                     SUMMARY[key]['SIGNIFICANT_c=1.0']):
+            
+            SUMMARY[key]['subjects'].append(s)
+            print('analyzing "%s" [...] ' % f)
+            data = Data(f, verbose=False)
+            
+            data.build_dFoF(**dFoF_parameters, verbose=False)
+            data.init_visual_stim()
+
+            protocol = 'ff-gratings-8orientation-2contrasts-15repeats' if\
+                        ('ff-gratings-8orientation-2contrasts-15repeats' in data.protocols) else\
+                        'ff-gratings-8orientation-2contrasts-10repeats'
+
+            for contrast in [0.5, 1]:
+                
+                t, significant_waveforms = compute_tuning_response_per_cells(data,
+                                                                             prestim_duration=4,
+                                                                             imaging_quantity='dFoF',
+                                                                             contrast=contrast,
+                                                                             protocol_name=protocol,
+                                                                             stat_test_props=stat_test_props,
+                                                                             response_significance_threshold=\
+                                                                                          response_significance_threshold,
+                                                                             verbose=False,
+                                                                             force_significant=significant,
+                                                                             return_significant_waveforms=True)
+                
+                SUMMARY[key]['WAVEFORMS_c=%.1f' % contrast].append(significant_waveforms)
+                
+    SUMMARY['t'] = t
+    print('done ! ')
+    
+    return SUMMARY
+
+SUMMARY = compute_summary_responses(DATASET,
+                                    verbose=False)
+np.save('../data/in-vivo/summary-dFoF.npy', SUMMARY)
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-dFoF.npy', allow_pickle=True).item()
+
+fig, AX = pt.figure(axes=(1,2),figsize=(1.1,1.), hspace=0, wspace=0.1, right=7.)
+
+cases, colors = ['KO', 'WT'], ['tab:purple', 'tab:orange']
+
+fitInterval = [2.5, 5.5]
+
+for i, case in enumerate(cases):
+    
+    #c1 = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=1.0']]
+    #c1 = np.array([r for r in SUMMARY[case]['WAVEFORMS_c=1.0']])
+    
+    for c, contrast in enumerate([1.0]):
+
+        #resp = [np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]]
+        resp = np.concatenate([r for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
+
+        #resp = (resp-np.min(resp, axis=1, keepdims=True))/\
+        #                (np.max(resp, axis=1, keepdims=True)-np.min(resp, axis=1, keepdims=True))
+        #resp = np.divide(resp, np.max(resp, axis=1, keepdims=True))
+        
+        #resp = np.divide(resp, np.max(c1, axis=1, keepdims=True))
+        
+        pt.plot(SUMMARY['t'], np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
+                sy=stats.sem(resp, axis=0),
+                #sy=np.std(resp, axis=0),
+                color=colors[i], ax=AX[i])
+
+    
+for i in range(2):
+    ylim = AX[i].get_ylim()
+    AX[i].fill_between([0,2], ylim[0]*np.ones(2), ylim[1]*np.ones(2), color='grey', alpha=.2, lw=0)
+    AX[i].fill_between([2.5,5.6], ylim[0]*np.ones(2), ylim[1]*np.ones(2), color='lightgray', alpha=.2, lw=0)
+    pt.set_plot(AX[i], ['bottom'] if i==1 else [],
+                xlim=[1.8,6.], 
+                xticks=[2,4,6])
+    pt.draw_bar_scales(AX[i], Ybar=1, Xbar=1e-12, Ybar_label='1$\Delta$F/F', color=colors[i])
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+
+# %%
+SUMMARY = np.load('../data/in-vivo/summary-dFoF.npy', allow_pickle=True).item()
+
+fig, ax = pt.figure(figsize=(1.2,1.7),wspace=0.1, right=7.)
+
+cases, colors = ['KO', 'WT'], ['tab:purple', 'tab:orange']
+
+Interval = [2.5, 5.5]
+condInterval = (SUMMARY['t']>Interval[0]) & (SUMMARY['t']<Interval[1])
+
+from scipy.optimize import minimize 
+
+def exp(t, X):
+    y = (np.exp(-(t-t[0])/X[0])-np.exp(-(t[-1]-t[0])/X[0]))
+    return y
+        
+Widths = {}
+for i, case in enumerate(cases):
+    contrast = 1.0
+    resp = np.array([np.mean(r, axis=0) for r in SUMMARY[case]['WAVEFORMS_c=%.1f' % contrast]])
+
+    resp = (resp-np.min(resp[:,condInterval], axis=1, keepdims=True))/\
+                    (np.max(resp[:,condInterval], axis=1, keepdims=True)-np.min(resp[:,condInterval], axis=1, keepdims=True))
+    
+    pt.plot(SUMMARY['t'], np.mean(resp, axis=0),#/np.mean(responsive_CCs, axis=0).max(),
+            sy=3*stats.sem(resp, axis=0),
+            color=colors[i], ax=ax)
+    Widths[case] = []
+    
+    for r in resp:
+        def to_minimize(X):
+            return np.sum((exp(SUMMARY['t'][condInterval], X)-r[condInterval]/r[condInterval].max())**2)
+            
+        Widths[case].append(minimize(to_minimize, x0=[1.5]).x[0])
+        
+
+y = exp(SUMMARY['t'][condInterval], [1.5,])
+ax.plot(SUMMARY['t'][condInterval], y/y.max(), 'k:') # 1.5 s
+ylim = ax.get_ylim()
+ax.fill_between([0,2], ylim[0]*np.ones(2), ylim[1]*np.ones(2), color='grey', alpha=.2, lw=0)
+ax.fill_between([2.5,5.6], ylim[0]*np.ones(2), ylim[1]*np.ones(2), color='lightgray', alpha=.2, lw=0)
+
+pt.set_plot(ax,
+            xlim=[1.5, 6], 
+            xticks=[2,4,6],
+            yticks=[0,1],
+            ylabel=' norm. $\Delta$F/F\n(min-max in decay window)',
+            title='c=%.1f' % contrast,
+            xlabel='time from stim. onset (s)')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+
+# %%
+fig, ax = pt.figure(figsize=(0.7,1.1))
+pt.bar([np.mean(Widths['KO'])], sy=[stats.sem(Widths['KO'])], x=[1], color='tab:purple', ax=ax)
+pt.bar([np.mean(Widths['WT'])], sy=[stats.sem(Widths['WT'])], x=[0], color='tab:orange', ax=ax)
+pt.set_plot(ax, ['left'], yticks=[0,0.5,1,1.5], ylabel='$\\tau_{decay}$ (s)')
+fig.savefig(os.path.join(os.path.expanduser('~'), 'Desktop', 'fig.svg'))
+print('WT : %.2f +/- %.2f ' % (np.mean(Widths['WT']), stats.sem(Widths['WT'])))
+print('KO : %.2f +/- %.2f ' % (np.mean(Widths['KO']), stats.sem(Widths['KO'])))
+print('mannwhitneyu, p=', stats.mannwhitneyu(Widths['WT'], Widths['KO']).pvalue)
 
 # %%
