@@ -549,11 +549,36 @@ pt.set_plot(ax3, xlabel='jitter (s) of "+" units ',
             xlim=[-1.5,1.5], yticks=[0,1])
 
 fig12.savefig('../figures/visual_coding/decays_per_session.svg')
-fig12.savefig('../figures/Figure5/decays_per_session.svg')
+#fig12.savefig('../figures/Figure5/decays_per_session.svg')
+
+# %%
+import pandas as pd
+PV = pd.DataFrame()
+for key in ['PV_negWidths', 'PV_posWidths']:
+    PV[key] = CCs[key]
+PV
+
+# %%
+SST = pd.DataFrame()
+for key in ['SST_negWidths', 'SST_posWidths']:
+    SST[key] = CCs[key]
+stats.kruskal(SST['SST_negWidths'], SST['SST_posWidths'])
+SST
+
+# %%
+from scikit_posthocs import posthoc_dunn
+print(stats.kruskal(PV['PV_posWidths'], PV['PV_negWidths'], SST['SST_posWidths'], SST['SST_negWidths']))
+posthoc_dunn([PV['PV_posWidths'], PV['PV_negWidths'], SST['SST_posWidths'], SST['SST_negWidths']], 
+             sort=False, p_adjust='bonferroni')
+
+# %%
+# posthoc_dunn?
 
 # %% [markdown]
 # ## Cross-correlation per cell 
 # ### (unusable --> rate waveforms are way too noisy at the required temporal sampling)
+
+# %%
 
 # %%
 from scipy import signal

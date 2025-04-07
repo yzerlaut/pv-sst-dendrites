@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -527,7 +527,7 @@ for cellType in TYPES:
         
     try:
         for iBranch in range(6):
-            fn = '../data/detailed_model/natMovieStim_simBranch%i_%s.zip' % (iBranch,
+            fn = '../data/detailed_model/natMovie/natMovieStim_simBranch%i_%s.zip' % (iBranch,
                          cellType.replace('Basket', 'BasketFull').replace('Martinotti', 'MartinottiFull'))
             sim = Parallel(filename=fn)
             sim.load()
@@ -608,16 +608,21 @@ import itertools
 from scipy import stats
 keys = TYPES
 for i in range(len(keys)):
-    print(keys[i], ', %.3f +/- %.2f ' % (1e-3*np.mean(RESULTS['tau_%s' % keys[i]]),
-                                         1e-3*stats.sem(RESULTS['tau_%s' % keys[i]])))
-    
-for i, j in itertools.product(range(len(keys)), range(len(keys))):
-    if i>j:
-        try:
-            print(keys[i], keys[j], ', p=%.0e' % stats.mannwhitneyu(RESULTS['tau_%s' % keys[i]],
-                                                                    RESULTS['tau_%s' % keys[j]]).pvalue)
-        except BaseException:
-            pass
+    try:
+        print(keys[i], ', %.3f +/- %.2f ' % (1e-3*np.mean(RESULTS['tau_%s' % keys[i]]),
+                                             1e-3*stats.sem(RESULTS['tau_%s' % keys[i]])))
+    except BaseException as be:
+        pass
+        
+
+print(' - t-test, PV vs PV-noSTP, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_BasketnoSTP']).pvalue)
+print(' - t-test, PV vs SST, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_Martinotti']).pvalue)
+#print(' - t-test, SST vs SST-noNMDA, p=%.0e' %  stats.ttest_ind((RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoNMDA']).pvalue)
+print(' - t-test, SST vs SST-noSTP, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']).pvalue)
+#print(' - t-test, SST vs SST-noSTP-noNMDA, p=%.0e' %  stats.ttest_ind((RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTPnoNMDA']).pvalue)
+from scikit_posthocs import posthoc_dunn
+posthoc_dunn([RESULTS['tau_BasketnoSTP'], RESULTS['tau_Basket'], RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']], 
+             sort=False, p_adjust='bonferroni')
 
 # %% [markdown]
 # ## Illustrate different cases
