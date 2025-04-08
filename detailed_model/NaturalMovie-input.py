@@ -615,16 +615,18 @@ for i in range(len(keys)):
         pass
         
 
-print(' - t-test, PV vs PV-noSTP, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_BasketnoSTP']).pvalue)
-print(' - t-test, PV vs SST, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_Martinotti']).pvalue)
-#print(' - t-test, SST vs SST-noNMDA, p=%.0e' %  stats.ttest_ind((RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoNMDA']).pvalue)
-print(' - t-test, SST vs SST-noSTP, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']).pvalue)
-#print(' - t-test, SST vs SST-noSTP-noNMDA, p=%.0e' %  stats.ttest_ind((RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTPnoNMDA']).pvalue)
-from scikit_posthocs import posthoc_dunn
-posthoc_dunn([RESULTS['tau_BasketnoSTP'], RESULTS['tau_Basket'], RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']], 
-             sort=False, p_adjust='bonferroni')
+print(' - t-test, PV vs PV-noSTP, p=%.0e' %  (5*stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_BasketnoSTP']).pvalue))
+print(' - t-test, PV vs SST, p=%.0e' %  (5*stats.ttest_ind(RESULTS['tau_Basket'], RESULTS['tau_Martinotti']).pvalue))
+print(' - t-test, SST vs SST-noNMDA, p=%.0e' %  (5*stats.ttest_ind(RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoNMDA']).pvalue))
+#print(' - t-test, SST vs SST-noSTP, p=%.0e' %  stats.ttest_ind(RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']).pvalue)
+print(' - t-test, SST vs SST-noSTP-noNMDA, p=%.0e' %  (5*stats.ttest_ind(RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTPnoNMDA']).pvalue))
+print(' - t-test, SST-noNMDA vs SST-noSTP-noNMDA, p=%.0e' %  (5*stats.ttest_ind(RESULTS['tau_MartinottinoNMDA'], RESULTS['tau_MartinottinoSTPnoNMDA']).pvalue))
 
-# %% [markdown]
+#from scikit_posthocs import posthoc_dunn
+#posthoc_dunn([RESULTS['tau_BasketnoSTP'], RESULTS['tau_Basket'], RESULTS['tau_Martinotti'], RESULTS['tau_MartinottinoSTP']], 
+#             sort=False, p_adjust='bonferroni')
+
+# %% [markdown] jp-MarkdownHeadingCollapsed=true
 # ## Illustrate different cases
 
 # %%
